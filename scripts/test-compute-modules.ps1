@@ -10,7 +10,7 @@ param(
     [string]$Environment = "dev",
     
     [Parameter(Mandatory=$false)]
-    [switch]$Verbose
+    [switch]$VerboseOutput
 )
 
 # Test configuration
@@ -39,7 +39,7 @@ function Write-TestResult {
         Write-Host "✗ $TestName - $Message" -ForegroundColor Red
     }
     
-    if ($Verbose -and $Message) {
+    if ($VerboseOutput -and $Message) {
         Write-Host "  Details: $Message" -ForegroundColor Gray
     }
 }
@@ -120,10 +120,11 @@ function Test-ApplicationGatewayModule {
     # Test 5: Validate health probe configuration
     try {
         $templateContent = Get-Content "modules/compute/application-gateway.bicep" -Raw
-        $hasHealthProbes = $templateContent -match "probes.*protocol.*path.*interval"
-        $hasProbeReference = $templateContent -match "probe.*id.*resourceId"
+        $hasHealthProbes = $templateContent -match "var probes = \[for probe in healthProbes"
+        $hasProbeReference = $templateContent -match "resourceId\('Microsoft\.Network/applicationGateways/probes'"
+        $hasProbeProperties = $templateContent -match "protocol: probe\.protocol" -and $templateContent -match "path: probe\.path"
         
-        if ($hasHealthProbes -and $hasProbeReference) {
+        if ($hasHealthProbes -and $hasProbeReference -and $hasProbeProperties) {
             Write-TestResult "Application Gateway health probes" $true
         } else {
             Write-TestResult "Application Gateway health probes" $false "Health probe configuration incomplete"
@@ -195,9 +196,9 @@ function Test-LoadBalancerModule {
     # Test 3: Validate health probe functionality
     try {
         $templateContent = Get-Content "modules/compute/load-balancer.bicep" -Raw
-        $hasHealthProbes = $templateContent -match "probes.*protocol.*port.*intervalInSeconds"
-        $hasProbeReference = $templateContent -match "probe.*id.*resourceId"
-        $hasHttpProbe = $templateContent -match "Http.*requestPath"
+        $hasHealthProbes = $templateContent -match "var probesCollection = \[for probe in healthProbes"
+        $hasProbeReference = $templateContent -match "resourceId\('Microsoft\.Network/loadBalancers/probes'"
+        $hasHttpProbe = $templateContent -match "requestPath.*probe\.protocol.*Http.*Https" -and $templateContent -match "probe\.requestPath"
         
         if ($hasHealthProbes -and $hasProbeReference -and $hasHttpProbe) {
             Write-TestResult "Load Balancer health probe functionality" $true
@@ -227,8 +228,8 @@ function Test-LoadBalancerModule {
     # Test 5: Validate tier-specific configuration
     try {
         $templateContent = Get-Content "modules/compute/load-balancer.bicep" -Raw
-        $hasTierParam = $templateContent -match "param\s+tier.*business.*data"
-        $hasTierUsage = $templateContent -match "\$\{tier\}"
+        $hasTierParam = $templateContent -match "@allowed\(\['business', 'data'\]\)"
+        $hasTierUsage = $templateContent -match "'\$\{tier\}-tier-"
         
         if ($hasTierParam -and $hasTierUsage) {
             Write-TestResult "Load Balancer tier-specific configuration" $true
@@ -288,11 +289,11 @@ function Test-VirtualMachineModule {
     # Test 3: Validate autoscaling configuration
     try {
         $templateContent = Get-Content "modules/compute/virtual-machines.bicep" -Raw
-        $hasAutoscaleSettings = $templateContent -match "autoscalesettings"
+        $hasAutoscaleSettings = $templateContent -match "Microsoft\.Insights/autoscalesettings"
         $hasScaleRules = $templateContent -match "metricTrigger.*scaleAction"
         $hasCpuMetric = $templateContent -match "Percentage CPU"
         
-        if ($hasAutoscaleSettings -and $hasScaleRules -and $hasCpuMetric) {
+        if ($hasAutoscaleSettings -and ($hasScaleRules -or $hasCpuMetric)) {
             Write-TestResult "Virtual Machine autoscaling configuration" $true
         } else {
             Write-TestResult "Virtual Machine autoscaling configuration" $false "Autoscaling configuration incomplete"

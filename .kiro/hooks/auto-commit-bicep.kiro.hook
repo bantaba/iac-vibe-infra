@@ -1,0 +1,19 @@
+{
+  "enabled": true,
+  "name": "Auto-commit Bicep Changes",
+  "description": "Automatically commits changes to the git repository whenever Bicep templates, parameter files, or scripts are modified",
+  "version": "1",
+  "when": {
+    "type": "userTriggered",
+    "patterns": [
+      "*.bicep",
+      "modules/**/*.bicep",
+      "parameters/*.json",
+      "scripts/*.ps1"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Files have been modified in the Bicep infrastructure project. Please commit these changes to git with an appropriate commit message that describes what was changed. Include the modified file names and a brief description of the changes made."
+  }
+}

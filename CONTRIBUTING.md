@@ -101,7 +101,19 @@ Before submitting changes, ensure:
    .\scripts\security-scan.ps1 -Directory . -SoftFail
    ```
 
-3. **Deployment Testing**:
+3. **Module Testing** (for compute modules):
+   ```powershell
+   # Test all compute modules
+   .\scripts\test-compute-modules.ps1
+   
+   # Test specific module with verbose output
+   .\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway -VerboseOutput
+   
+   # Test for specific environment
+   .\scripts\test-compute-modules.ps1 -Environment staging -VerboseOutput
+   ```
+
+4. **Deployment Testing**:
    ```powershell
    # Development deployment with what-if preview
    .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -WhatIf
@@ -113,7 +125,7 @@ Before submitting changes, ensure:
    .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -SkipValidation -SkipSecurityScan
    ```
 
-4. **Testing Best Practices**:
+5. **Testing Best Practices**:
    - Test in a development environment first
    - Use unique resource group names: `{prefix}-{workload}-dev-{username}-rg`
    - Verify all resources deploy successfully

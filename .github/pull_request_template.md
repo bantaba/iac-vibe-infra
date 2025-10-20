@@ -33,6 +33,7 @@ List the modules that were changed:
 ## Testing Checklist
 - [ ] Template validation passed (`.\scripts\validate.ps1`)
 - [ ] Security scan passed (Checkov)
+- [ ] Compute module tests passed (`.\scripts\test-compute-modules.ps1`)
 - [ ] Deployed successfully in development environment
 - [ ] All existing functionality still works
 - [ ] New functionality works as expected

@@ -87,10 +87,12 @@
   - Wire up load balancer backend pools with VM scale sets
   - _Requirements: 4.1, 4.2, 4.4, 4.5_
 
-- [ ] 4.6 Write compute module unit tests
-
+- [x] 4.6 Write compute module unit tests
   - Create tests for Application Gateway configuration validation
   - Write tests for load balancer health probe functionality
+  - Implement comprehensive test script with parameter validation
+  - Add support for verbose output and environment-specific testing
+  - Include tests for Virtual Machine and Availability Set modules
   - _Requirements: 4.1, 4.2, 4.4_
 
 - [ ] 5. Implement data layer modules

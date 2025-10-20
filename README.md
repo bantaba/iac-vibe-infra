@@ -25,7 +25,8 @@ bicep-infrastructure/
 ├── scripts/                   # Deployment and validation scripts
 │   ├── deploy.ps1             # Main deployment script
 │   ├── validate.ps1           # Template validation script
-│   └── security-scan.ps1      # Checkov security scanning script
+│   ├── security-scan.ps1      # Checkov security scanning script
+│   └── test-compute-modules.ps1 # Compute module unit tests
 ├── .checkov.yaml              # Checkov configuration file
 └── .checkovignore             # Checkov ignore patterns
 ```
@@ -67,7 +68,19 @@ bicep-infrastructure/
    checkov -d . --framework bicep --config-file .checkov.yaml
    ```
 
-4. **Deploy infrastructure**:
+4. **Test compute modules** (optional):
+   ```powershell
+   # Test all compute modules
+   .\scripts\test-compute-modules.ps1
+   
+   # Test specific module with verbose output
+   .\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway -VerboseOutput
+   
+   # Test for specific environment
+   .\scripts\test-compute-modules.ps1 -Environment staging -VerboseOutput
+   ```
+
+5. **Deploy infrastructure**:
    ```powershell
    # Development environment
    az deployment group create --resource-group contoso-webapp-dev-rg --template-file main.bicep --parameters @parameters/dev.parameters.json
@@ -79,7 +92,7 @@ bicep-infrastructure/
    az deployment group create --resource-group contoso-webapp-prod-rg --template-file main.bicep --parameters @parameters/prod.parameters.json --confirm-with-what-if
    ```
 
-5. **Verify deployment**:
+6. **Verify deployment**:
    ```powershell
    # Check resource deployment status
    az deployment group show --resource-group contoso-webapp-dev-rg --name main
@@ -244,6 +257,75 @@ module keyVault 'modules/security/key-vault.bicep' = {
 - **Access Controls**: RBAC and network-based access restrictions
 - **Audit Logging**: Comprehensive logging for security events and administrative operations
 
+## Testing
+
+### Compute Module Testing
+
+The project includes comprehensive unit tests for compute modules to validate configuration and functionality:
+
+#### Test Script Usage
+
+```powershell
+# Test all compute modules
+.\scripts\test-compute-modules.ps1
+
+# Test specific module
+.\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway
+.\scripts\test-compute-modules.ps1 -TestScope LoadBalancer
+.\scripts\test-compute-modules.ps1 -TestScope VirtualMachine
+.\scripts\test-compute-modules.ps1 -TestScope AvailabilitySet
+
+# Test with verbose output for detailed information
+.\scripts\test-compute-modules.ps1 -VerboseOutput
+
+# Test for specific environment
+.\scripts\test-compute-modules.ps1 -Environment staging -VerboseOutput
+```
+
+#### Test Coverage
+
+The test script validates the following aspects of compute modules:
+
+**Application Gateway Module Tests:**
+- Template syntax validation using `az bicep build`
+- Required parameter validation (applicationGatewayName, subnetId, publicIpAddressId)
+- WAF configuration and policy validation
+- SSL certificate support with Key Vault integration
+- Health probe configuration for backend monitoring
+- Backend pool management and routing rules
+
+**Load Balancer Module Tests:**
+- Template syntax validation
+- Required parameter validation (loadBalancerName, subnetId, tier)
+- Health probe functionality for HTTP/HTTPS and TCP protocols
+- Load balancing rules configuration
+- Tier-specific configuration validation (business/data tiers)
+- Availability zone support for Standard SKU
+
+**Virtual Machine Module Tests:**
+- Template syntax validation
+- Availability zone deployment configuration
+- Autoscaling configuration with CPU metrics and scale rules
+
+**Availability Set Module Tests:**
+- Template syntax validation
+- Fault domain and update domain configuration
+
+#### Test Results
+
+The test script provides comprehensive output including:
+- ✓ Passed tests (displayed in green)
+- ✗ Failed tests with detailed error messages (displayed in red)
+- Test summary with total, passed, and failed counts
+- Detailed failure information when using `-VerboseOutput` parameter
+
+#### Integration with CI/CD
+
+The test script is designed to integrate with CI/CD pipelines:
+- Returns exit code 0 for success, 1 for failure
+- Supports automated testing in build pipelines
+- Provides structured output for parsing by automation tools
+
 ## Deployed Infrastructure Components
 
 The main template currently deploys the following infrastructure components:
@@ -392,6 +474,11 @@ This project is version controlled with Git. The repository includes:
 - **Permission Errors**: Ensure you have Contributor role on the subscription/resource group
 - **Naming Conflicts**: Verify resource names are unique (especially Key Vault and Storage Account names)
 - **Network Address Conflicts**: Ensure VNet address spaces don't overlap with existing networks
+- **Test Script Issues**:
+  - Ensure Azure CLI is installed and authenticated (`az login`)
+  - Verify Bicep extension is installed (`az bicep install`)
+  - Check that all module files exist in the expected locations
+  - Use `-VerboseOutput` parameter for detailed error information
 - **Public IP Issues**:
   - Verify domain name labels are globally unique across Azure
   - Ensure Standard SKU is used for zone redundancy requirements

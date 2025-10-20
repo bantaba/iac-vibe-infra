@@ -8,6 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- Comprehensive compute module unit testing framework with `test-compute-modules.ps1`
+- Test coverage for Application Gateway, Load Balancer, Virtual Machine, and Availability Set modules
+- Support for verbose output and environment-specific testing in test scripts
 - Integrated networking modules into main orchestration template
 - Virtual Network deployment with multi-tier subnet architecture
 - Network Security Groups with comprehensive security rules for each tier
@@ -17,6 +20,7 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Environment-specific network address spaces (10.0.x.x for dev, 10.1.x.x for staging, 10.2.x.x for prod)
 
 ### Enhanced
+- Updated test script parameter from `-Verbose` to `-VerboseOutput` to avoid PowerShell conflicts
 - Main template now orchestrates complete networking infrastructure deployment
 - Improved dependency management between networking modules
 - Enhanced security with tier-specific NSG rules following principle of least privilege
