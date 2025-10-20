@@ -13,6 +13,11 @@ bicep-infrastructure/
 │   └── prod.parameters.json   # Production environment
 ├── modules/                   # Reusable Bicep modules
 │   ├── networking/            # Network infrastructure modules
+│   │   ├── vnet-manager.bicep # Virtual Network Manager configuration
+│   │   ├── virtual-network.bicep # Virtual networks and subnets
+│   │   ├── network-security-groups.bicep # NSG rules and associations
+│   │   ├── ddos-protection.bicep # DDoS protection plans
+│   │   └── public-ip.bicep    # Public IP addresses for Application Gateway
 │   ├── security/              # Security and identity modules
 │   ├── compute/               # Compute and load balancing modules
 │   ├── data/                  # Database and storage modules
@@ -91,6 +96,7 @@ The infrastructure implements a secure multi-tier architecture with the followin
 - **Virtual Network Manager**: Centralized network governance with network groups and security policies
 - **Segmented Subnets**: Application Gateway, Management, Web Tier, Business Tier, Data Tier, and Active Directory subnets
 - **Network Security Groups**: Tier-specific security rules following principle of least privilege
+- **Public IP Addresses**: Standard SKU public IPs with zone redundancy for Application Gateway and other public-facing resources
 - **DDoS Protection**: Enhanced protection for public-facing resources (staging and production)
 - **Service Endpoints**: Secure connectivity to Azure services (Key Vault, Storage, SQL)
 
@@ -117,6 +123,37 @@ Each environment has specific configurations optimized for its purpose:
   - Network: 10.2.0.0/16 address space
 
 ## Module Usage Examples
+
+### Public IP Module
+
+The Public IP module creates Standard SKU public IP addresses for Application Gateway and other public-facing resources:
+
+```bicep
+module applicationGatewayPublicIp 'modules/networking/public-ip.bicep' = {
+  name: 'application-gateway-public-ip-deployment'
+  params: {
+    publicIpName: 'contoso-webapp-prod-agw-pip'
+    sku: 'Standard'
+    allocationMethod: 'Static'
+    domainNameLabel: 'contoso-webapp-prod-agw'
+    zones: ['1', '2', '3'] // Zone redundancy for high availability
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      Purpose: 'ApplicationGateway'
+    }
+    location: 'East US'
+  }
+}
+```
+
+#### Public IP Configuration Options
+
+- **SKU**: `Basic` or `Standard` (Standard recommended for production)
+- **Allocation Method**: `Static` (recommended) or `Dynamic`
+- **Zone Redundancy**: Availability zones for Standard SKU (enhances availability)
+- **DNS Integration**: Optional domain name label for friendly DNS names
+- **IP Version**: IPv4 (default) or IPv6 support
 
 ### Key Vault Module
 
@@ -230,6 +267,12 @@ The main template currently deploys the following infrastructure components:
 - **Management Access**: Controlled RDP/SSH access from management subnet to all tiers
 - **Application Flow**: Proper traffic flow between tiers (AGW → Web → Business → Data)
 
+### Public IP Addresses
+- **Standard SKU**: Zone-redundant public IP addresses for high availability
+- **Static Allocation**: Consistent IP addresses for Application Gateway and load balancers
+- **DNS Integration**: Configurable domain name labels for friendly DNS names
+- **Zone Redundancy**: Multi-zone deployment for enhanced availability (when high availability is enabled)
+
 ### DDoS Protection
 - **Conditional Deployment**: Enabled for staging and production environments
 - **Enhanced Protection**: Standard DDoS protection plan for public-facing resources
@@ -330,9 +373,17 @@ This project is version controlled with Git. The repository includes:
    az network vnet list --resource-group contoso-webapp-dev-rg --output table
    az network nsg list --resource-group contoso-webapp-dev-rg --output table
    
-   # Verify Key Vault deployment (when security modules are added)
+   # Verify public IP addresses
+   az network public-ip list --resource-group contoso-webapp-dev-rg --output table
+   az network public-ip show --resource-group contoso-webapp-dev-rg --name contoso-webapp-dev-agw-pip --query "{Name:name,IPAddress:ipAddress,AllocationMethod:publicIPAllocationMethod,SKU:sku.name,Zones:zones}"
+   
+   # Verify Key Vault deployment
    az keyvault list --resource-group contoso-webapp-dev-rg --output table
    az keyvault show --name contoso-webapp-dev-kv --query "properties.{VaultUri:vaultUri,SoftDelete:enableSoftDelete,PurgeProtection:enablePurgeProtection}"
+   
+   # Verify Application Gateway (when compute modules are deployed)
+   az network application-gateway list --resource-group contoso-webapp-dev-rg --output table
+   az network application-gateway show --resource-group contoso-webapp-dev-rg --name contoso-webapp-dev-agw --query "{Name:name,State:operationalState,PublicIP:frontendIPConfigurations[0].publicIPAddress.id}"
    ```
 
 ### Troubleshooting Common Issues
@@ -341,11 +392,21 @@ This project is version controlled with Git. The repository includes:
 - **Permission Errors**: Ensure you have Contributor role on the subscription/resource group
 - **Naming Conflicts**: Verify resource names are unique (especially Key Vault and Storage Account names)
 - **Network Address Conflicts**: Ensure VNet address spaces don't overlap with existing networks
+- **Public IP Issues**:
+  - Verify domain name labels are globally unique across Azure
+  - Ensure Standard SKU is used for zone redundancy requirements
+  - Check that availability zones are supported in the target region
+  - Validate that Static allocation is used for Application Gateway requirements
 - **Key Vault Access Issues**: 
   - Verify object IDs for role assignments are correct
   - Ensure network access rules allow your deployment source
   - Check that RBAC authorization is enabled if using role assignments
   - Validate subnet IDs if using VNet integration
+- **Application Gateway Issues**:
+  - Ensure public IP address is Standard SKU and Static allocation
+  - Verify SSL certificate is properly stored in Key Vault
+  - Check that managed identity has access to Key Vault for certificate retrieval
+  - Validate backend pool health probe configurations
 
 ## Contributing
 

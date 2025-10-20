@@ -374,9 +374,9 @@ output applicationGatewayName string = applicationGateway.name
 output publicIpAddress string = reference(publicIpAddressId, '2023-09-01').ipAddress
 
 @description('The backend address pool resource IDs')
-output backendAddressPoolIds object = {
-  for pool in backendPools: pool.name => resourceId('Microsoft.Network/applicationGateways/backendAddressPools', applicationGatewayName, pool.name)
-}
+output backendAddressPoolIds object = reduce(backendPools, {}, (cur, pool) => union(cur, {
+  '${pool.name}': resourceId('Microsoft.Network/applicationGateways/backendAddressPools', applicationGatewayName, pool.name)
+}))
 
 @description('The frontend IP configuration resource ID')
 output frontendIpConfigurationId string = resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', applicationGatewayName, 'public-frontend-ip')
@@ -392,6 +392,6 @@ output applicationGatewayConfig object = {
   capacity: enableAutoscaling ? 'Autoscaling' : string(capacity)
   wafEnabled: enableWaf
   http2Enabled: enableHttp2
-  backendPools: [for pool in backendPools: pool.name]
-  listeners: [for listener in httpListeners: listener.name]
+  backendPools: map(backendPools, pool => pool.name)
+  listeners: map(httpListeners, listener => listener.name)
 }

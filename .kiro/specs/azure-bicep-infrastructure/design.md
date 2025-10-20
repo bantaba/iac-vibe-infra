@@ -51,9 +51,11 @@ Subnet Architecture (per environment):
 - ✅ Virtual Network with segmented subnets and service endpoints
 - ✅ Network Security Groups with comprehensive tier-specific rules
 - ✅ DDoS Protection Plan (conditional deployment for staging/production)
+- ✅ Public IP Address module with Standard SKU and zone redundancy support
 - ✅ Key Vault module with RBAC, network controls, and monitoring integration
+- ✅ Application Gateway module with WAF, SSL termination, and backend pool management
+- ✅ Load Balancer modules for internal traffic distribution
 - ⏳ Managed Identity and Security Center modules - Next phase
-- ⏳ Compute modules (Application Gateway, Load Balancers) - Next phase
 - ⏳ Data modules (SQL Database, Storage Accounts) - Next phase
 
 ## Components and Interfaces
@@ -72,7 +74,8 @@ bicep-infrastructure/
 │   │   ├── vnet-manager.bicep # Virtual Network Manager
 │   │   ├── virtual-network.bicep # Virtual Network
 │   │   ├── network-security-groups.bicep # NSG rules
-│   │   └── ddos-protection.bicep # DDoS protection plan
+│   │   ├── ddos-protection.bicep # DDoS protection plan
+│   │   └── public-ip.bicep    # Public IP addresses ✅
 │   ├── security/
 │   │   ├── key-vault.bicep    # Key Vault with RBAC and network controls ✅
 │   │   ├── managed-identity.bicep # Managed identities
@@ -101,6 +104,13 @@ bicep-infrastructure/
 - **Network Groups**: Logical grouping of virtual networks by environment and application tier
 - **Connectivity Configurations**: Hub-and-spoke topology with optional mesh connectivity
 - **Security Admin Rules**: Centralized security policies applied across network groups
+
+#### Public IP Address Interface
+- **SKU Configuration**: Support for Basic and Standard SKUs with conditional zone deployment
+- **Allocation Methods**: Static (recommended) and Dynamic allocation support
+- **Zone Redundancy**: Multi-zone deployment for Standard SKU enhancing availability
+- **DNS Integration**: Configurable domain name labels for friendly DNS names
+- **Comprehensive Outputs**: Resource ID, IP address, FQDN, and configuration details
 
 #### Application Gateway Interface
 - **Frontend Configuration**: Public IP with SSL certificate from Key Vault
@@ -204,6 +214,31 @@ type SubnetConfig = {
 }
 ```
 
+### Public IP Configuration Schema
+
+```bicep
+// Public IP address configuration
+type PublicIpConfig = {
+  sku: 'Basic' | 'Standard'
+  allocationMethod: 'Static' | 'Dynamic'
+  ipVersion: 'IPv4' | 'IPv6'
+  idleTimeoutInMinutes: int // 4-30 minutes
+  domainNameLabel: string?
+  zones: string[] // Availability zones for Standard SKU
+}
+
+// Public IP outputs
+type PublicIpOutputs = {
+  resourceId: string
+  name: string
+  ipAddress: string
+  fqdn: string
+  allocationMethod: string
+  sku: string
+  zones: string[]
+}
+```
+
 ### Security Configuration Schema
 
 ```bicep
@@ -256,6 +291,25 @@ type KeyVaultRoleAssignment = {
 
 ```bicep
 // Conditional resource creation with error handling
+resource publicIpAddress 'Microsoft.Network/publicIPAddresses@2023-09-01' = {
+  name: publicIpName
+  location: location
+  tags: tags
+  sku: {
+    name: sku
+    tier: 'Regional'
+  }
+  zones: (sku == 'Standard') ? zones : null // Conditional zone deployment
+  properties: {
+    publicIPAllocationMethod: allocationMethod
+    publicIPAddressVersion: ipVersion
+    idleTimeoutInMinutes: idleTimeoutInMinutes
+    dnsSettings: domainNameLabel != null ? {
+      domainNameLabel: domainNameLabel
+    } : null // Conditional DNS configuration
+  }
+}
+
 resource applicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' = if (deployApplicationGateway) {
   name: namingConvention.applicationGateway
   location: location

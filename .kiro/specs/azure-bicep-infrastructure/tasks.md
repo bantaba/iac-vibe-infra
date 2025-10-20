@@ -72,15 +72,23 @@
   - Configure availability sets and fault domains
   - _Requirements: 4.3_
 
-- [ ] 4.4 Integrate Application Gateway and Load Balancers into main template
-  - Create public IP address for Application Gateway
+- [x] 4.4 Create Public IP module for Application Gateway
+  - Implement public IP address module with Standard SKU and zone redundancy
+  - Configure DNS integration and availability zone support
+  - Add comprehensive outputs for integration with Application Gateway
+  - Support for both Basic and Standard SKUs with conditional zone deployment
+  - _Requirements: 4.1, 4.5_
+
+- [x] 4.5 Integrate Application Gateway and Load Balancers into main template
+  - Create public IP address for Application Gateway using public IP module
   - Add Application Gateway deployment to main.bicep with SSL configuration
   - Deploy internal load balancers for business and data tiers
   - Configure backend pool associations between Application Gateway and VM scale sets
   - Wire up load balancer backend pools with VM scale sets
   - _Requirements: 4.1, 4.2, 4.4, 4.5_
 
-- [ ]* 4.5 Write compute module unit tests
+- [ ] 4.6 Write compute module unit tests
+
   - Create tests for Application Gateway configuration validation
   - Write tests for load balancer health probe functionality
   - _Requirements: 4.1, 4.2, 4.4_

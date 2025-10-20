@@ -228,14 +228,14 @@ output privateIpAddress string = loadBalancer.properties.frontendIPConfiguration
 output frontendIpConfigurationId string = resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', loadBalancerName, frontendIpConfigurationName)
 
 @description('The backend address pool resource IDs')
-output backendAddressPoolIds object = {
-  for pool in backendAddressPools: pool.name => resourceId('Microsoft.Network/loadBalancers/backendAddressPools', loadBalancerName, pool.name)
-}
+output backendAddressPoolIds object = reduce(backendAddressPools, {}, (cur, pool) => union(cur, {
+  '${pool.name}': resourceId('Microsoft.Network/loadBalancers/backendAddressPools', loadBalancerName, pool.name)
+}))
 
 @description('The health probe resource IDs')
-output healthProbeIds object = {
-  for probe in healthProbes: probe.name => resourceId('Microsoft.Network/loadBalancers/probes', loadBalancerName, probe.name)
-}
+output healthProbeIds object = reduce(healthProbes, {}, (cur, probe) => union(cur, {
+  '${probe.name}': resourceId('Microsoft.Network/loadBalancers/probes', loadBalancerName, probe.name)
+}))
 
 @description('The load balancer configuration details')
 output loadBalancerConfig object = {
@@ -244,7 +244,7 @@ output loadBalancerConfig object = {
   sku: sku
   tier: tier
   privateIpAddress: loadBalancer.properties.frontendIPConfigurations[0].properties.privateIPAddress
-  backendPools: [for pool in backendAddressPools: pool.name]
-  healthProbes: [for probe in healthProbes: probe.name]
-  loadBalancingRules: [for rule in loadBalancingRules: rule.name]
+  backendPools: map(backendAddressPools, pool => pool.name)
+  healthProbes: map(healthProbes, probe => probe.name)
+  loadBalancingRules: map(loadBalancingRules, rule => rule.name)
 }

@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "1767186510005867396"
+      "templateHash": "16200161036008015919"
     }
   },
   "definitions": {
@@ -3463,6 +3463,255 @@
         "virtualNetwork"
       ]
     },
+    "applicationGatewayPublicIp": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "application-gateway-public-ip-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "publicIpName": {
+            "value": "[replace(reference('namingConventions').outputs.namingConvention.value.publicIp, '{purpose}', 'agw')]"
+          },
+          "sku": {
+            "value": "Standard"
+          },
+          "allocationMethod": {
+            "value": "Static"
+          },
+          "domainNameLabel": {
+            "value": "[format('{0}-{1}-{2}-agw', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'))]"
+          },
+          "zones": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', createArray('1', '2', '3')), createObject('value', createArray('1')))]",
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "11804307479146407211"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "publicIpName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the public IP address"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Basic",
+                "Standard"
+              ],
+              "metadata": {
+                "description": "The SKU of the public IP address"
+              }
+            },
+            "allocationMethod": {
+              "type": "string",
+              "defaultValue": "Static",
+              "allowedValues": [
+                "Static",
+                "Dynamic"
+              ],
+              "metadata": {
+                "description": "The allocation method for the public IP address"
+              }
+            },
+            "ipVersion": {
+              "type": "string",
+              "defaultValue": "IPv4",
+              "allowedValues": [
+                "IPv4",
+                "IPv6"
+              ],
+              "metadata": {
+                "description": "The IP version for the public IP address"
+              }
+            },
+            "idleTimeoutInMinutes": {
+              "type": "int",
+              "defaultValue": 4,
+              "minValue": 4,
+              "maxValue": 30,
+              "metadata": {
+                "description": "The idle timeout in minutes"
+              }
+            },
+            "domainNameLabel": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "The domain name label for the public IP address"
+              }
+            },
+            "zones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Availability zones for the public IP address (Standard SKU only)"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to the public IP address"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the public IP address"
+              }
+            }
+          },
+          "resources": {
+            "publicIpAddress": {
+              "type": "Microsoft.Network/publicIPAddresses",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('publicIpName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "Regional"
+              },
+              "zones": "[if(equals(parameters('sku'), 'Standard'), parameters('zones'), null())]",
+              "properties": {
+                "publicIPAllocationMethod": "[parameters('allocationMethod')]",
+                "publicIPAddressVersion": "[parameters('ipVersion')]",
+                "idleTimeoutInMinutes": "[parameters('idleTimeoutInMinutes')]",
+                "dnsSettings": "[if(not(equals(parameters('domainNameLabel'), null())), createObject('domainNameLabel', parameters('domainNameLabel')), null())]"
+              }
+            }
+          },
+          "outputs": {
+            "publicIpAddressId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the public IP address"
+              },
+              "value": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]"
+            },
+            "publicIpAddressName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the public IP address"
+              },
+              "value": "[parameters('publicIpName')]"
+            },
+            "ipAddress": {
+              "type": "string",
+              "metadata": {
+                "description": "The IP address value"
+              },
+              "value": "[reference('publicIpAddress').ipAddress]"
+            },
+            "fqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "The FQDN of the public IP address"
+              },
+              "value": "[if(not(equals(parameters('domainNameLabel'), null())), reference('publicIpAddress').dnsSettings.fqdn, '')]"
+            },
+            "publicIpConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The public IP address configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIpName'))]",
+                "name": "[parameters('publicIpName')]",
+                "ipAddress": "[reference('publicIpAddress').ipAddress]",
+                "allocationMethod": "[parameters('allocationMethod')]",
+                "sku": "[parameters('sku')]",
+                "zones": "[if(equals(parameters('sku'), 'Standard'), parameters('zones'), createArray())]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions"
+      ]
+    },
     "webTierAvailabilitySet": {
       "condition": "[not(parameters('environmentConfig').enableHighAvailability)]",
       "type": "Microsoft.Resources/deployments",
@@ -3973,6 +4222,2035 @@
         "namingConventions"
       ]
     },
+    "businessTierLoadBalancer": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "business-tier-load-balancer-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "loadBalancerName": {
+            "value": "[reference('namingConventions').outputs.loadBalancerNames.value.business]"
+          },
+          "sku": "[if(equals(parameters('environmentConfig').skuTier, 'Basic'), createObject('value', 'Basic'), createObject('value', 'Standard'))]",
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.businessTier]"
+          },
+          "privateIpAllocationMethod": {
+            "value": "Dynamic"
+          },
+          "tier": {
+            "value": "business"
+          },
+          "backendAddressPools": {
+            "value": [
+              {
+                "name": "business-tier-pool"
+              }
+            ]
+          },
+          "loadBalancingRules": {
+            "value": [
+              {
+                "name": "business-tier-http-rule",
+                "frontendPort": 80,
+                "backendPort": 80,
+                "protocol": "Tcp",
+                "enableFloatingIp": false,
+                "idleTimeoutInMinutes": 4,
+                "loadDistribution": "Default",
+                "probeName": "business-tier-http-probe"
+              },
+              {
+                "name": "business-tier-https-rule",
+                "frontendPort": 443,
+                "backendPort": 443,
+                "protocol": "Tcp",
+                "enableFloatingIp": false,
+                "idleTimeoutInMinutes": 4,
+                "loadDistribution": "Default",
+                "probeName": "business-tier-https-probe"
+              }
+            ]
+          },
+          "healthProbes": {
+            "value": [
+              {
+                "name": "business-tier-http-probe",
+                "protocol": "Http",
+                "port": 80,
+                "requestPath": "/health",
+                "intervalInSeconds": 15,
+                "numberOfProbes": 2
+              },
+              {
+                "name": "business-tier-https-probe",
+                "protocol": "Https",
+                "port": 443,
+                "requestPath": "/health",
+                "intervalInSeconds": 15,
+                "numberOfProbes": 2
+              }
+            ]
+          },
+          "zones": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', createArray('1', '2', '3')), createObject('value', createArray('1')))]",
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "7337058811136690504"
+            }
+          },
+          "definitions": {
+            "LoadBalancerConfig": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Load balancer name"
+                  }
+                },
+                "sku": {
+                  "type": "string",
+                  "allowedValues": [
+                    "Basic",
+                    "Standard"
+                  ],
+                  "metadata": {
+                    "description": "Load balancer SKU"
+                  }
+                },
+                "frontendIpConfiguration": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "privateIpAddress": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "privateIpAllocationMethod": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Dynamic",
+                        "Static"
+                      ]
+                    },
+                    "subnetId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "publicIpAddressId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "Frontend IP configuration"
+                  }
+                },
+                "backendAddressPools": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Backend address pools"
+                  }
+                },
+                "loadBalancingRules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "frontendPort": {
+                        "type": "int"
+                      },
+                      "backendPort": {
+                        "type": "int"
+                      },
+                      "protocol": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Tcp",
+                          "Udp"
+                        ]
+                      },
+                      "enableFloatingIp": {
+                        "type": "bool"
+                      },
+                      "idleTimeoutInMinutes": {
+                        "type": "int"
+                      },
+                      "loadDistribution": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Default",
+                          "SourceIP",
+                          "SourceIPProtocol"
+                        ]
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Load balancing rules"
+                  }
+                },
+                "probes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "protocol": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Http",
+                          "Https",
+                          "Tcp"
+                        ]
+                      },
+                      "port": {
+                        "type": "int"
+                      },
+                      "requestPath": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "intervalInSeconds": {
+                        "type": "int"
+                      },
+                      "numberOfProbes": {
+                        "type": "int"
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Health probes"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "loadBalancerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the load balancer"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Basic",
+                "Standard"
+              ],
+              "metadata": {
+                "description": "The SKU of the load balancer"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet ID for the load balancer frontend IP"
+              }
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "The private IP address for the load balancer (optional, will use dynamic if not specified)"
+              }
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Dynamic",
+              "allowedValues": [
+                "Static",
+                "Dynamic"
+              ],
+              "metadata": {
+                "description": "The private IP allocation method"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this load balancer (business or data)"
+              }
+            },
+            "backendAddressPools": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-pool', parameters('tier'))]"
+                }
+              ],
+              "metadata": {
+                "description": "Backend address pool configurations"
+              }
+            },
+            "loadBalancingRules": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-http-rule', parameters('tier'))]",
+                  "frontendPort": 80,
+                  "backendPort": 80,
+                  "protocol": "Tcp",
+                  "enableFloatingIp": false,
+                  "idleTimeoutInMinutes": 4,
+                  "loadDistribution": "Default",
+                  "probeName": "[format('{0}-tier-http-probe', parameters('tier'))]"
+                },
+                {
+                  "name": "[format('{0}-tier-https-rule', parameters('tier'))]",
+                  "frontendPort": 443,
+                  "backendPort": 443,
+                  "protocol": "Tcp",
+                  "enableFloatingIp": false,
+                  "idleTimeoutInMinutes": 4,
+                  "loadDistribution": "Default",
+                  "probeName": "[format('{0}-tier-https-probe', parameters('tier'))]"
+                }
+              ],
+              "metadata": {
+                "description": "Load balancing rules configurations"
+              }
+            },
+            "healthProbes": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-http-probe', parameters('tier'))]",
+                  "protocol": "Http",
+                  "port": 80,
+                  "requestPath": "/health",
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                },
+                {
+                  "name": "[format('{0}-tier-https-probe', parameters('tier'))]",
+                  "protocol": "Https",
+                  "port": 443,
+                  "requestPath": "/health",
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                },
+                {
+                  "name": "[format('{0}-tier-tcp-probe', parameters('tier'))]",
+                  "protocol": "Tcp",
+                  "port": 1433,
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                }
+              ],
+              "metadata": {
+                "description": "Health probe configurations"
+              }
+            },
+            "inboundNatRules": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Inbound NAT rules configurations (optional)"
+              }
+            },
+            "outboundRules": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Outbound rules configurations (optional)"
+              }
+            },
+            "enableTcpReset": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable TCP reset for idle timeout"
+              }
+            },
+            "enableFloatingIp": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable floating IP for SQL Always On scenarios"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the load balancer"
+              }
+            },
+            "zones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Availability zones for the load balancer (Standard SKU only)"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "backendAddressPoolsCollection",
+                "count": "[length(parameters('backendAddressPools'))]",
+                "input": {
+                  "name": "[parameters('backendAddressPools')[copyIndex('backendAddressPoolsCollection')].name]",
+                  "properties": {}
+                }
+              },
+              {
+                "name": "probesCollection",
+                "count": "[length(parameters('healthProbes'))]",
+                "input": {
+                  "name": "[parameters('healthProbes')[copyIndex('probesCollection')].name]",
+                  "properties": {
+                    "protocol": "[parameters('healthProbes')[copyIndex('probesCollection')].protocol]",
+                    "port": "[parameters('healthProbes')[copyIndex('probesCollection')].port]",
+                    "requestPath": "[if(or(equals(parameters('healthProbes')[copyIndex('probesCollection')].protocol, 'Http'), equals(parameters('healthProbes')[copyIndex('probesCollection')].protocol, 'Https')), parameters('healthProbes')[copyIndex('probesCollection')].requestPath, null())]",
+                    "intervalInSeconds": "[parameters('healthProbes')[copyIndex('probesCollection')].intervalInSeconds]",
+                    "numberOfProbes": "[parameters('healthProbes')[copyIndex('probesCollection')].numberOfProbes]"
+                  }
+                }
+              },
+              {
+                "name": "loadBalancingRulesCollection",
+                "count": "[length(parameters('loadBalancingRules'))]",
+                "input": {
+                  "name": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfiguration": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                    },
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), parameters('backendAddressPools')[0].name)]"
+                    },
+                    "probe": "[if(contains(parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')], 'probeName'), createObject('id', resourceId('Microsoft.Network/loadBalancers/probes', parameters('loadBalancerName'), parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].probeName)), null())]",
+                    "protocol": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].protocol]",
+                    "frontendPort": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].frontendPort]",
+                    "backendPort": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].backendPort]",
+                    "enableFloatingIP": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].enableFloatingIp]",
+                    "idleTimeoutInMinutes": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].idleTimeoutInMinutes]",
+                    "loadDistribution": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].loadDistribution]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              },
+              {
+                "name": "inboundNatRulesCollection",
+                "count": "[length(parameters('inboundNatRules'))]",
+                "input": {
+                  "name": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfiguration": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                    },
+                    "protocol": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].protocol]",
+                    "frontendPort": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].frontendPort]",
+                    "backendPort": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].backendPort]",
+                    "enableFloatingIP": "[parameters('enableFloatingIp')]",
+                    "idleTimeoutInMinutes": "[if(contains(parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')], 'idleTimeoutInMinutes'), parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].idleTimeoutInMinutes, 4)]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              },
+              {
+                "name": "outboundRulesCollection",
+                "count": "[length(parameters('outboundRules'))]",
+                "input": {
+                  "name": "[parameters('outboundRules')[copyIndex('outboundRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfigurations": [
+                      {
+                        "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                      }
+                    ],
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), parameters('backendAddressPools')[0].name)]"
+                    },
+                    "protocol": "[parameters('outboundRules')[copyIndex('outboundRulesCollection')].protocol]",
+                    "allocatedOutboundPorts": "[if(contains(parameters('outboundRules')[copyIndex('outboundRulesCollection')], 'allocatedOutboundPorts'), parameters('outboundRules')[copyIndex('outboundRulesCollection')].allocatedOutboundPorts, 1024)]",
+                    "idleTimeoutInMinutes": "[if(contains(parameters('outboundRules')[copyIndex('outboundRulesCollection')], 'idleTimeoutInMinutes'), parameters('outboundRules')[copyIndex('outboundRulesCollection')].idleTimeoutInMinutes, 4)]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              }
+            ],
+            "frontendIpConfigurationName": "[format('{0}-tier-frontend-ip', parameters('tier'))]",
+            "frontendIpConfigurations": [
+              {
+                "name": "[variables('frontendIpConfigurationName')]",
+                "properties": {
+                  "subnet": {
+                    "id": "[parameters('subnetId')]"
+                  },
+                  "privateIPAddress": "[parameters('privateIpAddress')]",
+                  "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]"
+                }
+              }
+            ]
+          },
+          "resources": {
+            "loadBalancer": {
+              "type": "Microsoft.Network/loadBalancers",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('loadBalancerName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "Regional"
+              },
+              "zones": "[if(equals(parameters('sku'), 'Standard'), parameters('zones'), null())]",
+              "properties": {
+                "frontendIPConfigurations": "[variables('frontendIpConfigurations')]",
+                "backendAddressPools": "[variables('backendAddressPoolsCollection')]",
+                "loadBalancingRules": "[variables('loadBalancingRulesCollection')]",
+                "probes": "[variables('probesCollection')]",
+                "inboundNatRules": "[variables('inboundNatRulesCollection')]",
+                "outboundRules": "[if(equals(parameters('sku'), 'Standard'), variables('outboundRulesCollection'), createArray())]"
+              }
+            }
+          },
+          "outputs": {
+            "loadBalancerId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the load balancer"
+              },
+              "value": "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancerName'))]"
+            },
+            "loadBalancerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the load balancer"
+              },
+              "value": "[parameters('loadBalancerName')]"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "metadata": {
+                "description": "The private IP address of the load balancer"
+              },
+              "value": "[reference('loadBalancer').frontendIPConfigurations[0].properties.privateIPAddress]"
+            },
+            "frontendIpConfigurationId": {
+              "type": "string",
+              "metadata": {
+                "description": "The frontend IP configuration resource ID"
+              },
+              "value": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+            },
+            "backendAddressPoolIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The backend address pool resource IDs"
+              },
+              "value": "[reduce(parameters('backendAddressPools'), createObject(), lambda('cur', 'pool', union(lambdaVariables('cur'), createObject(format('{0}', lambdaVariables('pool').name), resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), lambdaVariables('pool').name)))))]"
+            },
+            "healthProbeIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The health probe resource IDs"
+              },
+              "value": "[reduce(parameters('healthProbes'), createObject(), lambda('cur', 'probe', union(lambdaVariables('cur'), createObject(format('{0}', lambdaVariables('probe').name), resourceId('Microsoft.Network/loadBalancers/probes', parameters('loadBalancerName'), lambdaVariables('probe').name)))))]"
+            },
+            "loadBalancerConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The load balancer configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancerName'))]",
+                "name": "[parameters('loadBalancerName')]",
+                "sku": "[parameters('sku')]",
+                "tier": "[parameters('tier')]",
+                "privateIpAddress": "[reference('loadBalancer').frontendIPConfigurations[0].properties.privateIPAddress]",
+                "backendPools": "[map(parameters('backendAddressPools'), lambda('pool', lambdaVariables('pool').name))]",
+                "healthProbes": "[map(parameters('healthProbes'), lambda('probe', lambdaVariables('probe').name))]",
+                "loadBalancingRules": "[map(parameters('loadBalancingRules'), lambda('rule', lambdaVariables('rule').name))]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    },
+    "dataTierLoadBalancer": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "data-tier-load-balancer-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "loadBalancerName": {
+            "value": "[reference('namingConventions').outputs.loadBalancerNames.value.data]"
+          },
+          "sku": "[if(equals(parameters('environmentConfig').skuTier, 'Basic'), createObject('value', 'Basic'), createObject('value', 'Standard'))]",
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.dataTier]"
+          },
+          "privateIpAllocationMethod": {
+            "value": "Dynamic"
+          },
+          "tier": {
+            "value": "data"
+          },
+          "backendAddressPools": {
+            "value": [
+              {
+                "name": "data-tier-pool"
+              }
+            ]
+          },
+          "loadBalancingRules": {
+            "value": [
+              {
+                "name": "data-tier-sql-rule",
+                "frontendPort": 1433,
+                "backendPort": 1433,
+                "protocol": "Tcp",
+                "enableFloatingIp": false,
+                "idleTimeoutInMinutes": 4,
+                "loadDistribution": "Default",
+                "probeName": "data-tier-tcp-probe"
+              }
+            ]
+          },
+          "healthProbes": {
+            "value": [
+              {
+                "name": "data-tier-tcp-probe",
+                "protocol": "Tcp",
+                "port": 1433,
+                "intervalInSeconds": 15,
+                "numberOfProbes": 2
+              }
+            ]
+          },
+          "zones": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', createArray('1', '2', '3')), createObject('value', createArray('1')))]",
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "7337058811136690504"
+            }
+          },
+          "definitions": {
+            "LoadBalancerConfig": {
+              "type": "object",
+              "properties": {
+                "name": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Load balancer name"
+                  }
+                },
+                "sku": {
+                  "type": "string",
+                  "allowedValues": [
+                    "Basic",
+                    "Standard"
+                  ],
+                  "metadata": {
+                    "description": "Load balancer SKU"
+                  }
+                },
+                "frontendIpConfiguration": {
+                  "type": "object",
+                  "properties": {
+                    "name": {
+                      "type": "string"
+                    },
+                    "privateIpAddress": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "privateIpAllocationMethod": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Dynamic",
+                        "Static"
+                      ]
+                    },
+                    "subnetId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "publicIpAddressId": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "Frontend IP configuration"
+                  }
+                },
+                "backendAddressPools": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Backend address pools"
+                  }
+                },
+                "loadBalancingRules": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "frontendPort": {
+                        "type": "int"
+                      },
+                      "backendPort": {
+                        "type": "int"
+                      },
+                      "protocol": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Tcp",
+                          "Udp"
+                        ]
+                      },
+                      "enableFloatingIp": {
+                        "type": "bool"
+                      },
+                      "idleTimeoutInMinutes": {
+                        "type": "int"
+                      },
+                      "loadDistribution": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Default",
+                          "SourceIP",
+                          "SourceIPProtocol"
+                        ]
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Load balancing rules"
+                  }
+                },
+                "probes": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "name": {
+                        "type": "string"
+                      },
+                      "protocol": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Http",
+                          "Https",
+                          "Tcp"
+                        ]
+                      },
+                      "port": {
+                        "type": "int"
+                      },
+                      "requestPath": {
+                        "type": "string",
+                        "nullable": true
+                      },
+                      "intervalInSeconds": {
+                        "type": "int"
+                      },
+                      "numberOfProbes": {
+                        "type": "int"
+                      }
+                    }
+                  },
+                  "metadata": {
+                    "description": "Health probes"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "loadBalancerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the load balancer"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Basic",
+                "Standard"
+              ],
+              "metadata": {
+                "description": "The SKU of the load balancer"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet ID for the load balancer frontend IP"
+              }
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "The private IP address for the load balancer (optional, will use dynamic if not specified)"
+              }
+            },
+            "privateIpAllocationMethod": {
+              "type": "string",
+              "defaultValue": "Dynamic",
+              "allowedValues": [
+                "Static",
+                "Dynamic"
+              ],
+              "metadata": {
+                "description": "The private IP allocation method"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this load balancer (business or data)"
+              }
+            },
+            "backendAddressPools": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-pool', parameters('tier'))]"
+                }
+              ],
+              "metadata": {
+                "description": "Backend address pool configurations"
+              }
+            },
+            "loadBalancingRules": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-http-rule', parameters('tier'))]",
+                  "frontendPort": 80,
+                  "backendPort": 80,
+                  "protocol": "Tcp",
+                  "enableFloatingIp": false,
+                  "idleTimeoutInMinutes": 4,
+                  "loadDistribution": "Default",
+                  "probeName": "[format('{0}-tier-http-probe', parameters('tier'))]"
+                },
+                {
+                  "name": "[format('{0}-tier-https-rule', parameters('tier'))]",
+                  "frontendPort": 443,
+                  "backendPort": 443,
+                  "protocol": "Tcp",
+                  "enableFloatingIp": false,
+                  "idleTimeoutInMinutes": 4,
+                  "loadDistribution": "Default",
+                  "probeName": "[format('{0}-tier-https-probe', parameters('tier'))]"
+                }
+              ],
+              "metadata": {
+                "description": "Load balancing rules configurations"
+              }
+            },
+            "healthProbes": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "[format('{0}-tier-http-probe', parameters('tier'))]",
+                  "protocol": "Http",
+                  "port": 80,
+                  "requestPath": "/health",
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                },
+                {
+                  "name": "[format('{0}-tier-https-probe', parameters('tier'))]",
+                  "protocol": "Https",
+                  "port": 443,
+                  "requestPath": "/health",
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                },
+                {
+                  "name": "[format('{0}-tier-tcp-probe', parameters('tier'))]",
+                  "protocol": "Tcp",
+                  "port": 1433,
+                  "intervalInSeconds": 15,
+                  "numberOfProbes": 2
+                }
+              ],
+              "metadata": {
+                "description": "Health probe configurations"
+              }
+            },
+            "inboundNatRules": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Inbound NAT rules configurations (optional)"
+              }
+            },
+            "outboundRules": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Outbound rules configurations (optional)"
+              }
+            },
+            "enableTcpReset": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable TCP reset for idle timeout"
+              }
+            },
+            "enableFloatingIp": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable floating IP for SQL Always On scenarios"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the load balancer"
+              }
+            },
+            "zones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Availability zones for the load balancer (Standard SKU only)"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "backendAddressPoolsCollection",
+                "count": "[length(parameters('backendAddressPools'))]",
+                "input": {
+                  "name": "[parameters('backendAddressPools')[copyIndex('backendAddressPoolsCollection')].name]",
+                  "properties": {}
+                }
+              },
+              {
+                "name": "probesCollection",
+                "count": "[length(parameters('healthProbes'))]",
+                "input": {
+                  "name": "[parameters('healthProbes')[copyIndex('probesCollection')].name]",
+                  "properties": {
+                    "protocol": "[parameters('healthProbes')[copyIndex('probesCollection')].protocol]",
+                    "port": "[parameters('healthProbes')[copyIndex('probesCollection')].port]",
+                    "requestPath": "[if(or(equals(parameters('healthProbes')[copyIndex('probesCollection')].protocol, 'Http'), equals(parameters('healthProbes')[copyIndex('probesCollection')].protocol, 'Https')), parameters('healthProbes')[copyIndex('probesCollection')].requestPath, null())]",
+                    "intervalInSeconds": "[parameters('healthProbes')[copyIndex('probesCollection')].intervalInSeconds]",
+                    "numberOfProbes": "[parameters('healthProbes')[copyIndex('probesCollection')].numberOfProbes]"
+                  }
+                }
+              },
+              {
+                "name": "loadBalancingRulesCollection",
+                "count": "[length(parameters('loadBalancingRules'))]",
+                "input": {
+                  "name": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfiguration": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                    },
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), parameters('backendAddressPools')[0].name)]"
+                    },
+                    "probe": "[if(contains(parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')], 'probeName'), createObject('id', resourceId('Microsoft.Network/loadBalancers/probes', parameters('loadBalancerName'), parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].probeName)), null())]",
+                    "protocol": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].protocol]",
+                    "frontendPort": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].frontendPort]",
+                    "backendPort": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].backendPort]",
+                    "enableFloatingIP": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].enableFloatingIp]",
+                    "idleTimeoutInMinutes": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].idleTimeoutInMinutes]",
+                    "loadDistribution": "[parameters('loadBalancingRules')[copyIndex('loadBalancingRulesCollection')].loadDistribution]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              },
+              {
+                "name": "inboundNatRulesCollection",
+                "count": "[length(parameters('inboundNatRules'))]",
+                "input": {
+                  "name": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfiguration": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                    },
+                    "protocol": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].protocol]",
+                    "frontendPort": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].frontendPort]",
+                    "backendPort": "[parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].backendPort]",
+                    "enableFloatingIP": "[parameters('enableFloatingIp')]",
+                    "idleTimeoutInMinutes": "[if(contains(parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')], 'idleTimeoutInMinutes'), parameters('inboundNatRules')[copyIndex('inboundNatRulesCollection')].idleTimeoutInMinutes, 4)]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              },
+              {
+                "name": "outboundRulesCollection",
+                "count": "[length(parameters('outboundRules'))]",
+                "input": {
+                  "name": "[parameters('outboundRules')[copyIndex('outboundRulesCollection')].name]",
+                  "properties": {
+                    "frontendIPConfigurations": [
+                      {
+                        "id": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+                      }
+                    ],
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), parameters('backendAddressPools')[0].name)]"
+                    },
+                    "protocol": "[parameters('outboundRules')[copyIndex('outboundRulesCollection')].protocol]",
+                    "allocatedOutboundPorts": "[if(contains(parameters('outboundRules')[copyIndex('outboundRulesCollection')], 'allocatedOutboundPorts'), parameters('outboundRules')[copyIndex('outboundRulesCollection')].allocatedOutboundPorts, 1024)]",
+                    "idleTimeoutInMinutes": "[if(contains(parameters('outboundRules')[copyIndex('outboundRulesCollection')], 'idleTimeoutInMinutes'), parameters('outboundRules')[copyIndex('outboundRulesCollection')].idleTimeoutInMinutes, 4)]",
+                    "enableTcpReset": "[parameters('enableTcpReset')]"
+                  }
+                }
+              }
+            ],
+            "frontendIpConfigurationName": "[format('{0}-tier-frontend-ip', parameters('tier'))]",
+            "frontendIpConfigurations": [
+              {
+                "name": "[variables('frontendIpConfigurationName')]",
+                "properties": {
+                  "subnet": {
+                    "id": "[parameters('subnetId')]"
+                  },
+                  "privateIPAddress": "[parameters('privateIpAddress')]",
+                  "privateIPAllocationMethod": "[parameters('privateIpAllocationMethod')]"
+                }
+              }
+            ]
+          },
+          "resources": {
+            "loadBalancer": {
+              "type": "Microsoft.Network/loadBalancers",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('loadBalancerName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('sku')]",
+                "tier": "Regional"
+              },
+              "zones": "[if(equals(parameters('sku'), 'Standard'), parameters('zones'), null())]",
+              "properties": {
+                "frontendIPConfigurations": "[variables('frontendIpConfigurations')]",
+                "backendAddressPools": "[variables('backendAddressPoolsCollection')]",
+                "loadBalancingRules": "[variables('loadBalancingRulesCollection')]",
+                "probes": "[variables('probesCollection')]",
+                "inboundNatRules": "[variables('inboundNatRulesCollection')]",
+                "outboundRules": "[if(equals(parameters('sku'), 'Standard'), variables('outboundRulesCollection'), createArray())]"
+              }
+            }
+          },
+          "outputs": {
+            "loadBalancerId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the load balancer"
+              },
+              "value": "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancerName'))]"
+            },
+            "loadBalancerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the load balancer"
+              },
+              "value": "[parameters('loadBalancerName')]"
+            },
+            "privateIpAddress": {
+              "type": "string",
+              "metadata": {
+                "description": "The private IP address of the load balancer"
+              },
+              "value": "[reference('loadBalancer').frontendIPConfigurations[0].properties.privateIPAddress]"
+            },
+            "frontendIpConfigurationId": {
+              "type": "string",
+              "metadata": {
+                "description": "The frontend IP configuration resource ID"
+              },
+              "value": "[resourceId('Microsoft.Network/loadBalancers/frontendIPConfigurations', parameters('loadBalancerName'), variables('frontendIpConfigurationName'))]"
+            },
+            "backendAddressPoolIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The backend address pool resource IDs"
+              },
+              "value": "[reduce(parameters('backendAddressPools'), createObject(), lambda('cur', 'pool', union(lambdaVariables('cur'), createObject(format('{0}', lambdaVariables('pool').name), resourceId('Microsoft.Network/loadBalancers/backendAddressPools', parameters('loadBalancerName'), lambdaVariables('pool').name)))))]"
+            },
+            "healthProbeIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The health probe resource IDs"
+              },
+              "value": "[reduce(parameters('healthProbes'), createObject(), lambda('cur', 'probe', union(lambdaVariables('cur'), createObject(format('{0}', lambdaVariables('probe').name), resourceId('Microsoft.Network/loadBalancers/probes', parameters('loadBalancerName'), lambdaVariables('probe').name)))))]"
+            },
+            "loadBalancerConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The load balancer configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Network/loadBalancers', parameters('loadBalancerName'))]",
+                "name": "[parameters('loadBalancerName')]",
+                "sku": "[parameters('sku')]",
+                "tier": "[parameters('tier')]",
+                "privateIpAddress": "[reference('loadBalancer').frontendIPConfigurations[0].properties.privateIPAddress]",
+                "backendPools": "[map(parameters('backendAddressPools'), lambda('pool', lambdaVariables('pool').name))]",
+                "healthProbes": "[map(parameters('healthProbes'), lambda('probe', lambdaVariables('probe').name))]",
+                "loadBalancingRules": "[map(parameters('loadBalancingRules'), lambda('rule', lambdaVariables('rule').name))]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    },
+    "applicationGateway": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "application-gateway-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "applicationGatewayName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.applicationGateway]"
+          },
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.applicationGateway]"
+          },
+          "sku": {
+            "value": "[parameters('environmentConfig').applicationGatewaySku]"
+          },
+          "capacity": {
+            "value": "[parameters('environmentConfig').applicationGatewayCapacity]"
+          },
+          "enableAutoscaling": {
+            "value": "[parameters('environmentConfig').enableHighAvailability]"
+          },
+          "minCapacity": {
+            "value": 1
+          },
+          "maxCapacity": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', mul(parameters('environmentConfig').applicationGatewayCapacity, 3)), createObject('value', parameters('environmentConfig').applicationGatewayCapacity))]",
+          "publicIpAddressId": {
+            "value": "[reference('applicationGatewayPublicIp').outputs.publicIpAddressId.value]"
+          },
+          "keyVaultId": {
+            "value": "[reference('keyVault').outputs.keyVaultId.value]"
+          },
+          "sslCertificateName": {
+            "value": "ssl-certificate"
+          },
+          "managedIdentityId": {
+            "value": null
+          },
+          "backendPools": {
+            "value": [
+              {
+                "name": "web-tier-pool",
+                "backendAddresses": []
+              }
+            ]
+          },
+          "backendHttpSettings": {
+            "value": [
+              {
+                "name": "web-tier-http-settings",
+                "port": 80,
+                "protocol": "Http",
+                "cookieBasedAffinity": "Disabled",
+                "requestTimeout": 30,
+                "probeName": "web-tier-health-probe"
+              },
+              {
+                "name": "web-tier-https-settings",
+                "port": 443,
+                "protocol": "Https",
+                "cookieBasedAffinity": "Disabled",
+                "requestTimeout": 30,
+                "probeName": "web-tier-https-health-probe"
+              }
+            ]
+          },
+          "healthProbes": {
+            "value": [
+              {
+                "name": "web-tier-health-probe",
+                "protocol": "Http",
+                "host": "",
+                "path": "/health",
+                "interval": 30,
+                "timeout": 30,
+                "unhealthyThreshold": 3,
+                "port": 80
+              },
+              {
+                "name": "web-tier-https-health-probe",
+                "protocol": "Https",
+                "host": "",
+                "path": "/health",
+                "interval": 30,
+                "timeout": 30,
+                "unhealthyThreshold": 3,
+                "port": 443
+              }
+            ]
+          },
+          "httpListeners": {
+            "value": [
+              {
+                "name": "http-listener",
+                "frontendIpConfiguration": "public-frontend-ip",
+                "frontendPort": "port-80",
+                "protocol": "Http"
+              },
+              {
+                "name": "https-listener",
+                "frontendIpConfiguration": "public-frontend-ip",
+                "frontendPort": "port-443",
+                "protocol": "Https",
+                "sslCertificate": "ssl-certificate"
+              }
+            ]
+          },
+          "requestRoutingRules": {
+            "value": [
+              {
+                "name": "http-routing-rule",
+                "ruleType": "Basic",
+                "priority": 100,
+                "httpListener": "http-listener",
+                "backendAddressPool": "web-tier-pool",
+                "backendHttpSettings": "web-tier-http-settings"
+              },
+              {
+                "name": "https-routing-rule",
+                "ruleType": "Basic",
+                "priority": 200,
+                "httpListener": "https-listener",
+                "backendAddressPool": "web-tier-pool",
+                "backendHttpSettings": "web-tier-https-settings"
+              }
+            ]
+          },
+          "wafConfiguration": {
+            "value": {
+              "enabled": "[equals(parameters('environmentConfig').applicationGatewaySku, 'WAF_v2')]",
+              "firewallMode": "Prevention",
+              "ruleSetType": "OWASP",
+              "ruleSetVersion": "3.2",
+              "disabledRuleGroups": [],
+              "requestBodyCheck": true,
+              "maxRequestBodySizeInKb": 128,
+              "fileUploadLimitInMb": 100
+            }
+          },
+          "customWafRules": {
+            "value": []
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "10051587083912574035"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "applicationGatewayName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Application Gateway"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet ID for the Application Gateway"
+              }
+            },
+            "sku": {
+              "type": "string",
+              "defaultValue": "WAF_v2",
+              "allowedValues": [
+                "Standard_v2",
+                "WAF_v2"
+              ],
+              "metadata": {
+                "description": "The SKU of the Application Gateway"
+              }
+            },
+            "capacity": {
+              "type": "int",
+              "defaultValue": 2,
+              "minValue": 1,
+              "maxValue": 125,
+              "metadata": {
+                "description": "The capacity (instance count) of the Application Gateway"
+              }
+            },
+            "enableAutoscaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable autoscaling for the Application Gateway"
+              }
+            },
+            "minCapacity": {
+              "type": "int",
+              "defaultValue": 1,
+              "minValue": 1,
+              "maxValue": 125,
+              "metadata": {
+                "description": "Minimum autoscale instance count"
+              }
+            },
+            "maxCapacity": {
+              "type": "int",
+              "defaultValue": 10,
+              "minValue": 1,
+              "maxValue": 125,
+              "metadata": {
+                "description": "Maximum autoscale instance count"
+              }
+            },
+            "publicIpAddressId": {
+              "type": "string",
+              "metadata": {
+                "description": "Public IP address resource ID for the Application Gateway"
+              }
+            },
+            "keyVaultId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Key Vault resource ID for SSL certificates"
+              }
+            },
+            "sslCertificateName": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "SSL certificate name in Key Vault"
+              }
+            },
+            "managedIdentityId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Managed identity resource ID for Key Vault access"
+              }
+            },
+            "backendPools": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "web-tier-pool",
+                  "backendAddresses": []
+                }
+              ],
+              "metadata": {
+                "description": "Backend pool configurations"
+              }
+            },
+            "backendHttpSettings": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "web-tier-http-settings",
+                  "port": 80,
+                  "protocol": "Http",
+                  "cookieBasedAffinity": "Disabled",
+                  "requestTimeout": 30,
+                  "probeName": "web-tier-health-probe"
+                },
+                {
+                  "name": "web-tier-https-settings",
+                  "port": 443,
+                  "protocol": "Https",
+                  "cookieBasedAffinity": "Disabled",
+                  "requestTimeout": 30,
+                  "probeName": "web-tier-https-health-probe"
+                }
+              ],
+              "metadata": {
+                "description": "Backend HTTP settings configurations"
+              }
+            },
+            "healthProbes": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "web-tier-health-probe",
+                  "protocol": "Http",
+                  "host": "",
+                  "path": "/health",
+                  "interval": 30,
+                  "timeout": 30,
+                  "unhealthyThreshold": 3,
+                  "port": 80
+                },
+                {
+                  "name": "web-tier-https-health-probe",
+                  "protocol": "Https",
+                  "host": "",
+                  "path": "/health",
+                  "interval": 30,
+                  "timeout": 30,
+                  "unhealthyThreshold": 3,
+                  "port": 443
+                }
+              ],
+              "metadata": {
+                "description": "Health probe configurations"
+              }
+            },
+            "httpListeners": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "http-listener",
+                  "frontendIpConfiguration": "public-frontend-ip",
+                  "frontendPort": "port-80",
+                  "protocol": "Http"
+                },
+                {
+                  "name": "https-listener",
+                  "frontendIpConfiguration": "public-frontend-ip",
+                  "frontendPort": "port-443",
+                  "protocol": "Https",
+                  "sslCertificate": "ssl-certificate"
+                }
+              ],
+              "metadata": {
+                "description": "HTTP listeners configurations"
+              }
+            },
+            "requestRoutingRules": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "http-routing-rule",
+                  "ruleType": "Basic",
+                  "priority": 100,
+                  "httpListener": "http-listener",
+                  "backendAddressPool": "web-tier-pool",
+                  "backendHttpSettings": "web-tier-http-settings"
+                },
+                {
+                  "name": "https-routing-rule",
+                  "ruleType": "Basic",
+                  "priority": 200,
+                  "httpListener": "https-listener",
+                  "backendAddressPool": "web-tier-pool",
+                  "backendHttpSettings": "web-tier-https-settings"
+                }
+              ],
+              "metadata": {
+                "description": "Request routing rules configurations"
+              }
+            },
+            "wafConfiguration": {
+              "type": "object",
+              "defaultValue": {
+                "enabled": true,
+                "firewallMode": "Prevention",
+                "ruleSetType": "OWASP",
+                "ruleSetVersion": "3.2",
+                "disabledRuleGroups": [],
+                "requestBodyCheck": true,
+                "maxRequestBodySizeInKb": 128,
+                "fileUploadLimitInMb": 100
+              },
+              "metadata": {
+                "description": "WAF configuration"
+              }
+            },
+            "customWafRules": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Custom WAF rules"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the Application Gateway"
+              }
+            },
+            "enableHttp2": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable HTTP/2 support"
+              }
+            },
+            "enableWaf": {
+              "type": "bool",
+              "defaultValue": "[equals(parameters('sku'), 'WAF_v2')]",
+              "metadata": {
+                "description": "Enable WAF"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "backendAddressPools",
+                "count": "[length(parameters('backendPools'))]",
+                "input": {
+                  "name": "[parameters('backendPools')[copyIndex('backendAddressPools')].name]",
+                  "properties": {
+                    "backendAddresses": "[parameters('backendPools')[copyIndex('backendAddressPools')].backendAddresses]"
+                  }
+                }
+              },
+              {
+                "name": "backendHttpSettingsCollection",
+                "count": "[length(parameters('backendHttpSettings'))]",
+                "input": {
+                  "name": "[parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].name]",
+                  "properties": {
+                    "port": "[parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].port]",
+                    "protocol": "[parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].protocol]",
+                    "cookieBasedAffinity": "[parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].cookieBasedAffinity]",
+                    "requestTimeout": "[parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].requestTimeout]",
+                    "probe": "[if(contains(parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')], 'probeName'), createObject('id', resourceId('Microsoft.Network/applicationGateways/probes', parameters('applicationGatewayName'), parameters('backendHttpSettings')[copyIndex('backendHttpSettingsCollection')].probeName)), null())]",
+                    "pickHostNameFromBackendAddress": false,
+                    "affinityCookieName": "",
+                    "trustedRootCertificates": [],
+                    "connectionDraining": {
+                      "enabled": false,
+                      "drainTimeoutInSec": 1
+                    }
+                  }
+                }
+              },
+              {
+                "name": "probes",
+                "count": "[length(parameters('healthProbes'))]",
+                "input": {
+                  "name": "[parameters('healthProbes')[copyIndex('probes')].name]",
+                  "properties": {
+                    "protocol": "[parameters('healthProbes')[copyIndex('probes')].protocol]",
+                    "host": "[if(empty(parameters('healthProbes')[copyIndex('probes')].host), '127.0.0.1', parameters('healthProbes')[copyIndex('probes')].host)]",
+                    "path": "[parameters('healthProbes')[copyIndex('probes')].path]",
+                    "interval": "[parameters('healthProbes')[copyIndex('probes')].interval]",
+                    "timeout": "[parameters('healthProbes')[copyIndex('probes')].timeout]",
+                    "unhealthyThreshold": "[parameters('healthProbes')[copyIndex('probes')].unhealthyThreshold]",
+                    "port": "[parameters('healthProbes')[copyIndex('probes')].port]",
+                    "pickHostNameFromBackendHttpSettings": "[empty(parameters('healthProbes')[copyIndex('probes')].host)]",
+                    "minServers": 0,
+                    "match": {
+                      "statusCodes": [
+                        "200-399"
+                      ]
+                    }
+                  }
+                }
+              },
+              {
+                "name": "httpListenersCollection",
+                "count": "[length(parameters('httpListeners'))]",
+                "input": {
+                  "name": "[parameters('httpListeners')[copyIndex('httpListenersCollection')].name]",
+                  "properties": {
+                    "frontendIPConfiguration": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('applicationGatewayName'), parameters('httpListeners')[copyIndex('httpListenersCollection')].frontendIpConfiguration)]"
+                    },
+                    "frontendPort": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/frontendPorts', parameters('applicationGatewayName'), parameters('httpListeners')[copyIndex('httpListenersCollection')].frontendPort)]"
+                    },
+                    "protocol": "[parameters('httpListeners')[copyIndex('httpListenersCollection')].protocol]",
+                    "sslCertificate": "[if(and(equals(parameters('httpListeners')[copyIndex('httpListenersCollection')].protocol, 'Https'), contains(parameters('httpListeners')[copyIndex('httpListenersCollection')], 'sslCertificate')), createObject('id', resourceId('Microsoft.Network/applicationGateways/sslCertificates', parameters('applicationGatewayName'), parameters('httpListeners')[copyIndex('httpListenersCollection')].sslCertificate)), null())]",
+                    "requireServerNameIndication": "[equals(parameters('httpListeners')[copyIndex('httpListenersCollection')].protocol, 'Https')]"
+                  }
+                }
+              },
+              {
+                "name": "requestRoutingRulesCollection",
+                "count": "[length(parameters('requestRoutingRules'))]",
+                "input": {
+                  "name": "[parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].name]",
+                  "properties": {
+                    "ruleType": "[parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].ruleType]",
+                    "priority": "[parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].priority]",
+                    "httpListener": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/httpListeners', parameters('applicationGatewayName'), parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].httpListener)]"
+                    },
+                    "backendAddressPool": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('applicationGatewayName'), parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].backendAddressPool)]"
+                    },
+                    "backendHttpSettings": {
+                      "id": "[resourceId('Microsoft.Network/applicationGateways/backendHttpSettingsCollection', parameters('applicationGatewayName'), parameters('requestRoutingRules')[copyIndex('requestRoutingRulesCollection')].backendHttpSettings)]"
+                    }
+                  }
+                }
+              }
+            ],
+            "frontendIpConfigurations": [
+              {
+                "name": "public-frontend-ip",
+                "properties": {
+                  "publicIPAddress": {
+                    "id": "[parameters('publicIpAddressId')]"
+                  }
+                }
+              }
+            ],
+            "frontendPorts": [
+              {
+                "name": "port-80",
+                "properties": {
+                  "port": 80
+                }
+              },
+              {
+                "name": "port-443",
+                "properties": {
+                  "port": 443
+                }
+              }
+            ],
+            "sslCertificates": "[if(and(and(not(equals(parameters('keyVaultId'), null())), not(equals(parameters('sslCertificateName'), null()))), not(equals(parameters('managedIdentityId'), null()))), createArray(createObject('name', 'ssl-certificate', 'properties', createObject('keyVaultSecretId', format('{0}/secrets/{1}', parameters('keyVaultId'), parameters('sslCertificateName'))))), createArray())]",
+            "gatewayIpConfigurations": [
+              {
+                "name": "gateway-ip-configuration",
+                "properties": {
+                  "subnet": {
+                    "id": "[parameters('subnetId')]"
+                  }
+                }
+              }
+            ]
+          },
+          "resources": {
+            "applicationGateway": {
+              "type": "Microsoft.Network/applicationGateways",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('applicationGatewayName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "identity": "[if(not(equals(parameters('managedIdentityId'), null())), createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('managedIdentityId')), createObject())), null())]",
+              "properties": {
+                "sku": {
+                  "name": "[parameters('sku')]",
+                  "tier": "[parameters('sku')]",
+                  "capacity": "[if(parameters('enableAutoscaling'), null(), parameters('capacity'))]"
+                },
+                "autoscaleConfiguration": "[if(parameters('enableAutoscaling'), createObject('minCapacity', parameters('minCapacity'), 'maxCapacity', parameters('maxCapacity')), null())]",
+                "gatewayIPConfigurations": "[variables('gatewayIpConfigurations')]",
+                "frontendIPConfigurations": "[variables('frontendIpConfigurations')]",
+                "frontendPorts": "[variables('frontendPorts')]",
+                "sslCertificates": "[variables('sslCertificates')]",
+                "backendAddressPools": "[variables('backendAddressPools')]",
+                "backendHttpSettingsCollection": "[variables('backendHttpSettingsCollection')]",
+                "httpListeners": "[variables('httpListenersCollection')]",
+                "requestRoutingRules": "[variables('requestRoutingRulesCollection')]",
+                "probes": "[variables('probes')]",
+                "webApplicationFirewallConfiguration": "[if(parameters('enableWaf'), createObject('enabled', parameters('wafConfiguration').enabled, 'firewallMode', parameters('wafConfiguration').firewallMode, 'ruleSetType', parameters('wafConfiguration').ruleSetType, 'ruleSetVersion', parameters('wafConfiguration').ruleSetVersion, 'disabledRuleGroups', parameters('wafConfiguration').disabledRuleGroups, 'requestBodyCheck', parameters('wafConfiguration').requestBodyCheck, 'maxRequestBodySizeInKb', parameters('wafConfiguration').maxRequestBodySizeInKb, 'fileUploadLimitInMb', parameters('wafConfiguration').fileUploadLimitInMb), null())]",
+                "firewallPolicy": "[if(not(empty(parameters('customWafRules'))), createObject('id', resourceId('Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies', format('{0}-waf-policy', parameters('applicationGatewayName')))), null())]",
+                "enableHttp2": "[parameters('enableHttp2')]",
+                "forceFirewallPolicyAssociation": "[not(empty(parameters('customWafRules')))]"
+              },
+              "dependsOn": [
+                "wafPolicy"
+              ]
+            },
+            "wafPolicy": {
+              "condition": "[not(empty(parameters('customWafRules')))]",
+              "type": "Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-waf-policy', parameters('applicationGatewayName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "policySettings": {
+                  "requestBodyCheck": "[parameters('wafConfiguration').requestBodyCheck]",
+                  "maxRequestBodySizeInKb": "[parameters('wafConfiguration').maxRequestBodySizeInKb]",
+                  "fileUploadLimitInMb": "[parameters('wafConfiguration').fileUploadLimitInMb]",
+                  "state": "Enabled",
+                  "mode": "[parameters('wafConfiguration').firewallMode]"
+                },
+                "managedRules": {
+                  "managedRuleSets": [
+                    {
+                      "ruleSetType": "[parameters('wafConfiguration').ruleSetType]",
+                      "ruleSetVersion": "[parameters('wafConfiguration').ruleSetVersion]",
+                      "ruleGroupOverrides": "[parameters('wafConfiguration').disabledRuleGroups]"
+                    }
+                  ]
+                },
+                "customRules": "[parameters('customWafRules')]"
+              }
+            }
+          },
+          "outputs": {
+            "applicationGatewayId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Application Gateway"
+              },
+              "value": "[resourceId('Microsoft.Network/applicationGateways', parameters('applicationGatewayName'))]"
+            },
+            "applicationGatewayName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Application Gateway"
+              },
+              "value": "[parameters('applicationGatewayName')]"
+            },
+            "publicIpAddress": {
+              "type": "string",
+              "metadata": {
+                "description": "The public IP address of the Application Gateway"
+              },
+              "value": "[reference(parameters('publicIpAddressId'), '2023-09-01').ipAddress]"
+            },
+            "backendAddressPoolIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The backend address pool resource IDs"
+              },
+              "value": "[reduce(parameters('backendPools'), createObject(), lambda('cur', 'pool', union(lambdaVariables('cur'), createObject(format('{0}', lambdaVariables('pool').name), resourceId('Microsoft.Network/applicationGateways/backendAddressPools', parameters('applicationGatewayName'), lambdaVariables('pool').name)))))]"
+            },
+            "frontendIpConfigurationId": {
+              "type": "string",
+              "metadata": {
+                "description": "The frontend IP configuration resource ID"
+              },
+              "value": "[resourceId('Microsoft.Network/applicationGateways/frontendIPConfigurations', parameters('applicationGatewayName'), 'public-frontend-ip')]"
+            },
+            "wafPolicyId": {
+              "type": "string",
+              "metadata": {
+                "description": "The WAF policy resource ID (if created)"
+              },
+              "value": "[if(not(empty(parameters('customWafRules'))), resourceId('Microsoft.Network/ApplicationGatewayWebApplicationFirewallPolicies', format('{0}-waf-policy', parameters('applicationGatewayName'))), '')]"
+            },
+            "applicationGatewayConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The Application Gateway configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Network/applicationGateways', parameters('applicationGatewayName'))]",
+                "name": "[parameters('applicationGatewayName')]",
+                "sku": "[parameters('sku')]",
+                "capacity": "[if(parameters('enableAutoscaling'), 'Autoscaling', string(parameters('capacity')))]",
+                "wafEnabled": "[parameters('enableWaf')]",
+                "http2Enabled": "[parameters('enableHttp2')]",
+                "backendPools": "[map(parameters('backendPools'), lambda('pool', lambdaVariables('pool').name))]",
+                "listeners": "[map(parameters('httpListeners'), lambda('listener', lambdaVariables('listener').name))]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "applicationGatewayPublicIp",
+        "keyVault",
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    },
     "webTierVmScaleSet": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
@@ -3993,7 +6271,9 @@
             "value": []
           },
           "applicationGatewayBackendAddressPoolIds": {
-            "value": []
+            "value": [
+              "[reference('applicationGateway').outputs.backendAddressPoolIds.value['web-tier-pool']]"
+            ]
           },
           "vmConfig": {
             "value": {
@@ -4058,7 +6338,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1660387721309899474"
+              "templateHash": "12057853688279495848"
             }
           },
           "definitions": {
@@ -4439,7 +6719,7 @@
                 }
               }
             ],
-            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'disablePasswordAuthentication', true(), 'linuxConfiguration', createObject('ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
+            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'linuxConfiguration', createObject('disablePasswordAuthentication', true(), 'ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
             "storageProfile": {
               "imageReference": "[variables('imageReference')]",
               "osDisk": {
@@ -4607,6 +6887,7 @@
         }
       },
       "dependsOn": [
+        "applicationGateway",
         "namingConventions",
         "networkSecurityGroups",
         "virtualNetwork"
@@ -4629,7 +6910,9 @@
             "value": "[reference('virtualNetwork').outputs.subnetIds.value.businessTier]"
           },
           "loadBalancerBackendAddressPoolIds": {
-            "value": []
+            "value": [
+              "[reference('businessTierLoadBalancer').outputs.backendAddressPoolIds.value['business-tier-pool']]"
+            ]
           },
           "applicationGatewayBackendAddressPoolIds": {
             "value": []
@@ -4703,7 +6986,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1660387721309899474"
+              "templateHash": "12057853688279495848"
             }
           },
           "definitions": {
@@ -5084,7 +7367,7 @@
                 }
               }
             ],
-            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'disablePasswordAuthentication', true(), 'linuxConfiguration', createObject('ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
+            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'linuxConfiguration', createObject('disablePasswordAuthentication', true(), 'ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
             "storageProfile": {
               "imageReference": "[variables('imageReference')]",
               "osDisk": {
@@ -5252,6 +7535,7 @@
         }
       },
       "dependsOn": [
+        "businessTierLoadBalancer",
         "namingConventions",
         "networkSecurityGroups",
         "virtualNetwork"
@@ -5335,6 +7619,44 @@
     "compute": {
       "type": "object",
       "value": {
+        "publicIpAddress": {
+          "applicationGateway": {
+            "id": "[reference('applicationGatewayPublicIp').outputs.publicIpAddressId.value]",
+            "name": "[reference('applicationGatewayPublicIp').outputs.publicIpAddressName.value]",
+            "ipAddress": "[reference('applicationGatewayPublicIp').outputs.ipAddress.value]",
+            "fqdn": "[reference('applicationGatewayPublicIp').outputs.fqdn.value]",
+            "config": "[reference('applicationGatewayPublicIp').outputs.publicIpConfig.value]"
+          }
+        },
+        "applicationGateway": {
+          "id": "[reference('applicationGateway').outputs.applicationGatewayId.value]",
+          "name": "[reference('applicationGateway').outputs.applicationGatewayName.value]",
+          "publicIpAddress": "[reference('applicationGateway').outputs.publicIpAddress.value]",
+          "backendAddressPoolIds": "[reference('applicationGateway').outputs.backendAddressPoolIds.value]",
+          "frontendIpConfigurationId": "[reference('applicationGateway').outputs.frontendIpConfigurationId.value]",
+          "wafPolicyId": "[reference('applicationGateway').outputs.wafPolicyId.value]",
+          "config": "[reference('applicationGateway').outputs.applicationGatewayConfig.value]"
+        },
+        "loadBalancers": {
+          "businessTier": {
+            "id": "[reference('businessTierLoadBalancer').outputs.loadBalancerId.value]",
+            "name": "[reference('businessTierLoadBalancer').outputs.loadBalancerName.value]",
+            "privateIpAddress": "[reference('businessTierLoadBalancer').outputs.privateIpAddress.value]",
+            "frontendIpConfigurationId": "[reference('businessTierLoadBalancer').outputs.frontendIpConfigurationId.value]",
+            "backendAddressPoolIds": "[reference('businessTierLoadBalancer').outputs.backendAddressPoolIds.value]",
+            "healthProbeIds": "[reference('businessTierLoadBalancer').outputs.healthProbeIds.value]",
+            "config": "[reference('businessTierLoadBalancer').outputs.loadBalancerConfig.value]"
+          },
+          "dataTier": {
+            "id": "[reference('dataTierLoadBalancer').outputs.loadBalancerId.value]",
+            "name": "[reference('dataTierLoadBalancer').outputs.loadBalancerName.value]",
+            "privateIpAddress": "[reference('dataTierLoadBalancer').outputs.privateIpAddress.value]",
+            "frontendIpConfigurationId": "[reference('dataTierLoadBalancer').outputs.frontendIpConfigurationId.value]",
+            "backendAddressPoolIds": "[reference('dataTierLoadBalancer').outputs.backendAddressPoolIds.value]",
+            "healthProbeIds": "[reference('dataTierLoadBalancer').outputs.healthProbeIds.value]",
+            "config": "[reference('dataTierLoadBalancer').outputs.loadBalancerConfig.value]"
+          }
+        },
         "availabilitySets": {
           "webTier": "[if(not(parameters('environmentConfig').enableHighAvailability), createObject('id', reference('webTierAvailabilitySet').outputs.availabilitySetId.value, 'name', reference('webTierAvailabilitySet').outputs.availabilitySetName.value, 'config', reference('webTierAvailabilitySet').outputs.availabilitySetConfig.value), createObject('id', '', 'name', '', 'config', createObject()))]",
           "businessTier": "[if(not(parameters('environmentConfig').enableHighAvailability), createObject('id', reference('businessTierAvailabilitySet').outputs.availabilitySetId.value, 'name', reference('businessTierAvailabilitySet').outputs.availabilitySetName.value, 'config', reference('businessTierAvailabilitySet').outputs.availabilitySetConfig.value), createObject('id', '', 'name', '', 'config', createObject()))]"

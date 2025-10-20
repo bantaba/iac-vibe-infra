@@ -250,6 +250,20 @@ module keyVault 'modules/security/key-vault.bicep' = {
 // COMPUTE MODULES
 // ========================================
 
+// Deploy Public IP for Application Gateway
+module applicationGatewayPublicIp 'modules/networking/public-ip.bicep' = {
+  name: 'application-gateway-public-ip-deployment'
+  params: {
+    publicIpName: replace(namingConventions.outputs.namingConvention.publicIp, '{purpose}', 'agw')
+    sku: 'Standard'
+    allocationMethod: 'Static'
+    domainNameLabel: '${resourcePrefix}-${workloadName}-${environment}-agw'
+    zones: environmentConfig.enableHighAvailability ? ['1', '2', '3'] : ['1']
+    tags: tags
+    location: location
+  }
+}
+
 // Deploy Availability Sets (for environments not using scale sets)
 module webTierAvailabilitySet 'modules/compute/availability-sets.bicep' = if (!environmentConfig.enableHighAvailability) {
   name: 'web-tier-availability-set-deployment'
@@ -279,6 +293,228 @@ module businessTierAvailabilitySet 'modules/compute/availability-sets.bicep' = i
   }
 }
 
+// Deploy Internal Load Balancer for Business Tier
+module businessTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
+  name: 'business-tier-load-balancer-deployment'
+  params: {
+    loadBalancerName: namingConventions.outputs.loadBalancerNames.business
+    sku: environmentConfig.skuTier == 'Basic' ? 'Basic' : 'Standard'
+    subnetId: virtualNetwork.outputs.subnetIds.businessTier
+    privateIpAllocationMethod: 'Dynamic'
+    tier: 'business'
+    backendAddressPools: [
+      {
+        name: 'business-tier-pool'
+      }
+    ]
+    loadBalancingRules: [
+      {
+        name: 'business-tier-http-rule'
+        frontendPort: 80
+        backendPort: 80
+        protocol: 'Tcp'
+        enableFloatingIp: false
+        idleTimeoutInMinutes: 4
+        loadDistribution: 'Default'
+        probeName: 'business-tier-http-probe'
+      }
+      {
+        name: 'business-tier-https-rule'
+        frontendPort: 443
+        backendPort: 443
+        protocol: 'Tcp'
+        enableFloatingIp: false
+        idleTimeoutInMinutes: 4
+        loadDistribution: 'Default'
+        probeName: 'business-tier-https-probe'
+      }
+    ]
+    healthProbes: [
+      {
+        name: 'business-tier-http-probe'
+        protocol: 'Http'
+        port: 80
+        requestPath: '/health'
+        intervalInSeconds: 15
+        numberOfProbes: 2
+      }
+      {
+        name: 'business-tier-https-probe'
+        protocol: 'Https'
+        port: 443
+        requestPath: '/health'
+        intervalInSeconds: 15
+        numberOfProbes: 2
+      }
+    ]
+    zones: environmentConfig.enableHighAvailability ? ['1', '2', '3'] : ['1']
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+  ]
+}
+
+// Deploy Internal Load Balancer for Data Tier
+module dataTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
+  name: 'data-tier-load-balancer-deployment'
+  params: {
+    loadBalancerName: namingConventions.outputs.loadBalancerNames.data
+    sku: environmentConfig.skuTier == 'Basic' ? 'Basic' : 'Standard'
+    subnetId: virtualNetwork.outputs.subnetIds.dataTier
+    privateIpAllocationMethod: 'Dynamic'
+    tier: 'data'
+    backendAddressPools: [
+      {
+        name: 'data-tier-pool'
+      }
+    ]
+    loadBalancingRules: [
+      {
+        name: 'data-tier-sql-rule'
+        frontendPort: 1433
+        backendPort: 1433
+        protocol: 'Tcp'
+        enableFloatingIp: false
+        idleTimeoutInMinutes: 4
+        loadDistribution: 'Default'
+        probeName: 'data-tier-tcp-probe'
+      }
+    ]
+    healthProbes: [
+      {
+        name: 'data-tier-tcp-probe'
+        protocol: 'Tcp'
+        port: 1433
+        intervalInSeconds: 15
+        numberOfProbes: 2
+      }
+    ]
+    zones: environmentConfig.enableHighAvailability ? ['1', '2', '3'] : ['1']
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+  ]
+}
+
+// Deploy Application Gateway
+module applicationGateway 'modules/compute/application-gateway.bicep' = {
+  name: 'application-gateway-deployment'
+  params: {
+    applicationGatewayName: namingConventions.outputs.namingConvention.applicationGateway
+    subnetId: virtualNetwork.outputs.subnetIds.applicationGateway
+    sku: environmentConfig.applicationGatewaySku
+    capacity: environmentConfig.applicationGatewayCapacity
+    enableAutoscaling: environmentConfig.enableHighAvailability
+    minCapacity: 1
+    maxCapacity: environmentConfig.enableHighAvailability ? (environmentConfig.applicationGatewayCapacity * 3) : environmentConfig.applicationGatewayCapacity
+    publicIpAddressId: applicationGatewayPublicIp.outputs.publicIpAddressId
+    keyVaultId: keyVault.outputs.keyVaultId
+    sslCertificateName: 'ssl-certificate'
+    managedIdentityId: null // Will be added when managed identity module is integrated
+    backendPools: [
+      {
+        name: 'web-tier-pool'
+        backendAddresses: []
+      }
+    ]
+    backendHttpSettings: [
+      {
+        name: 'web-tier-http-settings'
+        port: 80
+        protocol: 'Http'
+        cookieBasedAffinity: 'Disabled'
+        requestTimeout: 30
+        probeName: 'web-tier-health-probe'
+      }
+      {
+        name: 'web-tier-https-settings'
+        port: 443
+        protocol: 'Https'
+        cookieBasedAffinity: 'Disabled'
+        requestTimeout: 30
+        probeName: 'web-tier-https-health-probe'
+      }
+    ]
+    healthProbes: [
+      {
+        name: 'web-tier-health-probe'
+        protocol: 'Http'
+        host: ''
+        path: '/health'
+        interval: 30
+        timeout: 30
+        unhealthyThreshold: 3
+        port: 80
+      }
+      {
+        name: 'web-tier-https-health-probe'
+        protocol: 'Https'
+        host: ''
+        path: '/health'
+        interval: 30
+        timeout: 30
+        unhealthyThreshold: 3
+        port: 443
+      }
+    ]
+    httpListeners: [
+      {
+        name: 'http-listener'
+        frontendIpConfiguration: 'public-frontend-ip'
+        frontendPort: 'port-80'
+        protocol: 'Http'
+      }
+      {
+        name: 'https-listener'
+        frontendIpConfiguration: 'public-frontend-ip'
+        frontendPort: 'port-443'
+        protocol: 'Https'
+        sslCertificate: 'ssl-certificate'
+      }
+    ]
+    requestRoutingRules: [
+      {
+        name: 'http-routing-rule'
+        ruleType: 'Basic'
+        priority: 100
+        httpListener: 'http-listener'
+        backendAddressPool: 'web-tier-pool'
+        backendHttpSettings: 'web-tier-http-settings'
+      }
+      {
+        name: 'https-routing-rule'
+        ruleType: 'Basic'
+        priority: 200
+        httpListener: 'https-listener'
+        backendAddressPool: 'web-tier-pool'
+        backendHttpSettings: 'web-tier-https-settings'
+      }
+    ]
+    wafConfiguration: {
+      enabled: environmentConfig.applicationGatewaySku == 'WAF_v2'
+      firewallMode: 'Prevention'
+      ruleSetType: 'OWASP'
+      ruleSetVersion: '3.2'
+      disabledRuleGroups: []
+      requestBodyCheck: true
+      maxRequestBodySizeInKb: 128
+      fileUploadLimitInMb: 100
+    }
+    customWafRules: []
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+    applicationGatewayPublicIp
+    keyVault
+  ]
+}
+
 // Deploy VM Scale Sets for Web Tier
 module webTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   name: 'web-tier-vmss-deployment'
@@ -286,7 +522,9 @@ module webTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
     vmScaleSetName: '${namingConventions.outputs.namingConvention.virtualMachineScaleSet}-web'
     subnetId: virtualNetwork.outputs.subnetIds.webTier
     loadBalancerBackendAddressPoolIds: []
-    applicationGatewayBackendAddressPoolIds: []
+    applicationGatewayBackendAddressPoolIds: [
+      applicationGateway.outputs.backendAddressPoolIds['web-tier-pool']
+    ]
     vmConfig: {
       vmSize: environmentConfig.virtualMachineSize
       osType: 'Linux'
@@ -321,6 +559,7 @@ module webTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   dependsOn: [
     virtualNetwork
     networkSecurityGroups
+    applicationGateway
   ]
 }
 
@@ -330,7 +569,9 @@ module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   params: {
     vmScaleSetName: '${namingConventions.outputs.namingConvention.virtualMachineScaleSet}-business'
     subnetId: virtualNetwork.outputs.subnetIds.businessTier
-    loadBalancerBackendAddressPoolIds: []
+    loadBalancerBackendAddressPoolIds: [
+      businessTierLoadBalancer.outputs.backendAddressPoolIds['business-tier-pool']
+    ]
     applicationGatewayBackendAddressPoolIds: []
     vmConfig: {
       vmSize: environmentConfig.virtualMachineSize
@@ -372,6 +613,7 @@ module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   dependsOn: [
     virtualNetwork
     networkSecurityGroups
+    businessTierLoadBalancer
   ]
 }
 
@@ -441,6 +683,44 @@ output security object = {
 
 // Compute outputs
 output compute object = {
+  publicIpAddress: {
+    applicationGateway: {
+      id: applicationGatewayPublicIp.outputs.publicIpAddressId
+      name: applicationGatewayPublicIp.outputs.publicIpAddressName
+      ipAddress: applicationGatewayPublicIp.outputs.ipAddress
+      fqdn: applicationGatewayPublicIp.outputs.fqdn
+      config: applicationGatewayPublicIp.outputs.publicIpConfig
+    }
+  }
+  applicationGateway: {
+    id: applicationGateway.outputs.applicationGatewayId
+    name: applicationGateway.outputs.applicationGatewayName
+    publicIpAddress: applicationGateway.outputs.publicIpAddress
+    backendAddressPoolIds: applicationGateway.outputs.backendAddressPoolIds
+    frontendIpConfigurationId: applicationGateway.outputs.frontendIpConfigurationId
+    wafPolicyId: applicationGateway.outputs.wafPolicyId
+    config: applicationGateway.outputs.applicationGatewayConfig
+  }
+  loadBalancers: {
+    businessTier: {
+      id: businessTierLoadBalancer.outputs.loadBalancerId
+      name: businessTierLoadBalancer.outputs.loadBalancerName
+      privateIpAddress: businessTierLoadBalancer.outputs.privateIpAddress
+      frontendIpConfigurationId: businessTierLoadBalancer.outputs.frontendIpConfigurationId
+      backendAddressPoolIds: businessTierLoadBalancer.outputs.backendAddressPoolIds
+      healthProbeIds: businessTierLoadBalancer.outputs.healthProbeIds
+      config: businessTierLoadBalancer.outputs.loadBalancerConfig
+    }
+    dataTier: {
+      id: dataTierLoadBalancer.outputs.loadBalancerId
+      name: dataTierLoadBalancer.outputs.loadBalancerName
+      privateIpAddress: dataTierLoadBalancer.outputs.privateIpAddress
+      frontendIpConfigurationId: dataTierLoadBalancer.outputs.frontendIpConfigurationId
+      backendAddressPoolIds: dataTierLoadBalancer.outputs.backendAddressPoolIds
+      healthProbeIds: dataTierLoadBalancer.outputs.healthProbeIds
+      config: dataTierLoadBalancer.outputs.loadBalancerConfig
+    }
+  }
   availabilitySets: {
     webTier: !environmentConfig.enableHighAvailability ? {
       id: webTierAvailabilitySet.outputs.availabilitySetId
