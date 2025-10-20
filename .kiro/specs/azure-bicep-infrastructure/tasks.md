@@ -53,7 +53,9 @@
   - Configure DDoS protection policies and monitoring
   - _Requirements: 2.2_
 
-- [ ] 2.5 Integrate networking modules into main template
+- [x] 2.5 Integrate networking modules into main template
+
+
   - Add Virtual Network Manager deployment to main.bicep
   - Configure virtual network and subnet deployments
   - Wire up NSG and DDoS protection module dependencies

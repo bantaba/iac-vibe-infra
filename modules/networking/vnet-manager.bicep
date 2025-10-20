@@ -11,7 +11,7 @@ import { TagConfiguration } from '../shared/parameter-schemas.bicep'
 param virtualNetworkManagerName string
 
 @description('The description of the Virtual Network Manager')
-param description string = 'Virtual Network Manager for centralized network governance'
+param vnmDescription string = 'Virtual Network Manager for centralized network governance'
 
 @description('The scope of the Virtual Network Manager')
 @allowed(['Subscription', 'ManagementGroup'])
@@ -140,7 +140,7 @@ resource virtualNetworkManager 'Microsoft.Network/networkManagers@2023-09-01' = 
   location: location
   tags: tags
   properties: {
-    description: description
+    description: vnmDescription
     networkManagerScopes: {
       subscriptions: scopeType == 'Subscription' ? [scopeId] : []
       managementGroups: scopeType == 'ManagementGroup' ? [scopeId] : []
@@ -186,7 +186,7 @@ resource securityAdminConfigurationResources 'Microsoft.Network/networkManagers/
 
 // Security Admin Rule Collections
 resource securityAdminRuleCollections 'Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections@2023-09-01' = [for (config, configIndex) in securityAdminConfigurations: {
-  name: '${config.name}/${config.ruleCollections[0].name}'
+  name: config.ruleCollections[0].name
   parent: securityAdminConfigurationResources[configIndex]
   properties: {
     description: config.ruleCollections[0].description
@@ -194,10 +194,11 @@ resource securityAdminRuleCollections 'Microsoft.Network/networkManagers/securit
   }
 }]
 
-// Security Admin Rules
-resource securityAdminRules 'Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections/rules@2023-09-01' = [for (config, configIndex) in securityAdminConfigurations: {
-  name: '${config.name}/${config.ruleCollections[0].name}/${config.ruleCollections[0].rules[0].name}'
+// Security Admin Rules - RDP blocking
+resource securityAdminRulesRDP 'Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections/rules@2023-09-01' = [for (config, configIndex) in securityAdminConfigurations: {
+  name: config.ruleCollections[0].rules[0].name
   parent: securityAdminRuleCollections[configIndex]
+  kind: 'Custom'
   properties: {
     description: config.ruleCollections[0].rules[0].description
     access: config.ruleCollections[0].rules[0].access
@@ -211,10 +212,11 @@ resource securityAdminRules 'Microsoft.Network/networkManagers/securityAdminConf
   }
 }]
 
-// Additional security admin rules for SSH blocking
+// Security Admin Rules - SSH blocking
 resource securityAdminRulesSSH 'Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections/rules@2023-09-01' = [for (config, configIndex) in securityAdminConfigurations: {
-  name: '${config.name}/${config.ruleCollections[0].name}/${config.ruleCollections[0].rules[1].name}'
+  name: config.ruleCollections[0].rules[1].name
   parent: securityAdminRuleCollections[configIndex]
+  kind: 'Custom'
   properties: {
     description: config.ruleCollections[0].rules[1].description
     access: config.ruleCollections[0].rules[1].access

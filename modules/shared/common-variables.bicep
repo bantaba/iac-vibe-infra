@@ -148,10 +148,10 @@ var storageAccountDefaults = {
 // SQL Database configuration constants
 var sqlDatabaseDefaults = {
   collation: 'SQL_Latin1_General_CP1_CI_AS'
-  maxSizeBytes: 268435456000 // 250 GB
+  maxSizeBytes: 268435456000
   zoneRedundant: false
   readScale: 'Disabled'
-  minCapacity: 0.5
+  minCapacity: 1
   autoPauseDelay: 60
   enableAdvancedDataSecurity: true
   enableVulnerabilityAssessment: true

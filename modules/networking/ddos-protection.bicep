@@ -19,11 +19,7 @@ param location string = resourceGroup().location
 @description('Enable DDoS protection plan')
 param enableDdosProtection bool = true
 
-@description('Public IP addresses to associate with DDoS protection')
-param publicIpAddresses array = []
 
-@description('Virtual networks to associate with DDoS protection')
-param virtualNetworks array = []
 
 @description('Log Analytics workspace ID for DDoS monitoring')
 param logAnalyticsWorkspaceId string = ''
@@ -31,31 +27,7 @@ param logAnalyticsWorkspaceId string = ''
 @description('Enable DDoS protection telemetry')
 param enableTelemetry bool = true
 
-@description('DDoS protection policy configuration')
-param ddosProtectionPolicy object = {
-  ddosCustomPolicy: {
-    protocolCustomSettings: [
-      {
-        protocol: 'Tcp'
-        triggerRateOverride: '20000'
-        sourceRateOverride: '10000'
-        triggerSensitivityOverride: 'Relaxed'
-      }
-      {
-        protocol: 'Udp'
-        triggerRateOverride: '10000'
-        sourceRateOverride: '5000'
-        triggerSensitivityOverride: 'Default'
-      }
-      {
-        protocol: 'Syn'
-        triggerRateOverride: '15000'
-        sourceRateOverride: '7500'
-        triggerSensitivityOverride: 'Default'
-      }
-    ]
-  }
-}
+
 
 // DDoS Protection Plan
 resource ddosProtectionPlan 'Microsoft.Network/ddosProtectionPlans@2023-09-01' = if (enableDdosProtection) {
@@ -65,15 +37,8 @@ resource ddosProtectionPlan 'Microsoft.Network/ddosProtectionPlans@2023-09-01' =
   properties: {}
 }
 
-// DDoS Protection Policy (if custom policy is needed)
-resource ddosProtectionPolicy_resource 'Microsoft.Network/ddosCustomPolicies@2023-09-01' = if (enableDdosProtection && !empty(ddosProtectionPolicy)) {
-  name: '${ddosProtectionPlanName}-policy'
-  location: location
-  tags: tags
-  properties: {
-    protocolCustomSettings: ddosProtectionPolicy.ddosCustomPolicy.protocolCustomSettings
-  }
-}
+// Note: DDoS Custom Policies are not commonly used and have limited API support
+// The DDoS Protection Plan provides standard protection without custom policies
 
 // Diagnostic Settings for DDoS Protection Plan
 resource ddosProtectionPlanDiagnostics 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (enableDdosProtection && !empty(logAnalyticsWorkspaceId)) {
@@ -112,7 +77,7 @@ output ddosProtectionPlanId string = enableDdosProtection ? ddosProtectionPlan.i
 output ddosProtectionPlanName string = enableDdosProtection ? ddosProtectionPlan.name : ''
 
 @description('The resource ID of the DDoS protection policy')
-output ddosProtectionPolicyId string = enableDdosProtection && !empty(ddosProtectionPolicy) ? ddosProtectionPolicy_resource.id : ''
+output ddosProtectionPolicyId string = ''
 
 @description('DDoS protection configuration for virtual networks')
 output ddosProtectionConfig object = enableDdosProtection ? {

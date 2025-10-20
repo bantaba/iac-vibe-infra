@@ -77,6 +77,9 @@ var namingConvention = {
   virtualNetworkManager: '${resourcePrefix}-${workloadName}-${environment}-vnm${suffix}'
   networkGroup: '${resourcePrefix}-${workloadName}-${environment}-{groupType}-ng${suffix}'
   
+  // DDoS Protection
+  ddosProtectionPlan: '${resourcePrefix}-${workloadName}-${environment}-ddos${suffix}'
+  
   // Load Balancing
   applicationGateway: '${resourcePrefix}-${workloadName}-${environment}-agw${suffix}'
   loadBalancer: '${resourcePrefix}-${workloadName}-${environment}-{tier}-lb${suffix}'

@@ -23,7 +23,7 @@ param dnsServers array = []
 param enableDdosProtection bool = false
 
 @description('DDoS protection plan resource ID (required if enableDdosProtection is true)')
-param ddosProtectionPlanId string = ''
+param ddosProtectionPlanId string?
 
 @description('Tags to apply to all resources')
 param tags TagConfiguration
@@ -231,7 +231,7 @@ resource virtualNetwork 'Microsoft.Network/virtualNetworks@2023-09-01' = {
     }
     subnets: subnetConfigurations
     enableDdosProtection: enableDdosProtection
-    ddosProtectionPlan: enableDdosProtection && !empty(ddosProtectionPlanId) ? {
+    ddosProtectionPlan: enableDdosProtection && ddosProtectionPlanId != null && ddosProtectionPlanId != '' ? {
       id: ddosProtectionPlanId
     } : null
     enableVmProtection: enableVmProtection

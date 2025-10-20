@@ -5,7 +5,7 @@
 targetScope = 'resourceGroup'
 
 // Import shared modules
-import { TagConfiguration, NsgRuleConfig } from '../shared/parameter-schemas.bicep'
+import { TagConfiguration } from '../shared/parameter-schemas.bicep'
 
 @description('The prefix for NSG names')
 param nsgNamePrefix string

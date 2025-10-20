@@ -1,0 +1,3009 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "13427454844976931256"
+    }
+  },
+  "definitions": {
+    "_1.SubnetConfiguration": {
+      "type": "object",
+      "properties": {
+        "applicationGateway": {
+          "type": "string",
+          "metadata": {
+            "description": "Application Gateway subnet address prefix"
+          }
+        },
+        "management": {
+          "type": "string",
+          "metadata": {
+            "description": "Management subnet address prefix"
+          }
+        },
+        "webTier": {
+          "type": "string",
+          "metadata": {
+            "description": "Web tier subnet address prefix"
+          }
+        },
+        "businessTier": {
+          "type": "string",
+          "metadata": {
+            "description": "Business tier subnet address prefix"
+          }
+        },
+        "dataTier": {
+          "type": "string",
+          "metadata": {
+            "description": "Data tier subnet address prefix"
+          }
+        },
+        "activeDirectory": {
+          "type": "string",
+          "metadata": {
+            "description": "Active Directory subnet address prefix"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "modules/shared/parameter-schemas.bicep"
+        }
+      }
+    },
+    "EnvironmentConfig": {
+      "type": "object",
+      "properties": {
+        "skuTier": {
+          "type": "string",
+          "allowedValues": [
+            "Basic",
+            "Premium",
+            "Standard"
+          ],
+          "metadata": {
+            "description": "Service tier for the environment (Basic, Standard, Premium)"
+          }
+        },
+        "instanceCount": {
+          "type": "int",
+          "metadata": {
+            "description": "Default instance count for scalable resources"
+          }
+        },
+        "enableHighAvailability": {
+          "type": "bool",
+          "metadata": {
+            "description": "Enable high availability features"
+          }
+        },
+        "enableDdosProtection": {
+          "type": "bool",
+          "metadata": {
+            "description": "Enable DDoS protection"
+          }
+        },
+        "sqlDatabaseSku": {
+          "type": "string",
+          "allowedValues": [
+            "Basic",
+            "BusinessCritical",
+            "GeneralPurpose",
+            "Premium",
+            "Standard"
+          ],
+          "metadata": {
+            "description": "SQL Database SKU"
+          }
+        },
+        "storageAccountSku": {
+          "type": "string",
+          "allowedValues": [
+            "Premium_LRS",
+            "Premium_ZRS",
+            "Standard_GRS",
+            "Standard_LRS",
+            "Standard_ZRS"
+          ],
+          "metadata": {
+            "description": "Storage Account SKU"
+          }
+        },
+        "applicationGatewaySku": {
+          "type": "string",
+          "allowedValues": [
+            "Standard_v2",
+            "WAF_v2"
+          ],
+          "metadata": {
+            "description": "Application Gateway SKU"
+          }
+        },
+        "applicationGatewayCapacity": {
+          "type": "int",
+          "minValue": 1,
+          "maxValue": 125,
+          "metadata": {
+            "description": "Application Gateway capacity"
+          }
+        },
+        "virtualMachineSize": {
+          "type": "string",
+          "metadata": {
+            "description": "Virtual Machine size"
+          }
+        },
+        "enableBackup": {
+          "type": "bool",
+          "metadata": {
+            "description": "Enable backup for resources"
+          }
+        },
+        "logRetentionDays": {
+          "type": "int",
+          "minValue": 30,
+          "maxValue": 730,
+          "metadata": {
+            "description": "Log retention period in days"
+          }
+        },
+        "enablePrivateEndpoints": {
+          "type": "bool",
+          "metadata": {
+            "description": "Enable private endpoints for data services"
+          }
+        },
+        "networkAddressSpace": {
+          "type": "string",
+          "metadata": {
+            "description": "Network address space for the virtual network"
+          }
+        },
+        "subnets": {
+          "$ref": "#/definitions/_1.SubnetConfiguration",
+          "metadata": {
+            "description": "Subnet configuration"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "modules/shared/parameter-schemas.bicep"
+        }
+      }
+    },
+    "TagConfiguration": {
+      "type": "object",
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "metadata": {
+            "description": "Environment tag"
+          }
+        },
+        "Workload": {
+          "type": "string",
+          "metadata": {
+            "description": "Workload tag"
+          }
+        },
+        "ManagedBy": {
+          "type": "string",
+          "metadata": {
+            "description": "Managed by tag"
+          }
+        },
+        "CostCenter": {
+          "type": "string",
+          "metadata": {
+            "description": "Cost center tag"
+          }
+        },
+        "Owner": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Owner tag"
+          }
+        },
+        "Project": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Project tag"
+          }
+        },
+        "DeploymentDate": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Deployment date tag"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "modules/shared/parameter-schemas.bicep"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "resourcePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The prefix for all resource names"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "allowedValues": [
+        "dev",
+        "staging",
+        "prod"
+      ],
+      "metadata": {
+        "description": "The environment name (dev, staging, prod)"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The Azure region for deployment"
+      }
+    },
+    "workloadName": {
+      "type": "string",
+      "metadata": {
+        "description": "The workload or application name"
+      }
+    },
+    "tags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "defaultValue": {
+        "Environment": "[parameters('environment')]",
+        "Workload": "[parameters('workloadName')]",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT",
+        "Owner": "DevOps-Team",
+        "Project": "Azure-Bicep-Infrastructure",
+        "DeploymentDate": "[utcNow('yyyy-MM-dd')]"
+      },
+      "metadata": {
+        "description": "Tags to apply to all resources"
+      }
+    },
+    "environmentConfig": {
+      "$ref": "#/definitions/EnvironmentConfig",
+      "metadata": {
+        "description": "Environment-specific configuration settings"
+      }
+    }
+  },
+  "resources": {
+    "namingConventions": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "naming-conventions",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "resourcePrefix": {
+            "value": "[parameters('resourcePrefix')]"
+          },
+          "environment": {
+            "value": "[parameters('environment')]"
+          },
+          "workloadName": {
+            "value": "[parameters('workloadName')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "17916838294149264941"
+            }
+          },
+          "functions": [
+            {
+              "namespace": "__bicep",
+              "members": {
+                "validateNameLength": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "name"
+                    },
+                    {
+                      "type": "string",
+                      "name": "resourceType"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[if(lessOrEquals(length(parameters('name')), variables('namingLimits')[parameters('resourceType')]), parameters('name'), take(parameters('name'), variables('namingLimits')[parameters('resourceType')]))]"
+                  }
+                },
+                "getSubnetName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "subnetType"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').subnet, '{subnetType}', parameters('subnetType')), 'subnet')]"
+                  }
+                },
+                "getNsgName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "subnetType"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').networkSecurityGroup, '{subnetType}', parameters('subnetType')), 'networkSecurityGroup')]"
+                  }
+                },
+                "getLoadBalancerName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "tier"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').loadBalancer, '{tier}', parameters('tier')), 'loadBalancer')]"
+                  }
+                },
+                "getVmName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "tier"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').virtualMachine, '{tier}', parameters('tier')), 'virtualMachine')]"
+                  }
+                },
+                "getVmssName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "tier"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').virtualMachineScaleSet, '{tier}', parameters('tier')), 'virtualMachine')]"
+                  }
+                },
+                "getManagedIdentityName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "purpose"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').managedIdentity, '{purpose}', parameters('purpose')), 'virtualNetwork')]"
+                  }
+                },
+                "getPrivateEndpointName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "serviceName"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').privateEndpoint, '{serviceName}', parameters('serviceName')), 'virtualNetwork')]"
+                  }
+                },
+                "getNetworkGroupName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "groupType"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').networkGroup, '{groupType}', parameters('groupType')), 'virtualNetwork')]"
+                  }
+                },
+                "getKeyVaultName": {
+                  "parameters": [],
+                  "output": {
+                    "type": "string",
+                    "value": "[variables('namingConvention').keyVault]"
+                  }
+                },
+                "getStorageAccountName": {
+                  "parameters": [],
+                  "output": {
+                    "type": "string",
+                    "value": "[variables('namingConvention').storageAccount]"
+                  }
+                },
+                "getSqlDatabaseName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "dbName"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').sqlDatabase, '{dbName}', parameters('dbName')), 'sqlServer')]"
+                  }
+                },
+                "getActionGroupName": {
+                  "parameters": [
+                    {
+                      "type": "string",
+                      "name": "alertType"
+                    }
+                  ],
+                  "output": {
+                    "type": "string",
+                    "value": "[__bicep.validateNameLength(replace(variables('namingConvention').actionGroup, '{alertType}', parameters('alertType')), 'virtualNetwork')]"
+                  }
+                }
+              }
+            }
+          ],
+          "parameters": {
+            "resourcePrefix": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 10,
+              "metadata": {
+                "description": "The prefix for all resource names"
+              }
+            },
+            "environment": {
+              "type": "string",
+              "allowedValues": [
+                "dev",
+                "staging",
+                "prod"
+              ],
+              "metadata": {
+                "description": "The environment name (dev, staging, prod)"
+              }
+            },
+            "workloadName": {
+              "type": "string",
+              "minLength": 2,
+              "maxLength": 15,
+              "metadata": {
+                "description": "The workload or application name"
+              }
+            },
+            "suffix": {
+              "type": "string",
+              "defaultValue": "",
+              "maxLength": 5,
+              "metadata": {
+                "description": "Optional suffix for resource differentiation"
+              }
+            }
+          },
+          "variables": {
+            "namingLimits": {
+              "resourceGroup": 90,
+              "virtualNetwork": 64,
+              "subnet": 80,
+              "networkSecurityGroup": 80,
+              "applicationGateway": 80,
+              "loadBalancer": 80,
+              "keyVault": 24,
+              "storageAccount": 24,
+              "sqlServer": 63,
+              "virtualMachine": 64,
+              "logAnalyticsWorkspace": 63
+            },
+            "namingConvention": {
+              "resourceGroup": "[format('{0}-{1}-{2}-rg{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "virtualNetwork": "[format('{0}-{1}-{2}-vnet{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "subnet": "[format('{0}-{1}-{2}-{{subnetType}}-snet{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "networkSecurityGroup": "[format('{0}-{1}-{2}-{{subnetType}}-nsg{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "routeTable": "[format('{0}-{1}-{2}-{{subnetType}}-rt{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "publicIp": "[format('{0}-{1}-{2}-{{purpose}}-pip{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "networkInterface": "[format('{0}-{1}-{2}-{{vmName}}-nic{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "virtualNetworkGateway": "[format('{0}-{1}-{2}-vgw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "localNetworkGateway": "[format('{0}-{1}-{2}-lgw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "virtualNetworkManager": "[format('{0}-{1}-{2}-vnm{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "networkGroup": "[format('{0}-{1}-{2}-{{groupType}}-ng{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "ddosProtectionPlan": "[format('{0}-{1}-{2}-ddos{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "applicationGateway": "[format('{0}-{1}-{2}-agw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "loadBalancer": "[format('{0}-{1}-{2}-{{tier}}-lb{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "keyVault": "[take(format('{0}{1}{2}kv{3}', toLower(parameters('resourcePrefix')), toLower(parameters('workloadName')), toLower(parameters('environment')), toLower(parameters('suffix'))), 24)]",
+              "managedIdentity": "[format('{0}-{1}-{2}-{{purpose}}-mi{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "virtualMachine": "[format('{0}-{1}-{2}-{{tier}}-vm{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "virtualMachineScaleSet": "[format('{0}-{1}-{2}-{{tier}}-vmss{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "availabilitySet": "[format('{0}-{1}-{2}-{{tier}}-as{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "storageAccount": "[take(format('{0}{1}{2}sa{3}', toLower(parameters('resourcePrefix')), toLower(parameters('workloadName')), toLower(parameters('environment')), toLower(parameters('suffix'))), 24)]",
+              "sqlServer": "[format('{0}-{1}-{2}-sql{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "sqlDatabase": "[format('{0}-{1}-{2}-{{dbName}}-sqldb{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "logAnalyticsWorkspace": "[format('{0}-{1}-{2}-law{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "applicationInsights": "[format('{0}-{1}-{2}-ai{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "actionGroup": "[format('{0}-{1}-{2}-{{alertType}}-ag{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "privateEndpoint": "[format('{0}-{1}-{2}-{{serviceName}}-pe{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+              "privateDnsZone": "[format('{0}-{1}-{2}-{{serviceName}}-pdz{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]"
+            }
+          },
+          "resources": {},
+          "outputs": {
+            "namingConvention": {
+              "type": "object",
+              "value": "[variables('namingConvention')]"
+            },
+            "subnetNames": {
+              "type": "object",
+              "value": {
+                "applicationGateway": "[__bicep.getSubnetName('agw')]",
+                "management": "[__bicep.getSubnetName('mgmt')]",
+                "webTier": "[__bicep.getSubnetName('web')]",
+                "businessTier": "[__bicep.getSubnetName('biz')]",
+                "dataTier": "[__bicep.getSubnetName('data')]",
+                "activeDirectory": "[__bicep.getSubnetName('ad')]"
+              }
+            },
+            "nsgNames": {
+              "type": "object",
+              "value": {
+                "applicationGateway": "[__bicep.getNsgName('agw')]",
+                "management": "[__bicep.getNsgName('mgmt')]",
+                "webTier": "[__bicep.getNsgName('web')]",
+                "businessTier": "[__bicep.getNsgName('biz')]",
+                "dataTier": "[__bicep.getNsgName('data')]",
+                "activeDirectory": "[__bicep.getNsgName('ad')]"
+              }
+            },
+            "loadBalancerNames": {
+              "type": "object",
+              "value": {
+                "web": "[__bicep.getLoadBalancerName('web')]",
+                "business": "[__bicep.getLoadBalancerName('biz')]",
+                "data": "[__bicep.getLoadBalancerName('data')]"
+              }
+            },
+            "specializedNames": {
+              "type": "object",
+              "value": {
+                "keyVault": "[__bicep.getKeyVaultName()]",
+                "storageAccount": "[__bicep.getStorageAccountName()]"
+              }
+            }
+          }
+        }
+      }
+    },
+    "commonVariables": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "common-variables",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "17792367466298546205"
+            }
+          },
+          "variables": {
+            "regionMappings": {
+              "East US": "eastus",
+              "East US 2": "eastus2",
+              "West US": "westus",
+              "West US 2": "westus2",
+              "West US 3": "westus3",
+              "Central US": "centralus",
+              "North Central US": "northcentralus",
+              "South Central US": "southcentralus",
+              "West Central US": "westcentralus",
+              "Canada Central": "canadacentral",
+              "Canada East": "canadaeast",
+              "Brazil South": "brazilsouth",
+              "North Europe": "northeurope",
+              "West Europe": "westeurope",
+              "UK South": "uksouth",
+              "UK West": "ukwest",
+              "France Central": "francecentral",
+              "Germany West Central": "germanywestcentral",
+              "Switzerland North": "switzerlandnorth",
+              "Norway East": "norwayeast",
+              "Southeast Asia": "southeastasia",
+              "East Asia": "eastasia",
+              "Australia East": "australiaeast",
+              "Australia Southeast": "australiasoutheast",
+              "Japan East": "japaneast",
+              "Japan West": "japanwest",
+              "Korea Central": "koreacentral",
+              "India Central": "centralindia",
+              "India South": "southindia",
+              "UAE North": "uaenorth",
+              "South Africa North": "southafricanorth"
+            },
+            "commonPorts": {
+              "http": 80,
+              "https": 443,
+              "ssh": 22,
+              "rdp": 3389,
+              "sql": 1433,
+              "mysql": 3306,
+              "postgresql": 5432,
+              "redis": 6379,
+              "mongodb": 27017,
+              "smtp": 25,
+              "smtps": 465,
+              "pop3": 110,
+              "pop3s": 995,
+              "imap": 143,
+              "imaps": 993,
+              "ftp": 21,
+              "ftps": 990,
+              "sftp": 22,
+              "dns": 53,
+              "dhcp": 67,
+              "ntp": 123,
+              "snmp": 161,
+              "ldap": 389,
+              "ldaps": 636,
+              "kerberos": 88,
+              "winrm": 5985,
+              "winrms": 5986
+            },
+            "nsgRulePriorities": {
+              "allowApplicationGateway": 100,
+              "allowLoadBalancer": 110,
+              "allowVnetTraffic": 120,
+              "allowManagementAccess": 130,
+              "allowMonitoring": 140,
+              "denyAllInbound": 4000,
+              "allowInternetAccess": 1000,
+              "allowVnetOutbound": 1010,
+              "allowStorageAccess": 1020,
+              "allowKeyVaultAccess": 1030,
+              "allowSqlAccess": 1040,
+              "denyAllOutbound": 4000
+            },
+            "applicationGatewayDefaults": {
+              "requestTimeout": 20,
+              "cookieBasedAffinity": "Disabled",
+              "protocol": "Https",
+              "port": 443,
+              "healthProbe": {
+                "interval": 30,
+                "timeout": 30,
+                "unhealthyThreshold": 3,
+                "path": "/health",
+                "statusCodes": [
+                  "200-399"
+                ]
+              },
+              "wafMode": "Prevention",
+              "wafRuleSetType": "OWASP",
+              "wafRuleSetVersion": "3.2"
+            },
+            "loadBalancerDefaults": {
+              "idleTimeoutInMinutes": 4,
+              "enableFloatingIp": false,
+              "loadDistribution": "Default",
+              "healthProbe": {
+                "intervalInSeconds": 15,
+                "numberOfProbes": 2,
+                "port": 80,
+                "protocol": "Http",
+                "requestPath": "/health"
+              }
+            },
+            "keyVaultDefaults": {
+              "sku": "standard",
+              "enableSoftDelete": true,
+              "softDeleteRetentionInDays": 90,
+              "enablePurgeProtection": true,
+              "enableRbacAuthorization": true,
+              "networkAcls": {
+                "bypass": "AzureServices",
+                "defaultAction": "Deny"
+              }
+            },
+            "storageAccountDefaults": {
+              "kind": "StorageV2",
+              "accessTier": "Hot",
+              "supportsHttpsTrafficOnly": true,
+              "minimumTlsVersion": "TLS1_2",
+              "allowBlobPublicAccess": false,
+              "allowSharedKeyAccess": false,
+              "networkAcls": {
+                "bypass": "AzureServices",
+                "defaultAction": "Deny"
+              }
+            },
+            "sqlDatabaseDefaults": {
+              "collation": "SQL_Latin1_General_CP1_CI_AS",
+              "maxSizeBytes": 268435456000,
+              "zoneRedundant": false,
+              "readScale": "Disabled",
+              "minCapacity": 1,
+              "autoPauseDelay": 60,
+              "enableAdvancedDataSecurity": true,
+              "enableVulnerabilityAssessment": true,
+              "enableAuditing": true
+            },
+            "virtualMachineDefaults": {
+              "osDisk": {
+                "storageAccountType": "Premium_LRS",
+                "diskSizeGB": 128,
+                "caching": "ReadWrite"
+              },
+              "networkInterface": {
+                "enableAcceleratedNetworking": true,
+                "enableIpForwarding": false
+              },
+              "bootDiagnostics": {
+                "enabled": true
+              }
+            },
+            "logAnalyticsDefaults": {
+              "sku": "PerGB2018",
+              "retentionInDays": 30,
+              "dailyQuotaGb": 1,
+              "enableLogAccessUsingOnlyResourcePermissions": true
+            },
+            "monitoringDefaults": {
+              "metricAlerts": {
+                "evaluationFrequency": "PT1M",
+                "windowSize": "PT5M",
+                "severity": 2,
+                "autoMitigate": true
+              },
+              "actionGroups": {
+                "emailReceiver": {
+                  "useCommonAlertSchema": true
+                },
+                "smsReceiver": {
+                  "countryCode": "1"
+                }
+              }
+            },
+            "privateEndpointDefaults": {
+              "privateDnsZoneGroups": {
+                "sql": "privatelink.database.windows.net",
+                "storage": "privatelink.blob.core.windows.net",
+                "keyVault": "privatelink.vaultcore.azure.net",
+                "monitor": "privatelink.monitor.azure.com",
+                "oms": "privatelink.oms.opinsights.azure.com",
+                "ods": "privatelink.ods.opinsights.azure.com",
+                "agentsvc": "privatelink.agentsvc.azure-automation.net"
+              }
+            }
+          },
+          "resources": [],
+          "outputs": {
+            "regionMappings": {
+              "type": "object",
+              "value": "[variables('regionMappings')]"
+            },
+            "commonPorts": {
+              "type": "object",
+              "value": "[variables('commonPorts')]"
+            },
+            "nsgRulePriorities": {
+              "type": "object",
+              "value": "[variables('nsgRulePriorities')]"
+            },
+            "applicationGatewayDefaults": {
+              "type": "object",
+              "value": "[variables('applicationGatewayDefaults')]"
+            },
+            "loadBalancerDefaults": {
+              "type": "object",
+              "value": "[variables('loadBalancerDefaults')]"
+            },
+            "keyVaultDefaults": {
+              "type": "object",
+              "value": "[variables('keyVaultDefaults')]"
+            },
+            "storageAccountDefaults": {
+              "type": "object",
+              "value": "[variables('storageAccountDefaults')]"
+            },
+            "sqlDatabaseDefaults": {
+              "type": "object",
+              "value": "[variables('sqlDatabaseDefaults')]"
+            },
+            "virtualMachineDefaults": {
+              "type": "object",
+              "value": "[variables('virtualMachineDefaults')]"
+            },
+            "logAnalyticsDefaults": {
+              "type": "object",
+              "value": "[variables('logAnalyticsDefaults')]"
+            },
+            "monitoringDefaults": {
+              "type": "object",
+              "value": "[variables('monitoringDefaults')]"
+            },
+            "privateEndpointDefaults": {
+              "type": "object",
+              "value": "[variables('privateEndpointDefaults')]"
+            }
+          }
+        }
+      }
+    },
+    "ddosProtection": {
+      "condition": "[parameters('environmentConfig').enableDdosProtection]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "ddos-protection-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "ddosProtectionPlanName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.ddosProtectionPlan]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "enableDdosProtection": {
+            "value": "[parameters('environmentConfig').enableDdosProtection]"
+          },
+          "enableTelemetry": {
+            "value": true
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "17180414613575447812"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "ddosProtectionPlanName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the DDoS protection plan"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the DDoS protection plan"
+              }
+            },
+            "enableDdosProtection": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable DDoS protection plan"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace ID for DDoS monitoring"
+              }
+            },
+            "enableTelemetry": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable DDoS protection telemetry"
+              }
+            }
+          },
+          "resources": {
+            "ddosProtectionPlan": {
+              "condition": "[parameters('enableDdosProtection')]",
+              "type": "Microsoft.Network/ddosProtectionPlans",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('ddosProtectionPlanName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {}
+            },
+            "ddosProtectionPlanDiagnostics": {
+              "condition": "[and(parameters('enableDdosProtection'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Network/ddosProtectionPlans/{0}', parameters('ddosProtectionPlanName'))]",
+              "name": "[format('{0}-diagnostics', parameters('ddosProtectionPlanName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": true,
+                      "days": 30
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "ddosProtectionPlan"
+              ]
+            }
+          },
+          "outputs": {
+            "ddosProtectionPlanId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the DDoS protection plan"
+              },
+              "value": "[if(parameters('enableDdosProtection'), resourceId('Microsoft.Network/ddosProtectionPlans', parameters('ddosProtectionPlanName')), '')]"
+            },
+            "ddosProtectionPlanName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the DDoS protection plan"
+              },
+              "value": "[if(parameters('enableDdosProtection'), parameters('ddosProtectionPlanName'), '')]"
+            },
+            "ddosProtectionPolicyId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the DDoS protection policy"
+              },
+              "value": ""
+            },
+            "ddosProtectionConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "DDoS protection configuration for virtual networks"
+              },
+              "value": "[if(parameters('enableDdosProtection'), createObject('id', resourceId('Microsoft.Network/ddosProtectionPlans', parameters('ddosProtectionPlanName')), 'enabled', true()), createObject('id', '', 'enabled', false()))]"
+            },
+            "monitoringConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "DDoS protection monitoring configuration"
+              },
+              "value": {
+                "ddosProtectionPlanId": "[if(parameters('enableDdosProtection'), resourceId('Microsoft.Network/ddosProtectionPlans', parameters('ddosProtectionPlanName')), '')]",
+                "logAnalyticsWorkspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "telemetryEnabled": "[parameters('enableTelemetry')]",
+                "diagnosticsEnabled": "[not(empty(parameters('logAnalyticsWorkspaceId')))]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions"
+      ]
+    },
+    "networkSecurityGroups": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "network-security-groups-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "nsgNamePrefix": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.networkSecurityGroup]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetAddressSpace": {
+            "value": "[parameters('environmentConfig').networkAddressSpace]"
+          },
+          "applicationGatewaySubnet": {
+            "value": "[parameters('environmentConfig').subnets.applicationGateway]"
+          },
+          "managementSubnet": {
+            "value": "[parameters('environmentConfig').subnets.management]"
+          },
+          "webTierSubnet": {
+            "value": "[parameters('environmentConfig').subnets.webTier]"
+          },
+          "businessTierSubnet": {
+            "value": "[parameters('environmentConfig').subnets.businessTier]"
+          },
+          "dataTierSubnet": {
+            "value": "[parameters('environmentConfig').subnets.dataTier]"
+          },
+          "activeDirectorySubnet": {
+            "value": "[parameters('environmentConfig').subnets.activeDirectory]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "4419443780421057610"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "nsgNamePrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "The prefix for NSG names"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the NSGs"
+              }
+            },
+            "vnetAddressSpace": {
+              "type": "string",
+              "defaultValue": "10.0.0.0/16",
+              "metadata": {
+                "description": "Virtual network address space for internal traffic rules"
+              }
+            },
+            "applicationGatewaySubnet": {
+              "type": "string",
+              "defaultValue": "10.0.1.0/24",
+              "metadata": {
+                "description": "Application Gateway subnet address prefix"
+              }
+            },
+            "managementSubnet": {
+              "type": "string",
+              "defaultValue": "10.0.2.0/24",
+              "metadata": {
+                "description": "Management subnet address prefix"
+              }
+            },
+            "webTierSubnet": {
+              "type": "string",
+              "defaultValue": "10.0.3.0/24",
+              "metadata": {
+                "description": "Web tier subnet address prefix"
+              }
+            },
+            "businessTierSubnet": {
+              "type": "string",
+              "defaultValue": "10.0.4.0/24",
+              "metadata": {
+                "description": "Business tier subnet address prefix"
+              }
+            },
+            "dataTierSubnet": {
+              "type": "string",
+              "defaultValue": "10.0.5.0/24",
+              "metadata": {
+                "description": "Data tier subnet address prefix"
+              }
+            },
+            "activeDirectorySubnet": {
+              "type": "string",
+              "defaultValue": "10.0.6.0/24",
+              "metadata": {
+                "description": "Active Directory subnet address prefix"
+              }
+            }
+          },
+          "resources": {
+            "applicationGatewayNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-agw-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-Internet-HTTP-HTTPS",
+                    "properties": {
+                      "description": "Allow HTTP and HTTPS traffic from internet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "80",
+                        "443"
+                      ],
+                      "sourceAddressPrefix": "Internet",
+                      "destinationAddressPrefix": "[parameters('applicationGatewaySubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-GatewayManager",
+                    "properties": {
+                      "description": "Allow Azure Gateway Manager",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "65200-65535",
+                      "sourceAddressPrefix": "GatewayManager",
+                      "destinationAddressPrefix": "*",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-AzureLoadBalancer",
+                    "properties": {
+                      "description": "Allow Azure Load Balancer",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "AzureLoadBalancer",
+                      "destinationAddressPrefix": "*",
+                      "access": "Allow",
+                      "priority": 120,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-WebTier-Outbound",
+                    "properties": {
+                      "description": "Allow traffic to web tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "80",
+                        "443"
+                      ],
+                      "sourceAddressPrefix": "[parameters('applicationGatewaySubnet')]",
+                      "destinationAddressPrefix": "[parameters('webTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Outbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  }
+                ]
+              }
+            },
+            "managementNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-mgmt-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-RDP-From-Management",
+                    "properties": {
+                      "description": "Allow RDP from management subnet only",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3389",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('managementSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-SSH-From-Management",
+                    "properties": {
+                      "description": "Allow SSH from management subnet only",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "22",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('managementSubnet')]",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-HTTPS-To-All-Tiers",
+                    "properties": {
+                      "description": "Allow HTTPS management traffic to all tiers",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "443",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('vnetAddressSpace')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Outbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  }
+                ]
+              }
+            },
+            "webTierNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-web-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-ApplicationGateway",
+                    "properties": {
+                      "description": "Allow traffic from Application Gateway",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "80",
+                        "443"
+                      ],
+                      "sourceAddressPrefix": "[parameters('applicationGatewaySubnet')]",
+                      "destinationAddressPrefix": "[parameters('webTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-RDP",
+                    "properties": {
+                      "description": "Allow RDP from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3389",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('webTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-SSH",
+                    "properties": {
+                      "description": "Allow SSH from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "22",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('webTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 120,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-BusinessTier-Outbound",
+                    "properties": {
+                      "description": "Allow traffic to business tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "80",
+                        "443",
+                        "8080",
+                        "8443"
+                      ],
+                      "sourceAddressPrefix": "[parameters('webTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Outbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  }
+                ]
+              }
+            },
+            "businessTierNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-biz-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-WebTier",
+                    "properties": {
+                      "description": "Allow traffic from web tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "80",
+                        "443",
+                        "8080",
+                        "8443"
+                      ],
+                      "sourceAddressPrefix": "[parameters('webTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-RDP",
+                    "properties": {
+                      "description": "Allow RDP from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3389",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-SSH",
+                    "properties": {
+                      "description": "Allow SSH from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "22",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 120,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-DataTier-Outbound",
+                    "properties": {
+                      "description": "Allow traffic to data tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRanges": [
+                        "1433",
+                        "3306",
+                        "5432"
+                      ],
+                      "sourceAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Outbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  }
+                ]
+              }
+            },
+            "dataTierNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-data-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-BusinessTier-SQL",
+                    "properties": {
+                      "description": "Allow SQL traffic from business tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "1433",
+                      "sourceAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-BusinessTier-MySQL",
+                    "properties": {
+                      "description": "Allow MySQL traffic from business tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3306",
+                      "sourceAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-BusinessTier-PostgreSQL",
+                    "properties": {
+                      "description": "Allow PostgreSQL traffic from business tier",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "5432",
+                      "sourceAddressPrefix": "[parameters('businessTierSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 120,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-RDP",
+                    "properties": {
+                      "description": "Allow RDP from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3389",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 130,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-SSH",
+                    "properties": {
+                      "description": "Allow SSH from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "22",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "access": "Allow",
+                      "priority": 140,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-Internet-Outbound",
+                    "properties": {
+                      "description": "Deny internet access from data tier",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "[parameters('dataTierSubnet')]",
+                      "destinationAddressPrefix": "Internet",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Outbound"
+                    }
+                  }
+                ]
+              }
+            },
+            "activeDirectoryNsg": {
+              "type": "Microsoft.Network/networkSecurityGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-ad-nsg', parameters('nsgNamePrefix'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "securityRules": [
+                  {
+                    "name": "Allow-LDAP",
+                    "properties": {
+                      "description": "Allow LDAP traffic from VNet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "389",
+                      "sourceAddressPrefix": "[parameters('vnetAddressSpace')]",
+                      "destinationAddressPrefix": "[parameters('activeDirectorySubnet')]",
+                      "access": "Allow",
+                      "priority": 100,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-LDAPS",
+                    "properties": {
+                      "description": "Allow LDAPS traffic from VNet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "636",
+                      "sourceAddressPrefix": "[parameters('vnetAddressSpace')]",
+                      "destinationAddressPrefix": "[parameters('activeDirectorySubnet')]",
+                      "access": "Allow",
+                      "priority": 110,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Kerberos",
+                    "properties": {
+                      "description": "Allow Kerberos traffic from VNet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "88",
+                      "sourceAddressPrefix": "[parameters('vnetAddressSpace')]",
+                      "destinationAddressPrefix": "[parameters('activeDirectorySubnet')]",
+                      "access": "Allow",
+                      "priority": 120,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-DNS",
+                    "properties": {
+                      "description": "Allow DNS traffic from VNet",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "53",
+                      "sourceAddressPrefix": "[parameters('vnetAddressSpace')]",
+                      "destinationAddressPrefix": "[parameters('activeDirectorySubnet')]",
+                      "access": "Allow",
+                      "priority": 130,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Allow-Management-RDP",
+                    "properties": {
+                      "description": "Allow RDP from management subnet",
+                      "protocol": "Tcp",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "3389",
+                      "sourceAddressPrefix": "[parameters('managementSubnet')]",
+                      "destinationAddressPrefix": "[parameters('activeDirectorySubnet')]",
+                      "access": "Allow",
+                      "priority": 140,
+                      "direction": "Inbound"
+                    }
+                  },
+                  {
+                    "name": "Deny-All-Inbound",
+                    "properties": {
+                      "description": "Deny all other inbound traffic",
+                      "protocol": "*",
+                      "sourcePortRange": "*",
+                      "destinationPortRange": "*",
+                      "sourceAddressPrefix": "*",
+                      "destinationAddressPrefix": "*",
+                      "access": "Deny",
+                      "priority": 4000,
+                      "direction": "Inbound"
+                    }
+                  }
+                ]
+              }
+            }
+          },
+          "outputs": {
+            "nsgIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The resource IDs of all NSGs"
+              },
+              "value": {
+                "applicationGateway": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-agw-nsg', parameters('nsgNamePrefix')))]",
+                "management": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-mgmt-nsg', parameters('nsgNamePrefix')))]",
+                "webTier": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-web-nsg', parameters('nsgNamePrefix')))]",
+                "businessTier": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-biz-nsg', parameters('nsgNamePrefix')))]",
+                "dataTier": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-data-nsg', parameters('nsgNamePrefix')))]",
+                "activeDirectory": "[resourceId('Microsoft.Network/networkSecurityGroups', format('{0}-ad-nsg', parameters('nsgNamePrefix')))]"
+              }
+            },
+            "nsgNames": {
+              "type": "object",
+              "metadata": {
+                "description": "The names of all NSGs"
+              },
+              "value": {
+                "applicationGateway": "[format('{0}-agw-nsg', parameters('nsgNamePrefix'))]",
+                "management": "[format('{0}-mgmt-nsg', parameters('nsgNamePrefix'))]",
+                "webTier": "[format('{0}-web-nsg', parameters('nsgNamePrefix'))]",
+                "businessTier": "[format('{0}-biz-nsg', parameters('nsgNamePrefix'))]",
+                "dataTier": "[format('{0}-data-nsg', parameters('nsgNamePrefix'))]",
+                "activeDirectory": "[format('{0}-ad-nsg', parameters('nsgNamePrefix'))]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions"
+      ]
+    },
+    "virtualNetwork": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "virtual-network-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "virtualNetworkName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.virtualNetwork]"
+          },
+          "addressSpace": {
+            "value": [
+              "[parameters('environmentConfig').networkAddressSpace]"
+            ]
+          },
+          "subnets": {
+            "value": "[parameters('environmentConfig').subnets]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "enableDdosProtection": {
+            "value": "[parameters('environmentConfig').enableDdosProtection]"
+          },
+          "ddosProtectionPlanId": "[if(parameters('environmentConfig').enableDdosProtection, createObject('value', reference('ddosProtection').outputs.ddosProtectionPlanId.value), createObject('value', null()))]",
+          "networkSecurityGroups": {
+            "value": "[reference('networkSecurityGroups').outputs.nsgIds.value]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1998328201500427293"
+            }
+          },
+          "definitions": {
+            "SubnetConfiguration": {
+              "type": "object",
+              "properties": {
+                "applicationGateway": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Application Gateway subnet address prefix"
+                  }
+                },
+                "management": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Management subnet address prefix"
+                  }
+                },
+                "webTier": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Web tier subnet address prefix"
+                  }
+                },
+                "businessTier": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Business tier subnet address prefix"
+                  }
+                },
+                "dataTier": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Data tier subnet address prefix"
+                  }
+                },
+                "activeDirectory": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Active Directory subnet address prefix"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "virtualNetworkName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the virtual network"
+              }
+            },
+            "addressSpace": {
+              "type": "array",
+              "defaultValue": [
+                "10.0.0.0/16"
+              ],
+              "metadata": {
+                "description": "The address space for the virtual network"
+              }
+            },
+            "subnets": {
+              "$ref": "#/definitions/SubnetConfiguration",
+              "metadata": {
+                "description": "The subnet configuration for the virtual network"
+              }
+            },
+            "dnsServers": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "DNS servers for the virtual network (optional)"
+              }
+            },
+            "enableDdosProtection": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable DDoS protection for the virtual network"
+              }
+            },
+            "ddosProtectionPlanId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "DDoS protection plan resource ID (required if enableDdosProtection is true)"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the virtual network"
+              }
+            },
+            "enableVmProtection": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable VM protection for the virtual network"
+              }
+            },
+            "networkSecurityGroups": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Network Security Group resource IDs for subnets"
+              }
+            },
+            "routeTables": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Route table resource IDs for subnets"
+              }
+            }
+          },
+          "variables": {
+            "subnetConfigurations": [
+              {
+                "name": "ApplicationGatewaySubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').applicationGateway]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'applicationGateway'), createObject('id', parameters('networkSecurityGroups').applicationGateway), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'applicationGateway'), createObject('id', parameters('routeTables').applicationGateway), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              },
+              {
+                "name": "ManagementSubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').management]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'management'), createObject('id', parameters('networkSecurityGroups').management), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'management'), createObject('id', parameters('routeTables').management), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Sql",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              },
+              {
+                "name": "WebTierSubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').webTier]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'webTier'), createObject('id', parameters('networkSecurityGroups').webTier), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'webTier'), createObject('id', parameters('routeTables').webTier), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Sql",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              },
+              {
+                "name": "BusinessTierSubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').businessTier]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'businessTier'), createObject('id', parameters('networkSecurityGroups').businessTier), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'businessTier'), createObject('id', parameters('routeTables').businessTier), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Sql",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              },
+              {
+                "name": "DataTierSubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').dataTier]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'dataTier'), createObject('id', parameters('networkSecurityGroups').dataTier), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'dataTier'), createObject('id', parameters('routeTables').dataTier), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Sql",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              },
+              {
+                "name": "ActiveDirectorySubnet",
+                "properties": {
+                  "addressPrefix": "[parameters('subnets').activeDirectory]",
+                  "networkSecurityGroup": "[if(contains(parameters('networkSecurityGroups'), 'activeDirectory'), createObject('id', parameters('networkSecurityGroups').activeDirectory), null())]",
+                  "routeTable": "[if(contains(parameters('routeTables'), 'activeDirectory'), createObject('id', parameters('routeTables').activeDirectory), null())]",
+                  "serviceEndpoints": [
+                    {
+                      "service": "Microsoft.KeyVault",
+                      "locations": [
+                        "*"
+                      ]
+                    },
+                    {
+                      "service": "Microsoft.Storage",
+                      "locations": [
+                        "*"
+                      ]
+                    }
+                  ],
+                  "delegations": [
+                    {
+                      "name": "Microsoft.AAD/DomainServices",
+                      "properties": {
+                        "serviceName": "Microsoft.AAD/DomainServices"
+                      }
+                    }
+                  ],
+                  "privateEndpointNetworkPolicies": "Disabled",
+                  "privateLinkServiceNetworkPolicies": "Enabled"
+                }
+              }
+            ]
+          },
+          "resources": {
+            "virtualNetwork": {
+              "type": "Microsoft.Network/virtualNetworks",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('virtualNetworkName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "addressSpace": {
+                  "addressPrefixes": "[parameters('addressSpace')]"
+                },
+                "dhcpOptions": "[if(empty(parameters('dnsServers')), null(), createObject('dnsServers', parameters('dnsServers')))]",
+                "subnets": "[variables('subnetConfigurations')]",
+                "enableDdosProtection": "[parameters('enableDdosProtection')]",
+                "ddosProtectionPlan": "[if(and(and(parameters('enableDdosProtection'), not(equals(parameters('ddosProtectionPlanId'), null()))), not(equals(parameters('ddosProtectionPlanId'), ''))), createObject('id', parameters('ddosProtectionPlanId')), null())]",
+                "enableVmProtection": "[parameters('enableVmProtection')]"
+              }
+            }
+          },
+          "outputs": {
+            "virtualNetworkId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the virtual network"
+              },
+              "value": "[resourceId('Microsoft.Network/virtualNetworks', parameters('virtualNetworkName'))]"
+            },
+            "virtualNetworkName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the virtual network"
+              },
+              "value": "[parameters('virtualNetworkName')]"
+            },
+            "addressSpace": {
+              "type": "array",
+              "metadata": {
+                "description": "The address space of the virtual network"
+              },
+              "value": "[reference('virtualNetwork').addressSpace.addressPrefixes]"
+            },
+            "subnetIds": {
+              "type": "object",
+              "metadata": {
+                "description": "The subnet resource IDs"
+              },
+              "value": {
+                "applicationGateway": "[reference('virtualNetwork').subnets[0].id]",
+                "management": "[reference('virtualNetwork').subnets[1].id]",
+                "webTier": "[reference('virtualNetwork').subnets[2].id]",
+                "businessTier": "[reference('virtualNetwork').subnets[3].id]",
+                "dataTier": "[reference('virtualNetwork').subnets[4].id]",
+                "activeDirectory": "[reference('virtualNetwork').subnets[5].id]"
+              }
+            },
+            "subnetNames": {
+              "type": "object",
+              "metadata": {
+                "description": "The subnet names"
+              },
+              "value": {
+                "applicationGateway": "[reference('virtualNetwork').subnets[0].name]",
+                "management": "[reference('virtualNetwork').subnets[1].name]",
+                "webTier": "[reference('virtualNetwork').subnets[2].name]",
+                "businessTier": "[reference('virtualNetwork').subnets[3].name]",
+                "dataTier": "[reference('virtualNetwork').subnets[4].name]",
+                "activeDirectory": "[reference('virtualNetwork').subnets[5].name]"
+              }
+            },
+            "subnetAddressPrefixes": {
+              "type": "object",
+              "metadata": {
+                "description": "The subnet address prefixes"
+              },
+              "value": {
+                "applicationGateway": "[reference('virtualNetwork').subnets[0].properties.addressPrefix]",
+                "management": "[reference('virtualNetwork').subnets[1].properties.addressPrefix]",
+                "webTier": "[reference('virtualNetwork').subnets[2].properties.addressPrefix]",
+                "businessTier": "[reference('virtualNetwork').subnets[3].properties.addressPrefix]",
+                "dataTier": "[reference('virtualNetwork').subnets[4].properties.addressPrefix]",
+                "activeDirectory": "[reference('virtualNetwork').subnets[5].properties.addressPrefix]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "ddosProtection",
+        "namingConventions",
+        "networkSecurityGroups"
+      ]
+    },
+    "virtualNetworkManager": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "virtual-network-manager-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "virtualNetworkManagerName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.virtualNetworkManager]"
+          },
+          "vnmDescription": {
+            "value": "[format('Virtual Network Manager for {0} {1} environment', parameters('workloadName'), parameters('environment'))]"
+          },
+          "scopeType": {
+            "value": "Subscription"
+          },
+          "scopeAccesses": {
+            "value": [
+              "SecurityAdmin",
+              "Connectivity"
+            ]
+          },
+          "scopeId": {
+            "value": "[subscription().subscriptionId]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "networkGroups": {
+            "value": [
+              {
+                "name": "[format('{0}-web-tier', parameters('environment'))]",
+                "description": "[format('{0} web tier virtual networks', parameters('environment'))]",
+                "memberType": "VirtualNetwork"
+              },
+              {
+                "name": "[format('{0}-business-tier', parameters('environment'))]",
+                "description": "[format('{0} business tier virtual networks', parameters('environment'))]",
+                "memberType": "VirtualNetwork"
+              },
+              {
+                "name": "[format('{0}-data-tier', parameters('environment'))]",
+                "description": "[format('{0} data tier virtual networks', parameters('environment'))]",
+                "memberType": "VirtualNetwork"
+              }
+            ]
+          },
+          "connectivityConfigurations": {
+            "value": [
+              {
+                "name": "[format('{0}-hub-spoke-connectivity', parameters('environment'))]",
+                "description": "[format('Hub and spoke connectivity for {0} environment', parameters('environment'))]",
+                "connectivityTopology": "HubAndSpoke",
+                "isGlobal": false,
+                "deleteExistingPeering": false,
+                "hubs": [],
+                "appliesToGroups": []
+              }
+            ]
+          },
+          "securityAdminConfigurations": {
+            "value": [
+              {
+                "name": "[format('{0}-security-rules', parameters('environment'))]",
+                "description": "[format('Security admin rules for {0} environment', parameters('environment'))]",
+                "applyOnNetworkIntentPolicyBasedServices": [
+                  "None"
+                ],
+                "ruleCollections": [
+                  {
+                    "name": "deny-high-risk-ports",
+                    "description": "Deny access to high-risk ports from internet",
+                    "appliesToGroups": [],
+                    "rules": [
+                      {
+                        "name": "deny-rdp-from-internet",
+                        "description": "Deny RDP access from internet",
+                        "access": "Deny",
+                        "direction": "Inbound",
+                        "priority": 100,
+                        "protocol": "Tcp",
+                        "sources": [
+                          {
+                            "addressPrefixType": "IPPrefix",
+                            "addressPrefix": "Internet"
+                          }
+                        ],
+                        "destinations": [
+                          {
+                            "addressPrefixType": "IPPrefix",
+                            "addressPrefix": "*"
+                          }
+                        ],
+                        "sourcePortRanges": [
+                          "*"
+                        ],
+                        "destinationPortRanges": [
+                          "3389"
+                        ]
+                      },
+                      {
+                        "name": "deny-ssh-from-internet",
+                        "description": "Deny SSH access from internet",
+                        "access": "Deny",
+                        "direction": "Inbound",
+                        "priority": 110,
+                        "protocol": "Tcp",
+                        "sources": [
+                          {
+                            "addressPrefixType": "IPPrefix",
+                            "addressPrefix": "Internet"
+                          }
+                        ],
+                        "destinations": [
+                          {
+                            "addressPrefixType": "IPPrefix",
+                            "addressPrefix": "*"
+                          }
+                        ],
+                        "sourcePortRanges": [
+                          "*"
+                        ],
+                        "destinationPortRanges": [
+                          "22"
+                        ]
+                      }
+                    ]
+                  }
+                ]
+              }
+            ]
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "13501635128287716398"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "virtualNetworkManagerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Virtual Network Manager"
+              }
+            },
+            "vnmDescription": {
+              "type": "string",
+              "defaultValue": "Virtual Network Manager for centralized network governance",
+              "metadata": {
+                "description": "The description of the Virtual Network Manager"
+              }
+            },
+            "scopeType": {
+              "type": "string",
+              "defaultValue": "Subscription",
+              "allowedValues": [
+                "Subscription",
+                "ManagementGroup"
+              ],
+              "metadata": {
+                "description": "The scope of the Virtual Network Manager"
+              }
+            },
+            "scopeAccesses": {
+              "type": "array",
+              "defaultValue": [
+                "SecurityAdmin",
+                "Connectivity"
+              ],
+              "allowedValues": [
+                "SecurityAdmin",
+                "Connectivity"
+              ],
+              "metadata": {
+                "description": "The scope access type for the Virtual Network Manager"
+              }
+            },
+            "scopeId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subscription ID or management group ID for the scope"
+              }
+            },
+            "networkGroups": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "production-web-tier",
+                  "description": "Production web tier virtual networks",
+                  "memberType": "VirtualNetwork"
+                },
+                {
+                  "name": "production-business-tier",
+                  "description": "Production business tier virtual networks",
+                  "memberType": "VirtualNetwork"
+                },
+                {
+                  "name": "production-data-tier",
+                  "description": "Production data tier virtual networks",
+                  "memberType": "VirtualNetwork"
+                },
+                {
+                  "name": "staging-environment",
+                  "description": "Staging environment virtual networks",
+                  "memberType": "VirtualNetwork"
+                },
+                {
+                  "name": "development-environment",
+                  "description": "Development environment virtual networks",
+                  "memberType": "VirtualNetwork"
+                }
+              ],
+              "metadata": {
+                "description": "Network groups configuration"
+              }
+            },
+            "connectivityConfigurations": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "hub-spoke-connectivity",
+                  "description": "Hub and spoke connectivity configuration",
+                  "connectivityTopology": "HubAndSpoke",
+                  "isGlobal": false,
+                  "deleteExistingPeering": false,
+                  "hubs": [],
+                  "appliesToGroups": []
+                }
+              ],
+              "metadata": {
+                "description": "Connectivity configurations for network topology"
+              }
+            },
+            "securityAdminConfigurations": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "default-security-rules",
+                  "description": "Default security admin rules for all network groups",
+                  "applyOnNetworkIntentPolicyBasedServices": [
+                    "None"
+                  ],
+                  "ruleCollections": [
+                    {
+                      "name": "deny-high-risk-ports",
+                      "description": "Deny access to high-risk ports",
+                      "appliesToGroups": [],
+                      "rules": [
+                        {
+                          "name": "deny-rdp-from-internet",
+                          "description": "Deny RDP access from internet",
+                          "access": "Deny",
+                          "direction": "Inbound",
+                          "priority": 100,
+                          "protocol": "Tcp",
+                          "sources": [
+                            {
+                              "addressPrefixType": "IPPrefix",
+                              "addressPrefix": "Internet"
+                            }
+                          ],
+                          "destinations": [
+                            {
+                              "addressPrefixType": "IPPrefix",
+                              "addressPrefix": "*"
+                            }
+                          ],
+                          "sourcePortRanges": [
+                            "*"
+                          ],
+                          "destinationPortRanges": [
+                            "3389"
+                          ]
+                        },
+                        {
+                          "name": "deny-ssh-from-internet",
+                          "description": "Deny SSH access from internet",
+                          "access": "Deny",
+                          "direction": "Inbound",
+                          "priority": 110,
+                          "protocol": "Tcp",
+                          "sources": [
+                            {
+                              "addressPrefixType": "IPPrefix",
+                              "addressPrefix": "Internet"
+                            }
+                          ],
+                          "destinations": [
+                            {
+                              "addressPrefixType": "IPPrefix",
+                              "addressPrefix": "*"
+                            }
+                          ],
+                          "sourcePortRanges": [
+                            "*"
+                          ],
+                          "destinationPortRanges": [
+                            "22"
+                          ]
+                        }
+                      ]
+                    }
+                  ]
+                }
+              ],
+              "metadata": {
+                "description": "Security admin configurations"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the Virtual Network Manager"
+              }
+            }
+          },
+          "resources": {
+            "virtualNetworkManager": {
+              "type": "Microsoft.Network/networkManagers",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('virtualNetworkManagerName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "description": "[parameters('vnmDescription')]",
+                "networkManagerScopes": {
+                  "subscriptions": "[if(equals(parameters('scopeType'), 'Subscription'), createArray(parameters('scopeId')), createArray())]",
+                  "managementGroups": "[if(equals(parameters('scopeType'), 'ManagementGroup'), createArray(parameters('scopeId')), createArray())]"
+                },
+                "networkManagerScopeAccesses": "[parameters('scopeAccesses')]"
+              }
+            },
+            "networkGroupResources": {
+              "copy": {
+                "name": "networkGroupResources",
+                "count": "[length(parameters('networkGroups'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/networkGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworkManagerName'), parameters('networkGroups')[copyIndex()].name)]",
+              "properties": {
+                "description": "[parameters('networkGroups')[copyIndex()].description]"
+              },
+              "dependsOn": [
+                "virtualNetworkManager"
+              ]
+            },
+            "connectivityConfigurationResources": {
+              "copy": {
+                "name": "connectivityConfigurationResources",
+                "count": "[length(parameters('connectivityConfigurations'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/connectivityConfigurations",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworkManagerName'), parameters('connectivityConfigurations')[copyIndex()].name)]",
+              "properties": {
+                "description": "[parameters('connectivityConfigurations')[copyIndex()].description]",
+                "connectivityTopology": "[parameters('connectivityConfigurations')[copyIndex()].connectivityTopology]",
+                "isGlobal": "[parameters('connectivityConfigurations')[copyIndex()].isGlobal]",
+                "deleteExistingPeering": "[parameters('connectivityConfigurations')[copyIndex()].deleteExistingPeering]",
+                "hubs": "[parameters('connectivityConfigurations')[copyIndex()].hubs]",
+                "appliesToGroups": "[parameters('connectivityConfigurations')[copyIndex()].appliesToGroups]"
+              },
+              "dependsOn": [
+                "networkGroupResources",
+                "virtualNetworkManager"
+              ]
+            },
+            "securityAdminConfigurationResources": {
+              "copy": {
+                "name": "securityAdminConfigurationResources",
+                "count": "[length(parameters('securityAdminConfigurations'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/securityAdminConfigurations",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}', parameters('virtualNetworkManagerName'), parameters('securityAdminConfigurations')[copyIndex()].name)]",
+              "properties": {
+                "description": "[parameters('securityAdminConfigurations')[copyIndex()].description]",
+                "applyOnNetworkIntentPolicyBasedServices": "[parameters('securityAdminConfigurations')[copyIndex()].applyOnNetworkIntentPolicyBasedServices]"
+              },
+              "dependsOn": [
+                "networkGroupResources",
+                "virtualNetworkManager"
+              ]
+            },
+            "securityAdminRuleCollections": {
+              "copy": {
+                "name": "securityAdminRuleCollections",
+                "count": "[length(parameters('securityAdminConfigurations'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}/{2}', parameters('virtualNetworkManagerName'), parameters('securityAdminConfigurations')[copyIndex()].name, parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].name)]",
+              "properties": {
+                "description": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].description]",
+                "appliesToGroups": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].appliesToGroups]"
+              },
+              "dependsOn": [
+                "[format('securityAdminConfigurationResources[{0}]', copyIndex())]"
+              ]
+            },
+            "securityAdminRulesRDP": {
+              "copy": {
+                "name": "securityAdminRulesRDP",
+                "count": "[length(parameters('securityAdminConfigurations'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections/rules",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}/{2}/{3}', parameters('virtualNetworkManagerName'), parameters('securityAdminConfigurations')[copyIndex()].name, parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].name, parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].name)]",
+              "kind": "Custom",
+              "properties": {
+                "description": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].description]",
+                "access": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].access]",
+                "direction": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].direction]",
+                "priority": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].priority]",
+                "protocol": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].protocol]",
+                "sources": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].sources]",
+                "destinations": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].destinations]",
+                "sourcePortRanges": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].sourcePortRanges]",
+                "destinationPortRanges": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[0].destinationPortRanges]"
+              },
+              "dependsOn": [
+                "[format('securityAdminRuleCollections[{0}]', copyIndex())]"
+              ]
+            },
+            "securityAdminRulesSSH": {
+              "copy": {
+                "name": "securityAdminRulesSSH",
+                "count": "[length(parameters('securityAdminConfigurations'))]"
+              },
+              "type": "Microsoft.Network/networkManagers/securityAdminConfigurations/ruleCollections/rules",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}/{1}/{2}/{3}', parameters('virtualNetworkManagerName'), parameters('securityAdminConfigurations')[copyIndex()].name, parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].name, parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].name)]",
+              "kind": "Custom",
+              "properties": {
+                "description": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].description]",
+                "access": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].access]",
+                "direction": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].direction]",
+                "priority": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].priority]",
+                "protocol": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].protocol]",
+                "sources": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].sources]",
+                "destinations": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].destinations]",
+                "sourcePortRanges": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].sourcePortRanges]",
+                "destinationPortRanges": "[parameters('securityAdminConfigurations')[copyIndex()].ruleCollections[0].rules[1].destinationPortRanges]"
+              },
+              "dependsOn": [
+                "[format('securityAdminRuleCollections[{0}]', copyIndex())]"
+              ]
+            }
+          },
+          "outputs": {
+            "virtualNetworkManagerId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Virtual Network Manager"
+              },
+              "value": "[resourceId('Microsoft.Network/networkManagers', parameters('virtualNetworkManagerName'))]"
+            },
+            "virtualNetworkManagerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Virtual Network Manager"
+              },
+              "value": "[parameters('virtualNetworkManagerName')]"
+            },
+            "networkGroupIds": {
+              "type": "array",
+              "metadata": {
+                "description": "The resource IDs of the network groups"
+              },
+              "copy": {
+                "count": "[length(parameters('networkGroups'))]",
+                "input": "[resourceId('Microsoft.Network/networkManagers/networkGroups', parameters('virtualNetworkManagerName'), parameters('networkGroups')[copyIndex()].name)]"
+              }
+            },
+            "networkGroupNames": {
+              "type": "array",
+              "metadata": {
+                "description": "The names of the network groups"
+              },
+              "copy": {
+                "count": "[length(parameters('networkGroups'))]",
+                "input": "[parameters('networkGroups')[copyIndex()].name]"
+              }
+            },
+            "connectivityConfigurationIds": {
+              "type": "array",
+              "metadata": {
+                "description": "The resource IDs of the connectivity configurations"
+              },
+              "copy": {
+                "count": "[length(parameters('connectivityConfigurations'))]",
+                "input": "[resourceId('Microsoft.Network/networkManagers/connectivityConfigurations', parameters('virtualNetworkManagerName'), parameters('connectivityConfigurations')[copyIndex()].name)]"
+              }
+            },
+            "securityAdminConfigurationIds": {
+              "type": "array",
+              "metadata": {
+                "description": "The resource IDs of the security admin configurations"
+              },
+              "copy": {
+                "count": "[length(parameters('securityAdminConfigurations'))]",
+                "input": "[resourceId('Microsoft.Network/networkManagers/securityAdminConfigurations', parameters('virtualNetworkManagerName'), parameters('securityAdminConfigurations')[copyIndex()].name)]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    }
+  },
+  "outputs": {
+    "namingConvention": {
+      "type": "object",
+      "value": "[reference('namingConventions').outputs.namingConvention.value]"
+    },
+    "deploymentTags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "value": "[parameters('tags')]"
+    },
+    "environmentConfig": {
+      "$ref": "#/definitions/EnvironmentConfig",
+      "value": "[parameters('environmentConfig')]"
+    },
+    "commonVariables": {
+      "type": "object",
+      "value": "[reference('commonVariables').outputs]"
+    },
+    "resourcePrefix": {
+      "type": "string",
+      "value": "[parameters('resourcePrefix')]"
+    },
+    "environment": {
+      "type": "string",
+      "value": "[parameters('environment')]"
+    },
+    "workloadName": {
+      "type": "string",
+      "value": "[parameters('workloadName')]"
+    },
+    "location": {
+      "type": "string",
+      "value": "[parameters('location')]"
+    },
+    "networking": {
+      "type": "object",
+      "value": {
+        "virtualNetwork": {
+          "id": "[reference('virtualNetwork').outputs.virtualNetworkId.value]",
+          "name": "[reference('virtualNetwork').outputs.virtualNetworkName.value]",
+          "addressSpace": "[reference('virtualNetwork').outputs.addressSpace.value]",
+          "subnets": {
+            "ids": "[reference('virtualNetwork').outputs.subnetIds.value]",
+            "names": "[reference('virtualNetwork').outputs.subnetNames.value]",
+            "addressPrefixes": "[reference('virtualNetwork').outputs.subnetAddressPrefixes.value]"
+          }
+        },
+        "networkSecurityGroups": {
+          "ids": "[reference('networkSecurityGroups').outputs.nsgIds.value]",
+          "names": "[reference('networkSecurityGroups').outputs.nsgNames.value]"
+        },
+        "ddosProtection": "[if(parameters('environmentConfig').enableDdosProtection, createObject('id', reference('ddosProtection').outputs.ddosProtectionPlanId.value, 'name', reference('ddosProtection').outputs.ddosProtectionPlanName.value, 'config', reference('ddosProtection').outputs.ddosProtectionConfig.value), createObject('id', '', 'name', '', 'config', createObject('id', '', 'enabled', false())))]",
+        "virtualNetworkManager": {
+          "id": "[reference('virtualNetworkManager').outputs.virtualNetworkManagerId.value]",
+          "name": "[reference('virtualNetworkManager').outputs.virtualNetworkManagerName.value]",
+          "networkGroups": {
+            "ids": "[reference('virtualNetworkManager').outputs.networkGroupIds.value]",
+            "names": "[reference('virtualNetworkManager').outputs.networkGroupNames.value]"
+          },
+          "connectivityConfigurations": "[reference('virtualNetworkManager').outputs.connectivityConfigurationIds.value]",
+          "securityAdminConfigurations": "[reference('virtualNetworkManager').outputs.securityAdminConfigurationIds.value]"
+        }
+      }
+    }
+  }
+}
