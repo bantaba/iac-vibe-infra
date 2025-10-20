@@ -18,37 +18,42 @@ The infrastructure follows a hub-and-spoke network topology managed by Azure Vir
 
 ### Network Architecture
 
-```mermaid
-graph TB
-    subgraph "Virtual Network Manager Scope"
-        subgraph "Hub VNet"
-            AGW[Application Gateway]
-            FW[Azure Firewall]
-            BASTION[Bastion Host]
-        end
-        
-        subgraph "Spoke VNet - Production"
-            subgraph "App Gateway Subnet"
-                AGW_SUBNET[10.1.1.0/24]
-            end
-            subgraph "Management Subnet"
-                MGMT_SUBNET[10.1.2.0/24]
-            end
-            subgraph "Web Tier Subnet"
-                WEB_SUBNET[10.1.3.0/24]
-            end
-            subgraph "Business Tier Subnet"
-                BIZ_SUBNET[10.1.4.0/24]
-            end
-            subgraph "Data Tier Subnet"
-                DATA_SUBNET[10.1.5.0/24]
-            end
-            subgraph "Active Directory Subnet"
-                AD_SUBNET[10.1.6.0/24]
-            end
-        end
-    end
+The implemented network architecture provides a secure, multi-tier infrastructure:
+
 ```
+Virtual Network Manager Scope
+├── Network Groups (per environment)
+│   ├── {env}-web-tier (Application Gateway, Web servers)
+│   ├── {env}-business-tier (Application logic servers)  
+│   └── {env}-data-tier (Database servers)
+├── Security Admin Rules
+│   ├── Deny RDP from Internet (Priority 100)
+│   └── Deny SSH from Internet (Priority 110)
+└── Connectivity Configurations
+    └── Hub-and-Spoke topology setup
+
+Environment-Specific Virtual Networks:
+├── Development (10.0.0.0/16)
+├── Staging (10.1.0.0/16)
+└── Production (10.2.0.0/16)
+
+Subnet Architecture (per environment):
+├── Application Gateway Subnet (/24)
+├── Management Subnet (/24)
+├── Web Tier Subnet (/24)
+├── Business Tier Subnet (/24)
+├── Data Tier Subnet (/24)
+└── Active Directory Subnet (/24)
+```
+
+**Current Implementation Status:**
+- ✅ Virtual Network Manager with network groups and security policies
+- ✅ Virtual Network with segmented subnets and service endpoints
+- ✅ Network Security Groups with comprehensive tier-specific rules
+- ✅ DDoS Protection Plan (conditional deployment for staging/production)
+- ⏳ Security modules (Key Vault, Managed Identity) - Next phase
+- ⏳ Compute modules (Application Gateway, Load Balancers) - Next phase
+- ⏳ Data modules (SQL Database, Storage Accounts) - Next phase
 
 ## Components and Interfaces
 

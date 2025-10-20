@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "Auto Git Commit",
+  "description": "Automatically commits changes to the git repository whenever Bicep templates, parameter files, or scripts are modified",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.bicep",
+      "modules/**/*.bicep",
+      "parameters/*.json",
+      "scripts/*.ps1",
+      "main.json",
+      ".checkov.yaml",
+      ".checkovignore"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "Files have been modified in the infrastructure project. Please commit these changes to the git repository with an appropriate commit message that describes what was changed. Use git add to stage the changes, then git commit with a descriptive message following conventional commit format."
+  }
+}

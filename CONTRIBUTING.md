@@ -82,24 +82,44 @@ Before submitting changes, ensure:
 
 1. **Template Validation**:
    ```powershell
+   # Basic validation
    .\scripts\validate.ps1 -TemplateFile main.bicep -ParameterFile parameters\dev.parameters.json -ResourceGroupName test-rg
+   
+   # Full validation including project structure
+   .\scripts\validate.ps1 -TemplateFile main.bicep -ParameterFile parameters\dev.parameters.json -ResourceGroupName test-rg -ValidateStructure
    ```
 
 2. **Security Scanning**:
    ```powershell
-   # Use project configuration for consistent scanning
-   checkov -d . --config-file .checkov.yaml --framework bicep
-   
-   # Or use the project's security scan script (when available)
+   # Use project's security scan script
    .\scripts\security-scan.ps1 -Directory . -OutputFormat cli
+   
+   # Generate detailed report
+   .\scripts\security-scan.ps1 -Directory . -OutputFormat json -OutputFile security-report.json
+   
+   # Soft fail mode (continue despite issues)
+   .\scripts\security-scan.ps1 -Directory . -SoftFail
    ```
 
 3. **Deployment Testing**:
+   ```powershell
+   # Development deployment with what-if preview
+   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -WhatIf
+   
+   # Full deployment
+   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg
+   
+   # Skip validation and security scan (for rapid iteration)
+   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -SkipValidation -SkipSecurityScan
+   ```
+
+4. **Testing Best Practices**:
    - Test in a development environment first
    - Use unique resource group names: `{prefix}-{workload}-dev-{username}-rg`
    - Verify all resources deploy successfully
-   - Validate security configurations
+   - Validate security configurations and network connectivity
    - Clean up test resources to manage costs
+   - Use what-if analysis before production deployments
 
 ## Contribution Process
 

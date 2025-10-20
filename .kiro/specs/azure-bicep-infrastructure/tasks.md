@@ -54,11 +54,11 @@
   - _Requirements: 2.2_
 
 - [x] 2.5 Integrate networking modules into main template
-
-
   - Add Virtual Network Manager deployment to main.bicep
-  - Configure virtual network and subnet deployments
+  - Configure virtual network and subnet deployments  
   - Wire up NSG and DDoS protection module dependencies
+  - Implement proper dependency management and conditional deployment
+  - Add comprehensive networking outputs for resource IDs and configurations
   - _Requirements: 1.4, 1.5, 3.1, 3.2_
 
 - [ ] 3. Implement security and identity modules

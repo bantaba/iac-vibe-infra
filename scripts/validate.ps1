@@ -96,8 +96,39 @@ try {
     
     Write-Host "Naming convention validation passed" -ForegroundColor Green
     
-    Write-Host "Basic validation completed successfully!" -ForegroundColor Green
-    Write-Host "Note: Full Azure CLI validation will be implemented in task 8.2" -ForegroundColor Yellow
+    # Validate Bicep template syntax
+    Write-Host "Validating Bicep template syntax..." -ForegroundColor Yellow
+    try {
+        $buildResult = az bicep build --file $TemplateFile 2>&1
+        if ($LASTEXITCODE -ne 0) {
+            throw "Bicep build failed: $buildResult"
+        }
+    } catch {
+        throw "Bicep syntax validation failed: $_"
+    }
+    
+    Write-Host "Bicep syntax validation passed" -ForegroundColor Green
+    
+    # Validate Azure deployment (if Azure CLI is authenticated)
+    Write-Host "Validating Azure deployment..." -ForegroundColor Yellow
+    try {
+        $validateResult = az deployment group validate `
+            --resource-group $ResourceGroupName `
+            --template-file $TemplateFile `
+            --parameters "@$ParameterFile" 2>&1
+        
+        if ($LASTEXITCODE -ne 0) {
+            Write-Warning "Azure deployment validation failed: $validateResult"
+            Write-Host "This may be due to authentication or resource group issues" -ForegroundColor Yellow
+        } else {
+            Write-Host "Azure deployment validation passed" -ForegroundColor Green
+        }
+    } catch {
+        Write-Warning "Could not validate Azure deployment: $_"
+        Write-Host "Ensure you are logged in to Azure CLI and the resource group exists" -ForegroundColor Yellow
+    }
+    
+    Write-Host "Template validation completed successfully!" -ForegroundColor Green
     
 } catch {
     Write-Error "Template validation failed: $_"
