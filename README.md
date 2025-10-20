@@ -77,6 +77,22 @@ Each environment has specific configurations optimized for its purpose:
 - Centralized secret management with Key Vault
 - Comprehensive logging and monitoring
 
+## Git Repository
+
+This project is version controlled with Git. The repository includes:
+
+- **Comprehensive .gitignore**: Excludes build artifacts, secrets, and temporary files
+- **Structured commits**: Clear commit messages documenting infrastructure changes
+- **Branch protection**: Recommended to use feature branches for changes
+
+### Git Workflow
+
+1. **Create feature branch**: `git checkout -b feature/new-module`
+2. **Make changes**: Edit Bicep templates and configurations
+3. **Validate changes**: Run validation and security scripts
+4. **Commit changes**: `git commit -m "descriptive message"`
+5. **Push and review**: Create pull request for review
+
 ## Contributing
 
 This project follows Infrastructure as Code best practices. All changes should be:
@@ -85,6 +101,7 @@ This project follows Infrastructure as Code best practices. All changes should b
 2. Security scanned with Checkov
 3. Tested in development environment first
 4. Reviewed before production deployment
+5. Committed with clear, descriptive messages
 
 ## License
 
