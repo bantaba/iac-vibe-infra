@@ -9,36 +9,55 @@
 
 
 
+
   - Create directory structure for modularized Bicep templates
   - Implement naming convention utilities and common parameter schemas
   - Create environment-specific parameter files (dev, staging, prod)
   - _Requirements: 1.1, 1.2, 1.3_
 
-- [-] 2. Implement networking foundation modules
+- [x] 2. Implement networking foundation modules
 
 
 
 
 
-- [ ] 2.1 Create Virtual Network Manager module
+
+
+
+- [x] 2.1 Create Virtual Network Manager module
+
   - Implement Virtual Network Manager with network groups and connectivity configurations
+
+
   - Configure security admin rules for centralized policy management
   - _Requirements: 3.1, 3.2, 3.3, 3.4, 3.5_
 
-- [ ] 2.2 Implement virtual network and subnet modules
+- [x] 2.2 Implement virtual network and subnet modules
+
+
   - Create virtual network module with configurable address spaces
   - Implement subnet module with service endpoints and delegations
   - _Requirements: 1.1, 3.1, 4.3_
 
-- [ ] 2.3 Create network security group modules
+- [x] 2.3 Create network security group modules
+
+
   - Implement NSG rules following principle of least privilege
   - Configure tier-specific security rules for web, business, and data layers
   - _Requirements: 2.1, 4.1_
 
-- [ ] 2.4 Implement DDoS protection module
+
+
+- [x] 2.4 Implement DDoS protection module
   - Create DDoS protection plan for public-facing resources
   - Configure DDoS protection policies and monitoring
   - _Requirements: 2.2_
+
+- [ ] 2.5 Integrate networking modules into main template
+  - Add Virtual Network Manager deployment to main.bicep
+  - Configure virtual network and subnet deployments
+  - Wire up NSG and DDoS protection module dependencies
+  - _Requirements: 1.4, 1.5, 3.1, 3.2_
 
 - [ ] 3. Implement security and identity modules
 - [ ] 3.1 Create Key Vault module
@@ -124,29 +143,29 @@
   - Configure custom metrics and availability tests
   - _Requirements: 6.1_
 
-- [ ] 7. Create main orchestration template
-- [ ] 7.1 Implement main.bicep template
+- [x] 7. Create main orchestration template
+- [x] 7.1 Implement main.bicep template
   - Create main template that orchestrates all module deployments
   - Configure proper dependency management between modules
   - _Requirements: 1.4, 1.5_
 
-- [ ] 7.2 Create parameter validation logic
+- [x] 7.2 Create parameter validation logic
   - Implement parameter validation and default value handling
   - Configure environment-specific parameter overrides
   - _Requirements: 1.2_
 
-- [ ] 7.3 Implement resource tagging strategy
+- [x] 7.3 Implement resource tagging strategy
   - Create consistent tagging across all resources
   - Configure cost center and environment tags
   - _Requirements: 1.3_
 
-- [ ] 8. Create deployment and validation scripts
-- [ ] 8.1 Implement PowerShell deployment scripts
+- [x] 8. Create deployment and validation scripts
+- [x] 8.1 Implement PowerShell deployment scripts
   - Create deployment script with error handling and rollback capabilities
   - Configure pre-deployment validation and post-deployment testing
   - _Requirements: 1.1_
 
-- [ ] 8.2 Create template validation scripts
+- [x] 8.2 Create template validation scripts
   - Implement Bicep template syntax validation
   - Configure parameter file validation against template schema
   - _Requirements: 1.1_
@@ -161,18 +180,18 @@
   - Write tests for rollback and recovery scenarios
   - _Requirements: 1.4, 1.5_
 
-- [ ] 9. Configure environment-specific deployments
-- [ ] 9.1 Create development environment configuration
+- [x] 9. Configure environment-specific deployments
+- [x] 9.1 Create development environment configuration
   - Implement minimal resource deployment for development
   - Configure cost-optimized settings and reduced redundancy
   - _Requirements: 1.2_
 
-- [ ] 9.2 Create staging environment configuration
+- [x] 9.2 Create staging environment configuration
   - Implement full-scale deployment matching production
   - Configure staging-specific networking and security settings
   - _Requirements: 1.2_
 
-- [ ] 9.3 Create production environment configuration
+- [x] 9.3 Create production environment configuration
   - Implement production-ready configuration with high availability
   - Configure production security policies and monitoring
   - _Requirements: 1.2, 2.1, 4.3_
