@@ -1,0 +1,12 @@
+# Checkov ignore patterns
+# Add file patterns or specific checks to ignore during security scanning
+
+# Example: Ignore specific files
+# scripts/legacy-script.ps1
+
+# Example: Ignore specific directories
+# temp/
+# build/
+
+# Example: Ignore specific check IDs for certain files
+# CKV_AZURE_1:modules/networking/virtual-network.bicep

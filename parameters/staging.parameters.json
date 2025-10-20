@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": {
+      "value": "contoso"
+    },
+    "environment": {
+      "value": "staging"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "workloadName": {
+      "value": "webapp"
+    },
+    "tags": {
+      "value": {
+        "Environment": "staging",
+        "Workload": "webapp",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT-Staging",
+        "Owner": "DevOps-Team",
+        "Project": "Azure-Bicep-Infrastructure"
+      }
+    },
+    "environmentConfig": {
+      "value": {
+        "skuTier": "Standard",
+        "instanceCount": 2,
+        "enableHighAvailability": true,
+        "enableDdosProtection": true,
+        "sqlDatabaseSku": "Standard",
+        "storageAccountSku": "Standard_GRS",
+        "applicationGatewaySku": "Standard_v2",
+        "applicationGatewayCapacity": 2,
+        "virtualMachineSize": "Standard_D2s_v3",
+        "enableBackup": true,
+        "logRetentionDays": 90,
+        "enablePrivateEndpoints": true,
+        "networkAddressSpace": "10.1.0.0/16",
+        "subnets": {
+          "applicationGateway": "10.1.1.0/24",
+          "management": "10.1.2.0/24",
+          "webTier": "10.1.3.0/24",
+          "businessTier": "10.1.4.0/24",
+          "dataTier": "10.1.5.0/24",
+          "activeDirectory": "10.1.6.0/24"
+        }
+      }
+    }
+  }
+}

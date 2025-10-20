@@ -1,0 +1,21 @@
+{
+  "enabled": true,
+  "name": "Code Quality Analyzer",
+  "description": "Monitors source code files for changes and analyzes modified code for potential improvements including code smells, design patterns, and best practices. Generates suggestions for improving code quality while maintaining existing functionality.",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "**/*.bicep",
+      "**/*.ps1",
+      "**/*.json",
+      "**/*.yaml",
+      "**/*.yml",
+      "**/*.md"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "A source code file has been modified. Please analyze the changed code for potential improvements focusing on:\n\n1. **Code Smells**: Identify any code smells such as duplicated code, long methods/functions, large classes/modules, or complex conditional logic\n2. **Design Patterns**: Suggest appropriate design patterns that could improve the code structure and maintainability\n3. **Best Practices**: Check adherence to language-specific and technology-specific best practices (Azure Bicep, PowerShell, JSON schema validation, etc.)\n4. **Readability**: Suggest improvements for variable naming, code organization, and documentation\n5. **Maintainability**: Identify areas where the code could be made more modular, reusable, or easier to modify\n6. **Performance**: Suggest optimizations that could improve execution speed or resource usage without changing functionality\n7. **Security**: For infrastructure code, check for security misconfigurations or vulnerabilities\n\nFor each suggestion, provide:\n- A clear description of the issue or improvement opportunity\n- The specific code section affected\n- A concrete recommendation with example code if applicable\n- The benefit of implementing the change\n\nFocus on actionable suggestions that maintain existing functionality while improving code quality. Consider the technology stack (Azure Bicep, PowerShell, Azure CLI, Checkov) and project structure when making recommendations."
+  }
+}

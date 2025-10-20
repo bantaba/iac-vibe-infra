@@ -1,0 +1,53 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": {
+      "value": "contoso"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "workloadName": {
+      "value": "webapp"
+    },
+    "tags": {
+      "value": {
+        "Environment": "dev",
+        "Workload": "webapp",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT-Development",
+        "Owner": "DevOps-Team",
+        "Project": "Azure-Bicep-Infrastructure"
+      }
+    },
+    "environmentConfig": {
+      "value": {
+        "skuTier": "Basic",
+        "instanceCount": 1,
+        "enableHighAvailability": false,
+        "enableDdosProtection": false,
+        "sqlDatabaseSku": "Basic",
+        "storageAccountSku": "Standard_LRS",
+        "applicationGatewaySku": "Standard_v2",
+        "applicationGatewayCapacity": 1,
+        "virtualMachineSize": "Standard_B2s",
+        "enableBackup": false,
+        "logRetentionDays": 30,
+        "enablePrivateEndpoints": false,
+        "networkAddressSpace": "10.0.0.0/16",
+        "subnets": {
+          "applicationGateway": "10.0.1.0/24",
+          "management": "10.0.2.0/24",
+          "webTier": "10.0.3.0/24",
+          "businessTier": "10.0.4.0/24",
+          "dataTier": "10.0.5.0/24",
+          "activeDirectory": "10.0.6.0/24"
+        }
+      }
+    }
+  }
+}

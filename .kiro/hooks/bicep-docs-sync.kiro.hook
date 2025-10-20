@@ -1,0 +1,22 @@
+{
+  "enabled": true,
+  "name": "Bicep Documentation Sync",
+  "description": "Monitors Azure Bicep templates, PowerShell scripts, and configuration files for changes and automatically updates project documentation to reflect infrastructure modifications",
+  "version": "1",
+  "when": {
+    "type": "fileEdited",
+    "patterns": [
+      "*.bicep",
+      "modules/**/*.bicep",
+      "scripts/*.ps1",
+      "parameters/*.json",
+      ".checkov.yaml",
+      ".checkovignore",
+      "main.bicep"
+    ]
+  },
+  "then": {
+    "type": "askAgent",
+    "prompt": "The Azure Bicep infrastructure code has been modified. Please review the changes and update the documentation accordingly. Focus on:\n\n1. Update the README.md with any new modules, deployment procedures, or architectural changes\n2. If there's a /docs folder, update relevant documentation files there\n3. Ensure documentation reflects current module structure, dependencies, and usage patterns\n4. Update any deployment instructions, parameter descriptions, or security configurations\n5. Maintain consistency with the established naming conventions and architectural patterns\n\nPlease analyze the changed files and provide comprehensive documentation updates that help users understand and deploy the infrastructure correctly."
+  }
+}

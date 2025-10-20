@@ -1,0 +1,42 @@
+# Checkov configuration for Azure Bicep Infrastructure project
+# This configuration defines security scanning rules and exclusions
+
+framework:
+  - bicep
+  - arm
+
+output:
+  - cli
+  - json
+  - sarif
+
+quiet: false
+compact: false
+soft-fail: false
+
+# Skip specific checks if needed (examples)
+skip-check:
+  # Example: Skip check for storage account public access (if intentionally configured)
+  # - CKV_AZURE_59
+  
+# Include custom policies directory if created
+# external-checks-dir:
+#   - ./custom-policies
+
+# Severity levels to report
+severity:
+  - CRITICAL
+  - HIGH
+  - MEDIUM
+  - LOW
+
+# File patterns to scan
+include:
+  - "**/*.bicep"
+  - "**/*.json"
+
+# File patterns to exclude
+exclude:
+  - ".git/**"
+  - "node_modules/**"
+  - "**/.terraform/**"

@@ -1,0 +1,293 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "7235917530749381939"
+    }
+  },
+  "functions": [
+    {
+      "namespace": "__bicep",
+      "members": {
+        "validateNameLength": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "name"
+            },
+            {
+              "type": "string",
+              "name": "resourceType"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[if(lessOrEquals(length(parameters('name')), variables('namingLimits')[parameters('resourceType')]), parameters('name'), take(parameters('name'), variables('namingLimits')[parameters('resourceType')]))]"
+          }
+        },
+        "getSubnetName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "subnetType"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').subnet, '{subnetType}', parameters('subnetType')), 'subnet')]"
+          }
+        },
+        "getNsgName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "subnetType"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').networkSecurityGroup, '{subnetType}', parameters('subnetType')), 'networkSecurityGroup')]"
+          }
+        },
+        "getLoadBalancerName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "tier"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').loadBalancer, '{tier}', parameters('tier')), 'loadBalancer')]"
+          }
+        },
+        "getVmName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "tier"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').virtualMachine, '{tier}', parameters('tier')), 'virtualMachine')]"
+          }
+        },
+        "getVmssName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "tier"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').virtualMachineScaleSet, '{tier}', parameters('tier')), 'virtualMachine')]"
+          }
+        },
+        "getManagedIdentityName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "purpose"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').managedIdentity, '{purpose}', parameters('purpose')), 'virtualNetwork')]"
+          }
+        },
+        "getPrivateEndpointName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "serviceName"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').privateEndpoint, '{serviceName}', parameters('serviceName')), 'virtualNetwork')]"
+          }
+        },
+        "getNetworkGroupName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "groupType"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').networkGroup, '{groupType}', parameters('groupType')), 'virtualNetwork')]"
+          }
+        },
+        "getKeyVaultName": {
+          "parameters": [],
+          "output": {
+            "type": "string",
+            "value": "[variables('namingConvention').keyVault]"
+          }
+        },
+        "getStorageAccountName": {
+          "parameters": [],
+          "output": {
+            "type": "string",
+            "value": "[variables('namingConvention').storageAccount]"
+          }
+        },
+        "getSqlDatabaseName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "dbName"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').sqlDatabase, '{dbName}', parameters('dbName')), 'sqlServer')]"
+          }
+        },
+        "getActionGroupName": {
+          "parameters": [
+            {
+              "type": "string",
+              "name": "alertType"
+            }
+          ],
+          "output": {
+            "type": "string",
+            "value": "[__bicep.validateNameLength(replace(variables('namingConvention').actionGroup, '{alertType}', parameters('alertType')), 'virtualNetwork')]"
+          }
+        }
+      }
+    }
+  ],
+  "parameters": {
+    "resourcePrefix": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 10,
+      "metadata": {
+        "description": "The prefix for all resource names"
+      }
+    },
+    "environment": {
+      "type": "string",
+      "allowedValues": [
+        "dev",
+        "staging",
+        "prod"
+      ],
+      "metadata": {
+        "description": "The environment name (dev, staging, prod)"
+      }
+    },
+    "workloadName": {
+      "type": "string",
+      "minLength": 2,
+      "maxLength": 15,
+      "metadata": {
+        "description": "The workload or application name"
+      }
+    },
+    "suffix": {
+      "type": "string",
+      "defaultValue": "",
+      "maxLength": 5,
+      "metadata": {
+        "description": "Optional suffix for resource differentiation"
+      }
+    }
+  },
+  "variables": {
+    "namingLimits": {
+      "resourceGroup": 90,
+      "virtualNetwork": 64,
+      "subnet": 80,
+      "networkSecurityGroup": 80,
+      "applicationGateway": 80,
+      "loadBalancer": 80,
+      "keyVault": 24,
+      "storageAccount": 24,
+      "sqlServer": 63,
+      "virtualMachine": 64,
+      "logAnalyticsWorkspace": 63
+    },
+    "namingConvention": {
+      "resourceGroup": "[format('{0}-{1}-{2}-rg{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "virtualNetwork": "[format('{0}-{1}-{2}-vnet{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "subnet": "[format('{0}-{1}-{2}-{{subnetType}}-snet{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "networkSecurityGroup": "[format('{0}-{1}-{2}-{{subnetType}}-nsg{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "routeTable": "[format('{0}-{1}-{2}-{{subnetType}}-rt{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "publicIp": "[format('{0}-{1}-{2}-{{purpose}}-pip{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "networkInterface": "[format('{0}-{1}-{2}-{{vmName}}-nic{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "virtualNetworkGateway": "[format('{0}-{1}-{2}-vgw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "localNetworkGateway": "[format('{0}-{1}-{2}-lgw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "virtualNetworkManager": "[format('{0}-{1}-{2}-vnm{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "networkGroup": "[format('{0}-{1}-{2}-{{groupType}}-ng{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "applicationGateway": "[format('{0}-{1}-{2}-agw{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "loadBalancer": "[format('{0}-{1}-{2}-{{tier}}-lb{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "keyVault": "[take(format('{0}{1}{2}kv{3}', toLower(parameters('resourcePrefix')), toLower(parameters('workloadName')), toLower(parameters('environment')), toLower(parameters('suffix'))), 24)]",
+      "managedIdentity": "[format('{0}-{1}-{2}-{{purpose}}-mi{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "virtualMachine": "[format('{0}-{1}-{2}-{{tier}}-vm{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "virtualMachineScaleSet": "[format('{0}-{1}-{2}-{{tier}}-vmss{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "availabilitySet": "[format('{0}-{1}-{2}-{{tier}}-as{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "storageAccount": "[take(format('{0}{1}{2}sa{3}', toLower(parameters('resourcePrefix')), toLower(parameters('workloadName')), toLower(parameters('environment')), toLower(parameters('suffix'))), 24)]",
+      "sqlServer": "[format('{0}-{1}-{2}-sql{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "sqlDatabase": "[format('{0}-{1}-{2}-{{dbName}}-sqldb{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "logAnalyticsWorkspace": "[format('{0}-{1}-{2}-law{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "applicationInsights": "[format('{0}-{1}-{2}-ai{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "actionGroup": "[format('{0}-{1}-{2}-{{alertType}}-ag{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "privateEndpoint": "[format('{0}-{1}-{2}-{{serviceName}}-pe{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]",
+      "privateDnsZone": "[format('{0}-{1}-{2}-{{serviceName}}-pdz{3}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'), parameters('suffix'))]"
+    }
+  },
+  "resources": {},
+  "outputs": {
+    "namingConvention": {
+      "type": "object",
+      "value": "[variables('namingConvention')]"
+    },
+    "subnetNames": {
+      "type": "object",
+      "value": {
+        "applicationGateway": "[__bicep.getSubnetName('agw')]",
+        "management": "[__bicep.getSubnetName('mgmt')]",
+        "webTier": "[__bicep.getSubnetName('web')]",
+        "businessTier": "[__bicep.getSubnetName('biz')]",
+        "dataTier": "[__bicep.getSubnetName('data')]",
+        "activeDirectory": "[__bicep.getSubnetName('ad')]"
+      }
+    },
+    "nsgNames": {
+      "type": "object",
+      "value": {
+        "applicationGateway": "[__bicep.getNsgName('agw')]",
+        "management": "[__bicep.getNsgName('mgmt')]",
+        "webTier": "[__bicep.getNsgName('web')]",
+        "businessTier": "[__bicep.getNsgName('biz')]",
+        "dataTier": "[__bicep.getNsgName('data')]",
+        "activeDirectory": "[__bicep.getNsgName('ad')]"
+      }
+    },
+    "loadBalancerNames": {
+      "type": "object",
+      "value": {
+        "web": "[__bicep.getLoadBalancerName('web')]",
+        "business": "[__bicep.getLoadBalancerName('biz')]",
+        "data": "[__bicep.getLoadBalancerName('data')]"
+      }
+    },
+    "specializedNames": {
+      "type": "object",
+      "value": {
+        "keyVault": "[__bicep.getKeyVaultName()]",
+        "storageAccount": "[__bicep.getStorageAccountName()]"
+      }
+    }
+  }
+}

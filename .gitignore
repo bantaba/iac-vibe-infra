@@ -1,0 +1,99 @@
+# Azure Bicep and ARM Template files
+*.json.bak
+*.bicep.bak
+
+# Azure CLI and PowerShell
+.azure/
+*.log
+*.tmp
+
+# Build outputs
+*.arm.json
+bicep-build/
+arm-templates/
+
+# IDE and Editor files
+.vscode/
+.vs/
+*.swp
+*.swo
+*~
+
+# OS generated files
+.DS_Store
+.DS_Store?
+._*
+.Spotlight-V100
+.Trashes
+ehthumbs.db
+Thumbs.db
+
+# Windows
+desktop.ini
+
+# Security and sensitive files
+*.pfx
+*.p12
+*.key
+*.pem
+secrets/
+.env
+.env.local
+.env.*.local
+
+# Terraform (if mixed with Bicep)
+*.tfstate
+*.tfstate.*
+.terraform/
+.terraform.lock.hcl
+
+# Node.js (if using npm for tooling)
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Python (if using Python tools like Checkov)
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
+dist/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
+
+# Virtual environments
+venv/
+env/
+ENV/
+env.bak/
+venv.bak/
+
+# Checkov
+.checkov/
+checkov-report.*
+
+# Azure DevOps
+.azuredevops/
+
+# Deployment artifacts
+deployment-outputs/
+*.deployment.json
+
+# Local configuration overrides
+local.parameters.json
+*.local.bicep
