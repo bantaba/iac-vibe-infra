@@ -1,0 +1,86 @@
+name: Validate Bicep Templates
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+
+jobs:
+  validate:
+    runs-on: ubuntu-latest
+    
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Azure CLI
+      uses: azure/CLI@v1
+      with:
+        azcliversion: latest
+        
+    - name: Install Bicep
+      run: az bicep install
+      
+    - name: Validate Bicep syntax
+      run: |
+        echo "Validating main template..."
+        az bicep build --file main.bicep
+        
+        echo "Validating all modules..."
+        find modules -name "*.bicep" -exec az bicep build --file {} \;
+        
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install Checkov
+      run: pip install checkov
+      
+    - name: Run Checkov security scan
+      run: |
+        checkov -d . --framework bicep --output cli --output sarif --output-file-path checkov-results.sarif
+        
+    - name: Upload Checkov results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
+        
+    - name: Validate parameter files
+      run: |
+        echo "Validating parameter file schemas..."
+        for param_file in parameters/*.json; do
+          echo "Validating $param_file"
+          # Basic JSON validation
+          python -m json.tool "$param_file" > /dev/null
+        done
+        
+    - name: Test deployment validation (dry-run)
+      env:
+        AZURE_CLIENT_ID: ${{ secrets.AZURE_CLIENT_ID }}
+        AZURE_CLIENT_SECRET: ${{ secrets.AZURE_CLIENT_SECRET }}
+        AZURE_TENANT_ID: ${{ secrets.AZURE_TENANT_ID }}
+        AZURE_SUBSCRIPTION_ID: ${{ secrets.AZURE_SUBSCRIPTION_ID }}
+      run: |
+        if [ -n "$AZURE_CLIENT_ID" ]; then
+          echo "Running Azure deployment validation..."
+          az login --service-principal -u $AZURE_CLIENT_ID -p $AZURE_CLIENT_SECRET --tenant $AZURE_TENANT_ID
+          az account set --subscription $AZURE_SUBSCRIPTION_ID
+          
+          # Create a temporary resource group for validation
+          TEMP_RG="bicep-validation-$(date +%s)"
+          az group create --name $TEMP_RG --location "East US"
+          
+          # Validate deployment
+          az deployment group validate \
+            --resource-group $TEMP_RG \
+            --template-file main.bicep \
+            --parameters @parameters/dev.parameters.json
+            
+          # Clean up
+          az group delete --name $TEMP_RG --yes --no-wait
+        else
+          echo "Azure credentials not configured, skipping deployment validation"
+        fi

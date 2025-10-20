@@ -1,0 +1,100 @@
+name: Security Scan
+
+on:
+  push:
+    branches: [ main, develop ]
+  pull_request:
+    branches: [ main, develop ]
+  schedule:
+    # Run security scan daily at 2 AM UTC
+    - cron: '0 2 * * *'
+
+jobs:
+  security-scan:
+    runs-on: ubuntu-latest
+    
+    permissions:
+      security-events: write
+      contents: read
+      
+    steps:
+    - name: Checkout code
+      uses: actions/checkout@v4
+      
+    - name: Setup Python
+      uses: actions/setup-python@v4
+      with:
+        python-version: '3.x'
+        
+    - name: Install Checkov
+      run: pip install checkov
+      
+    - name: Run Checkov security scan
+      run: |
+        checkov -d . \
+          --framework bicep \
+          --output cli \
+          --output sarif \
+          --output-file-path checkov-results.sarif \
+          --soft-fail
+          
+    - name: Upload Checkov results to GitHub Security
+      uses: github/codeql-action/upload-sarif@v2
+      if: always()
+      with:
+        sarif_file: checkov-results.sarif
+        
+    - name: Run Checkov with JSON output for artifacts
+      run: |
+        checkov -d . \
+          --framework bicep \
+          --output json \
+          --output-file-path checkov-results.json \
+          --soft-fail
+          
+    - name: Upload security scan results
+      uses: actions/upload-artifact@v3
+      if: always()
+      with:
+        name: security-scan-results
+        path: |
+          checkov-results.sarif
+          checkov-results.json
+        retention-days: 30
+        
+    - name: Comment PR with security results
+      if: github.event_name == 'pull_request'
+      uses: actions/github-script@v6
+      with:
+        script: |
+          const fs = require('fs');
+          
+          try {
+            const results = JSON.parse(fs.readFileSync('checkov-results.json', 'utf8'));
+            
+            const summary = results.summary || {};
+            const passed = summary.passed || 0;
+            const failed = summary.failed || 0;
+            const skipped = summary.skipped || 0;
+            
+            const comment = `## 🔒 Security Scan Results
+            
+            | Status | Count |
+            |--------|-------|
+            | ✅ Passed | ${passed} |
+            | ❌ Failed | ${failed} |
+            | ⏭️ Skipped | ${skipped} |
+            
+            ${failed > 0 ? '⚠️ **Security issues found!** Please review the security scan results.' : '✅ **No security issues found.**'}
+            
+            View detailed results in the [Security tab](${context.payload.repository.html_url}/security/code-scanning).`;
+            
+            github.rest.issues.createComment({
+              issue_number: context.issue.number,
+              owner: context.repo.owner,
+              repo: context.repo.repo,
+              body: comment
+            });
+          } catch (error) {
+            console.log('Could not parse security results:', error);
+          }
