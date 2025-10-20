@@ -12,7 +12,8 @@
       "scripts/*.ps1",
       "main.json",
       ".checkov.yaml",
-      ".checkovignore"
+      ".checkovignore",
+      "**/**"
     ]
   },
   "then": {

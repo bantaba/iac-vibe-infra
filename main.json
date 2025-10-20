@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "13427454844976931256"
+      "templateHash": "1767186510005867396"
     }
   },
   "definitions": {
@@ -2940,6 +2940,2322 @@
         "namingConventions",
         "virtualNetwork"
       ]
+    },
+    "keyVault": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "key-vault-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "keyVaultName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.keyVault]"
+          },
+          "keyVaultConfig": {
+            "value": {
+              "sku": "[if(equals(parameters('environmentConfig').skuTier, 'Premium'), 'premium', 'standard')]",
+              "enableSoftDelete": true,
+              "softDeleteRetentionInDays": "[if(equals(parameters('environment'), 'prod'), 90, 30)]",
+              "enablePurgeProtection": "[equals(parameters('environment'), 'prod')]",
+              "enableRbacAuthorization": true,
+              "networkAcls": {
+                "bypass": "AzureServices",
+                "defaultAction": "[if(parameters('environmentConfig').enablePrivateEndpoints, 'Deny', 'Allow')]",
+                "ipRules": [],
+                "virtualNetworkRules": "[if(parameters('environmentConfig').enablePrivateEndpoints, createArray(reference('virtualNetwork').outputs.subnetIds.value.management, reference('virtualNetwork').outputs.subnetIds.value.webTier, reference('virtualNetwork').outputs.subnetIds.value.businessTier), createArray())]"
+              }
+            }
+          },
+          "keyVaultAdministrators": {
+            "value": []
+          },
+          "keyVaultSecretsUsers": {
+            "value": []
+          },
+          "keyVaultCertificateUsers": {
+            "value": []
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "5748297240115920289"
+            }
+          },
+          "definitions": {
+            "KeyVaultConfig": {
+              "type": "object",
+              "properties": {
+                "sku": {
+                  "type": "string",
+                  "allowedValues": [
+                    "premium",
+                    "standard"
+                  ],
+                  "metadata": {
+                    "description": "Key Vault SKU"
+                  }
+                },
+                "enableSoftDelete": {
+                  "type": "bool",
+                  "metadata": {
+                    "description": "Enable soft delete"
+                  }
+                },
+                "softDeleteRetentionInDays": {
+                  "type": "int",
+                  "minValue": 7,
+                  "maxValue": 90,
+                  "metadata": {
+                    "description": "Soft delete retention days"
+                  }
+                },
+                "enablePurgeProtection": {
+                  "type": "bool",
+                  "metadata": {
+                    "description": "Enable purge protection"
+                  }
+                },
+                "enableRbacAuthorization": {
+                  "type": "bool",
+                  "metadata": {
+                    "description": "Enable RBAC authorization"
+                  }
+                },
+                "networkAcls": {
+                  "type": "object",
+                  "properties": {
+                    "bypass": {
+                      "type": "string",
+                      "allowedValues": [
+                        "AzureServices",
+                        "None"
+                      ]
+                    },
+                    "defaultAction": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Allow",
+                        "Deny"
+                      ]
+                    },
+                    "ipRules": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "nullable": true
+                    },
+                    "virtualNetworkRules": {
+                      "type": "array",
+                      "items": {
+                        "type": "string"
+                      },
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "Network access control"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Key Vault"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region for deployment"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "keyVaultConfig": {
+              "$ref": "#/definitions/KeyVaultConfig",
+              "defaultValue": {
+                "sku": "standard",
+                "enableSoftDelete": true,
+                "softDeleteRetentionInDays": 90,
+                "enablePurgeProtection": true,
+                "enableRbacAuthorization": true,
+                "networkAcls": {
+                  "bypass": "AzureServices",
+                  "defaultAction": "Deny",
+                  "ipRules": [],
+                  "virtualNetworkRules": []
+                }
+              },
+              "metadata": {
+                "description": "Key Vault configuration settings"
+              }
+            },
+            "allowedSubnetIds": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "defaultValue": [],
+              "metadata": {
+                "description": "Subnet IDs that should have access to Key Vault"
+              }
+            },
+            "allowedIpAddresses": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "defaultValue": [],
+              "metadata": {
+                "description": "IP addresses that should have access to Key Vault"
+              }
+            },
+            "keyVaultAdministrators": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "defaultValue": [],
+              "metadata": {
+                "description": "Object IDs of users/groups/service principals that should have Key Vault Administrator access"
+              }
+            },
+            "keyVaultSecretsUsers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "defaultValue": [],
+              "metadata": {
+                "description": "Object IDs of users/groups/service principals that should have Key Vault Secrets User access"
+              }
+            },
+            "keyVaultCertificateUsers": {
+              "type": "array",
+              "items": {
+                "type": "string"
+              },
+              "defaultValue": [],
+              "metadata": {
+                "description": "Object IDs of users/groups/service principals that should have Key Vault Certificate User access"
+              }
+            },
+            "enableDiagnostics": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable diagnostic settings for Key Vault"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace ID for diagnostic settings"
+              }
+            },
+            "enableTelemetry": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable telemetry for the module"
+              }
+            }
+          },
+          "variables": {
+            "copy": [
+              {
+                "name": "ipRules",
+                "count": "[length(parameters('allowedIpAddresses'))]",
+                "input": {
+                  "value": "[parameters('allowedIpAddresses')[copyIndex('ipRules')]]"
+                }
+              },
+              {
+                "name": "virtualNetworkRules",
+                "count": "[length(parameters('allowedSubnetIds'))]",
+                "input": {
+                  "id": "[parameters('allowedSubnetIds')[copyIndex('virtualNetworkRules')]]",
+                  "ignoreMissingVnetServiceEndpoint": false
+                }
+              }
+            ],
+            "networkRules": {
+              "bypass": "[parameters('keyVaultConfig').networkAcls.bypass]",
+              "defaultAction": "[parameters('keyVaultConfig').networkAcls.defaultAction]",
+              "ipRules": "[variables('ipRules')]",
+              "virtualNetworkRules": "[variables('virtualNetworkRules')]"
+            },
+            "roleDefinitions": {
+              "keyVaultAdministrator": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '00482a5a-887f-4fb3-b363-3b7fe8e74483')]",
+              "keyVaultSecretsUser": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '4633458b-17de-408a-b874-0445c86b69e6')]",
+              "keyVaultCertificateUser": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', 'db79e9a7-68ee-4b58-9aeb-b90e7c24fcba')]",
+              "keyVaultCryptoUser": "[subscriptionResourceId('Microsoft.Authorization/roleDefinitions', '12338af0-0e69-4776-bea7-57ae8d297424')]"
+            }
+          },
+          "resources": {
+            "keyVault": {
+              "type": "Microsoft.KeyVault/vaults",
+              "apiVersion": "2023-07-01",
+              "name": "[parameters('keyVaultName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "sku": {
+                  "family": "A",
+                  "name": "[parameters('keyVaultConfig').sku]"
+                },
+                "tenantId": "[tenant().tenantId]",
+                "enableSoftDelete": "[parameters('keyVaultConfig').enableSoftDelete]",
+                "softDeleteRetentionInDays": "[parameters('keyVaultConfig').softDeleteRetentionInDays]",
+                "enablePurgeProtection": "[if(parameters('keyVaultConfig').enablePurgeProtection, true(), null())]",
+                "enableRbacAuthorization": "[parameters('keyVaultConfig').enableRbacAuthorization]",
+                "enabledForDeployment": false,
+                "enabledForDiskEncryption": true,
+                "enabledForTemplateDeployment": true,
+                "networkAcls": "[variables('networkRules')]",
+                "publicNetworkAccess": "[if(equals(parameters('keyVaultConfig').networkAcls.defaultAction, 'Allow'), 'Enabled', 'Disabled')]"
+              }
+            },
+            "keyVaultAdminRoleAssignments": {
+              "copy": {
+                "name": "keyVaultAdminRoleAssignments",
+                "count": "[length(parameters('keyVaultAdministrators'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('keyVaultAdministrators')[copyIndex()], variables('roleDefinitions').keyVaultAdministrator)]",
+              "properties": {
+                "roleDefinitionId": "[variables('roleDefinitions').keyVaultAdministrator]",
+                "principalId": "[parameters('keyVaultAdministrators')[copyIndex()]]",
+                "principalType": "User"
+              },
+              "dependsOn": [
+                "keyVault"
+              ]
+            },
+            "keyVaultSecretsUserRoleAssignments": {
+              "copy": {
+                "name": "keyVaultSecretsUserRoleAssignments",
+                "count": "[length(parameters('keyVaultSecretsUsers'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('keyVaultSecretsUsers')[copyIndex()], variables('roleDefinitions').keyVaultSecretsUser)]",
+              "properties": {
+                "roleDefinitionId": "[variables('roleDefinitions').keyVaultSecretsUser]",
+                "principalId": "[parameters('keyVaultSecretsUsers')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "keyVault"
+              ]
+            },
+            "keyVaultCertificateUserRoleAssignments": {
+              "copy": {
+                "name": "keyVaultCertificateUserRoleAssignments",
+                "count": "[length(parameters('keyVaultCertificateUsers'))]"
+              },
+              "type": "Microsoft.Authorization/roleAssignments",
+              "apiVersion": "2022-04-01",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[guid(resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName')), parameters('keyVaultCertificateUsers')[copyIndex()], variables('roleDefinitions').keyVaultCertificateUser)]",
+              "properties": {
+                "roleDefinitionId": "[variables('roleDefinitions').keyVaultCertificateUser]",
+                "principalId": "[parameters('keyVaultCertificateUsers')[copyIndex()]]",
+                "principalType": "ServicePrincipal"
+              },
+              "dependsOn": [
+                "keyVault"
+              ]
+            },
+            "keyVaultDiagnostics": {
+              "condition": "[and(parameters('enableDiagnostics'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.KeyVault/vaults/{0}', parameters('keyVaultName'))]",
+              "name": "[format('{0}-diagnostics', parameters('keyVaultName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "logs": [
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "keyVault"
+              ]
+            },
+            "telemetryDeployment": {
+              "condition": "[parameters('enableTelemetry')]",
+              "type": "Microsoft.Resources/deployments",
+              "apiVersion": "2022-09-01",
+              "name": "[format('pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-{0}', uniqueString(deployment().name, parameters('location')))]",
+              "properties": {
+                "mode": "Incremental",
+                "template": {
+                  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+                  "contentVersion": "1.0.0.0",
+                  "resources": []
+                }
+              }
+            }
+          },
+          "outputs": {
+            "keyVaultId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the Key Vault"
+              },
+              "value": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]"
+            },
+            "keyVaultName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the Key Vault"
+              },
+              "value": "[parameters('keyVaultName')]"
+            },
+            "keyVaultUri": {
+              "type": "string",
+              "metadata": {
+                "description": "The URI of the Key Vault"
+              },
+              "value": "[reference('keyVault').vaultUri]"
+            },
+            "keyVaultConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The Key Vault configuration"
+              },
+              "value": {
+                "id": "[resourceId('Microsoft.KeyVault/vaults', parameters('keyVaultName'))]",
+                "name": "[parameters('keyVaultName')]",
+                "uri": "[reference('keyVault').vaultUri]",
+                "sku": "[reference('keyVault').sku.name]",
+                "enableSoftDelete": "[reference('keyVault').enableSoftDelete]",
+                "softDeleteRetentionInDays": "[reference('keyVault').softDeleteRetentionInDays]",
+                "enablePurgeProtection": "[reference('keyVault').enablePurgeProtection]",
+                "enableRbacAuthorization": "[reference('keyVault').enableRbacAuthorization]",
+                "networkAcls": "[reference('keyVault').networkAcls]",
+                "publicNetworkAccess": "[reference('keyVault').publicNetworkAccess]"
+              }
+            },
+            "roleAssignments": {
+              "type": "object",
+              "metadata": {
+                "description": "Role assignment information"
+              },
+              "value": {
+                "administratorsCount": "[length(parameters('keyVaultAdministrators'))]",
+                "secretsUsersCount": "[length(parameters('keyVaultSecretsUsers'))]",
+                "certificateUsersCount": "[length(parameters('keyVaultCertificateUsers'))]",
+                "roleDefinitions": "[variables('roleDefinitions')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    },
+    "webTierAvailabilitySet": {
+      "condition": "[not(parameters('environmentConfig').enableHighAvailability)]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "web-tier-availability-set-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "availabilitySetName": {
+            "value": "[format('{0}-web', reference('namingConventions').outputs.namingConvention.value.availabilitySet)]"
+          },
+          "tier": {
+            "value": "web"
+          },
+          "faultDomainCount": {
+            "value": 2
+          },
+          "updateDomainCount": {
+            "value": 5
+          },
+          "useManagedDisks": {
+            "value": true
+          },
+          "createProximityPlacementGroup": {
+            "value": false
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1046012305258000164"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "availabilitySetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the availability set"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "web",
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this availability set (web, business, or data)"
+              }
+            },
+            "faultDomainCount": {
+              "type": "int",
+              "defaultValue": 3,
+              "minValue": 1,
+              "maxValue": 3,
+              "metadata": {
+                "description": "Number of fault domains"
+              }
+            },
+            "updateDomainCount": {
+              "type": "int",
+              "defaultValue": 5,
+              "minValue": 1,
+              "maxValue": 20,
+              "metadata": {
+                "description": "Number of update domains"
+              }
+            },
+            "useManagedDisks": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Use managed disks (recommended)"
+              }
+            },
+            "createProximityPlacementGroup": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Create proximity placement group for low latency"
+              }
+            },
+            "proximityPlacementGroupType": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Standard",
+                "Ultra"
+              ],
+              "metadata": {
+                "description": "Proximity placement group type"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the availability set"
+              }
+            }
+          },
+          "resources": {
+            "proximityPlacementGroup": {
+              "condition": "[parameters('createProximityPlacementGroup')]",
+              "type": "Microsoft.Compute/proximityPlacementGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-ppg', parameters('availabilitySetName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "proximityPlacementGroupType": "[parameters('proximityPlacementGroupType')]"
+              }
+            },
+            "availabilitySet": {
+              "type": "Microsoft.Compute/availabilitySets",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('availabilitySetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[if(parameters('useManagedDisks'), 'Aligned', 'Classic')]"
+              },
+              "properties": {
+                "platformFaultDomainCount": "[parameters('faultDomainCount')]",
+                "platformUpdateDomainCount": "[parameters('updateDomainCount')]",
+                "proximityPlacementGroup": "[if(parameters('createProximityPlacementGroup'), createObject('id', resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName')))), null())]"
+              },
+              "dependsOn": [
+                "proximityPlacementGroup"
+              ]
+            }
+          },
+          "outputs": {
+            "availabilitySetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the availability set"
+              },
+              "value": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+            },
+            "availabilitySetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the availability set"
+              },
+              "value": "[parameters('availabilitySetName')]"
+            },
+            "proximityPlacementGroupId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the proximity placement group (if created)"
+              },
+              "value": "[if(parameters('createProximityPlacementGroup'), resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName'))), '')]"
+            },
+            "availabilitySetConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The availability set configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]",
+                "name": "[parameters('availabilitySetName')]",
+                "tier": "[parameters('tier')]",
+                "faultDomainCount": "[parameters('faultDomainCount')]",
+                "updateDomainCount": "[parameters('updateDomainCount')]",
+                "useManagedDisks": "[parameters('useManagedDisks')]",
+                "proximityPlacementGroupEnabled": "[parameters('createProximityPlacementGroup')]",
+                "proximityPlacementGroupId": "[if(parameters('createProximityPlacementGroup'), resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName'))), '')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions"
+      ]
+    },
+    "businessTierAvailabilitySet": {
+      "condition": "[not(parameters('environmentConfig').enableHighAvailability)]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "business-tier-availability-set-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "availabilitySetName": {
+            "value": "[format('{0}-business', reference('namingConventions').outputs.namingConvention.value.availabilitySet)]"
+          },
+          "tier": {
+            "value": "business"
+          },
+          "faultDomainCount": {
+            "value": 2
+          },
+          "updateDomainCount": {
+            "value": 5
+          },
+          "useManagedDisks": {
+            "value": true
+          },
+          "createProximityPlacementGroup": {
+            "value": false
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1046012305258000164"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "availabilitySetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the availability set"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "web",
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this availability set (web, business, or data)"
+              }
+            },
+            "faultDomainCount": {
+              "type": "int",
+              "defaultValue": 3,
+              "minValue": 1,
+              "maxValue": 3,
+              "metadata": {
+                "description": "Number of fault domains"
+              }
+            },
+            "updateDomainCount": {
+              "type": "int",
+              "defaultValue": 5,
+              "minValue": 1,
+              "maxValue": 20,
+              "metadata": {
+                "description": "Number of update domains"
+              }
+            },
+            "useManagedDisks": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Use managed disks (recommended)"
+              }
+            },
+            "createProximityPlacementGroup": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Create proximity placement group for low latency"
+              }
+            },
+            "proximityPlacementGroupType": {
+              "type": "string",
+              "defaultValue": "Standard",
+              "allowedValues": [
+                "Standard",
+                "Ultra"
+              ],
+              "metadata": {
+                "description": "Proximity placement group type"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the availability set"
+              }
+            }
+          },
+          "resources": {
+            "proximityPlacementGroup": {
+              "condition": "[parameters('createProximityPlacementGroup')]",
+              "type": "Microsoft.Compute/proximityPlacementGroups",
+              "apiVersion": "2023-09-01",
+              "name": "[format('{0}-ppg', parameters('availabilitySetName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "proximityPlacementGroupType": "[parameters('proximityPlacementGroupType')]"
+              }
+            },
+            "availabilitySet": {
+              "type": "Microsoft.Compute/availabilitySets",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('availabilitySetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[if(parameters('useManagedDisks'), 'Aligned', 'Classic')]"
+              },
+              "properties": {
+                "platformFaultDomainCount": "[parameters('faultDomainCount')]",
+                "platformUpdateDomainCount": "[parameters('updateDomainCount')]",
+                "proximityPlacementGroup": "[if(parameters('createProximityPlacementGroup'), createObject('id', resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName')))), null())]"
+              },
+              "dependsOn": [
+                "proximityPlacementGroup"
+              ]
+            }
+          },
+          "outputs": {
+            "availabilitySetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the availability set"
+              },
+              "value": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]"
+            },
+            "availabilitySetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the availability set"
+              },
+              "value": "[parameters('availabilitySetName')]"
+            },
+            "proximityPlacementGroupId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the proximity placement group (if created)"
+              },
+              "value": "[if(parameters('createProximityPlacementGroup'), resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName'))), '')]"
+            },
+            "availabilitySetConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The availability set configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Compute/availabilitySets', parameters('availabilitySetName'))]",
+                "name": "[parameters('availabilitySetName')]",
+                "tier": "[parameters('tier')]",
+                "faultDomainCount": "[parameters('faultDomainCount')]",
+                "updateDomainCount": "[parameters('updateDomainCount')]",
+                "useManagedDisks": "[parameters('useManagedDisks')]",
+                "proximityPlacementGroupEnabled": "[parameters('createProximityPlacementGroup')]",
+                "proximityPlacementGroupId": "[if(parameters('createProximityPlacementGroup'), resourceId('Microsoft.Compute/proximityPlacementGroups', format('{0}-ppg', parameters('availabilitySetName'))), '')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions"
+      ]
+    },
+    "webTierVmScaleSet": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "web-tier-vmss-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "vmScaleSetName": {
+            "value": "[format('{0}-web', reference('namingConventions').outputs.namingConvention.value.virtualMachineScaleSet)]"
+          },
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.webTier]"
+          },
+          "loadBalancerBackendAddressPoolIds": {
+            "value": []
+          },
+          "applicationGatewayBackendAddressPoolIds": {
+            "value": []
+          },
+          "vmConfig": {
+            "value": {
+              "vmSize": "[parameters('environmentConfig').virtualMachineSize]",
+              "osType": "Linux",
+              "osDisk": {
+                "storageAccountType": "[if(equals(parameters('environmentConfig').skuTier, 'Premium'), 'Premium_LRS', 'Standard_LRS')]",
+                "diskSizeGB": 128
+              },
+              "dataDisks": [],
+              "networkInterface": {
+                "enableAcceleratedNetworking": "[not(equals(parameters('environmentConfig').skuTier, 'Basic'))]",
+                "enableIpForwarding": false
+              },
+              "availability": {
+                "availabilitySetId": null,
+                "availabilityZone": null
+              }
+            }
+          },
+          "tier": {
+            "value": "web"
+          },
+          "instanceCount": {
+            "value": "[parameters('environmentConfig').instanceCount]"
+          },
+          "enableAutoscaling": {
+            "value": "[parameters('environmentConfig').enableHighAvailability]"
+          },
+          "minInstanceCount": {
+            "value": 1
+          },
+          "maxInstanceCount": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', mul(parameters('environmentConfig').instanceCount, 3)), createObject('value', parameters('environmentConfig').instanceCount))]",
+          "availabilityZones": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', createArray('1', '2', '3')), createObject('value', createArray('1')))]",
+          "adminUsername": {
+            "value": "azureuser"
+          },
+          "sshPublicKey": {
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7S..."
+          },
+          "customScriptExtension": {
+            "value": {}
+          },
+          "enableBootDiagnostics": {
+            "value": true
+          },
+          "networkSecurityGroupId": {
+            "value": "[reference('networkSecurityGroups').outputs.nsgIds.value.webTier]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1660387721309899474"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "VirtualMachineConfig": {
+              "type": "object",
+              "properties": {
+                "vmSize": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "VM size"
+                  }
+                },
+                "osType": {
+                  "type": "string",
+                  "allowedValues": [
+                    "Linux",
+                    "Windows"
+                  ],
+                  "metadata": {
+                    "description": "Operating system type"
+                  }
+                },
+                "osDisk": {
+                  "type": "object",
+                  "properties": {
+                    "storageAccountType": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Premium_LRS",
+                        "StandardSSD_LRS",
+                        "Standard_LRS"
+                      ]
+                    },
+                    "diskSizeGB": {
+                      "type": "int",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "OS disk configuration"
+                  }
+                },
+                "dataDisks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "diskSizeGB": {
+                        "type": "int"
+                      },
+                      "storageAccountType": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Premium_LRS",
+                          "StandardSSD_LRS",
+                          "Standard_LRS"
+                        ]
+                      },
+                      "lun": {
+                        "type": "int"
+                      }
+                    }
+                  },
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Data disk configurations"
+                  }
+                },
+                "networkInterface": {
+                  "type": "object",
+                  "properties": {
+                    "enableAcceleratedNetworking": {
+                      "type": "bool"
+                    },
+                    "enableIpForwarding": {
+                      "type": "bool"
+                    }
+                  },
+                  "metadata": {
+                    "description": "Network interface configuration"
+                  }
+                },
+                "availability": {
+                  "type": "object",
+                  "properties": {
+                    "availabilitySetId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "availabilityZone": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "Availability configuration"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "vmScaleSetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name prefix for the VM scale set"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet ID for the VM scale set"
+              }
+            },
+            "loadBalancerBackendAddressPoolIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "The load balancer backend address pool IDs (optional)"
+              }
+            },
+            "applicationGatewayBackendAddressPoolIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "The application gateway backend address pool IDs (optional)"
+              }
+            },
+            "vmConfig": {
+              "$ref": "#/definitions/VirtualMachineConfig",
+              "metadata": {
+                "description": "VM configuration"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "web",
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this VM scale set (web, business, or data)"
+              }
+            },
+            "instanceCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "minValue": 0,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Initial instance count for the scale set"
+              }
+            },
+            "enableAutoscaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable autoscaling"
+              }
+            },
+            "minInstanceCount": {
+              "type": "int",
+              "defaultValue": 1,
+              "minValue": 1,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Minimum instance count for autoscaling"
+              }
+            },
+            "maxInstanceCount": {
+              "type": "int",
+              "defaultValue": 10,
+              "minValue": 1,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Maximum instance count for autoscaling"
+              }
+            },
+            "availabilityZones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Availability zones for the scale set"
+              }
+            },
+            "adminUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "Admin username for the VMs"
+              }
+            },
+            "adminPassword": {
+              "type": "securestring",
+              "nullable": true,
+              "metadata": {
+                "description": "Admin password for Windows VMs (use Key Vault reference)"
+              }
+            },
+            "sshPublicKey": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "SSH public key for Linux VMs"
+              }
+            },
+            "customScriptExtension": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Custom script extension settings (optional)"
+              }
+            },
+            "enableBootDiagnostics": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable boot diagnostics"
+              }
+            },
+            "bootDiagnosticsStorageUri": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Storage account URI for boot diagnostics (optional)"
+              }
+            },
+            "networkSecurityGroupId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Network security group ID for the network interface"
+              }
+            },
+            "enableAcceleratedNetworking": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable accelerated networking"
+              }
+            },
+            "enableIpForwarding": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable IP forwarding"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the VM scale set"
+              }
+            },
+            "upgradeMode": {
+              "type": "string",
+              "defaultValue": "Manual",
+              "allowedValues": [
+                "Automatic",
+                "Manual",
+                "Rolling"
+              ],
+              "metadata": {
+                "description": "Upgrade policy mode"
+              }
+            },
+            "singlePlacementGroup": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable single placement group"
+              }
+            },
+            "overprovision": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable over-provisioning"
+              }
+            }
+          },
+          "variables": {
+            "isWindows": "[equals(parameters('vmConfig').osType, 'Windows')]",
+            "isLinux": "[equals(parameters('vmConfig').osType, 'Linux')]",
+            "imageReference": "[if(variables('isWindows'), createObject('publisher', 'MicrosoftWindowsServer', 'offer', 'WindowsServer', 'sku', '2022-datacenter-azure-edition', 'version', 'latest'), createObject('publisher', 'Canonical', 'offer', '0001-com-ubuntu-server-jammy', 'sku', '22_04-lts-gen2', 'version', 'latest'))]",
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[format('{0}-nic-config', parameters('vmScaleSetName'))]",
+                "properties": {
+                  "primary": true,
+                  "enableAcceleratedNetworking": "[parameters('vmConfig').networkInterface.enableAcceleratedNetworking]",
+                  "enableIPForwarding": "[parameters('vmConfig').networkInterface.enableIpForwarding]",
+                  "networkSecurityGroup": "[if(not(equals(parameters('networkSecurityGroupId'), null())), createObject('id', parameters('networkSecurityGroupId')), null())]",
+                  "ipConfigurations": [
+                    {
+                      "name": "[format('{0}-ip-config', parameters('vmScaleSetName'))]",
+                      "properties": {
+                        "primary": true,
+                        "subnet": {
+                          "id": "[parameters('subnetId')]"
+                        },
+                        "loadBalancerBackendAddressPools": "[map(parameters('loadBalancerBackendAddressPoolIds'), lambda('poolId', createObject('id', lambdaVariables('poolId'))))]",
+                        "applicationGatewayBackendAddressPools": "[map(parameters('applicationGatewayBackendAddressPoolIds'), lambda('poolId', createObject('id', lambdaVariables('poolId'))))]"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'disablePasswordAuthentication', true(), 'linuxConfiguration', createObject('ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
+            "storageProfile": {
+              "imageReference": "[variables('imageReference')]",
+              "osDisk": {
+                "createOption": "FromImage",
+                "caching": "ReadWrite",
+                "managedDisk": {
+                  "storageAccountType": "[parameters('vmConfig').osDisk.storageAccountType]"
+                },
+                "diskSizeGB": "[parameters('vmConfig').osDisk.diskSizeGB]"
+              },
+              "dataDisks": "[map(coalesce(parameters('vmConfig').dataDisks, createArray()), lambda('disk', createObject('lun', lambdaVariables('disk').lun, 'createOption', 'Empty', 'caching', 'ReadWrite', 'managedDisk', createObject('storageAccountType', lambdaVariables('disk').storageAccountType), 'diskSizeGB', lambdaVariables('disk').diskSizeGB)))]"
+            },
+            "extensionProfile": "[if(not(empty(parameters('customScriptExtension'))), createObject('extensions', createArray(createObject('name', 'CustomScriptExtension', 'properties', createObject('publisher', if(variables('isWindows'), 'Microsoft.Compute', 'Microsoft.Azure.Extensions'), 'type', if(variables('isWindows'), 'CustomScriptExtension', 'CustomScript'), 'typeHandlerVersion', if(variables('isWindows'), '1.10', '2.1'), 'autoUpgradeMinorVersion', true(), 'settings', parameters('customScriptExtension'))))), null())]"
+          },
+          "resources": {
+            "vmScaleSet": {
+              "type": "Microsoft.Compute/virtualMachineScaleSets",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('vmScaleSetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "zones": "[parameters('availabilityZones')]",
+              "sku": {
+                "name": "[parameters('vmConfig').vmSize]",
+                "tier": "Standard",
+                "capacity": "[parameters('instanceCount')]"
+              },
+              "properties": {
+                "singlePlacementGroup": "[parameters('singlePlacementGroup')]",
+                "upgradePolicy": {
+                  "mode": "[parameters('upgradeMode')]",
+                  "rollingUpgradePolicy": "[if(equals(parameters('upgradeMode'), 'Rolling'), createObject('maxBatchInstancePercent', 20, 'maxUnhealthyInstancePercent', 20, 'maxUnhealthyUpgradedInstancePercent', 20, 'pauseTimeBetweenBatches', 'PT0S'), null())]"
+                },
+                "virtualMachineProfile": {
+                  "osProfile": "[variables('osProfile')]",
+                  "storageProfile": "[variables('storageProfile')]",
+                  "networkProfile": {
+                    "networkInterfaceConfigurations": "[variables('networkInterfaceConfigurations')]"
+                  },
+                  "extensionProfile": "[variables('extensionProfile')]",
+                  "diagnosticsProfile": "[if(parameters('enableBootDiagnostics'), createObject('bootDiagnostics', createObject('enabled', true(), 'storageUri', parameters('bootDiagnosticsStorageUri'))), null())]"
+                },
+                "overprovision": "[parameters('overprovision')]",
+                "doNotRunExtensionsOnOverprovisionedVMs": false,
+                "zoneBalance": true,
+                "platformFaultDomainCount": 1
+              }
+            },
+            "autoscaleSettings": {
+              "condition": "[parameters('enableAutoscaling')]",
+              "type": "Microsoft.Insights/autoscalesettings",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-autoscale', parameters('vmScaleSetName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "name": "[format('{0}-autoscale', parameters('vmScaleSetName'))]",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                "enabled": true,
+                "profiles": [
+                  {
+                    "name": "Default",
+                    "capacity": {
+                      "minimum": "[string(parameters('minInstanceCount'))]",
+                      "maximum": "[string(parameters('maxInstanceCount'))]",
+                      "default": "[string(parameters('instanceCount'))]"
+                    },
+                    "rules": [
+                      {
+                        "metricTrigger": {
+                          "metricName": "Percentage CPU",
+                          "metricNamespace": "Microsoft.Compute/virtualMachineScaleSets",
+                          "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "GreaterThan",
+                          "threshold": 75
+                        },
+                        "scaleAction": {
+                          "direction": "Increase",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT5M"
+                        }
+                      },
+                      {
+                        "metricTrigger": {
+                          "metricName": "Percentage CPU",
+                          "metricNamespace": "Microsoft.Compute/virtualMachineScaleSets",
+                          "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "LessThan",
+                          "threshold": 25
+                        },
+                        "scaleAction": {
+                          "direction": "Decrease",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT5M"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "notifications": []
+              },
+              "dependsOn": [
+                "vmScaleSet"
+              ]
+            }
+          },
+          "outputs": {
+            "vmScaleSetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the VM scale set"
+              },
+              "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]"
+            },
+            "vmScaleSetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the VM scale set"
+              },
+              "value": "[parameters('vmScaleSetName')]"
+            },
+            "autoscaleSettingsId": {
+              "type": "string",
+              "metadata": {
+                "description": "The autoscale settings resource ID"
+              },
+              "value": "[if(parameters('enableAutoscaling'), resourceId('Microsoft.Insights/autoscalesettings', format('{0}-autoscale', parameters('vmScaleSetName'))), '')]"
+            },
+            "vmScaleSetConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The VM scale set configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                "name": "[parameters('vmScaleSetName')]",
+                "tier": "[parameters('tier')]",
+                "vmSize": "[parameters('vmConfig').vmSize]",
+                "osType": "[parameters('vmConfig').osType]",
+                "instanceCount": "[parameters('instanceCount')]",
+                "availabilityZones": "[parameters('availabilityZones')]",
+                "autoscalingEnabled": "[parameters('enableAutoscaling')]",
+                "minInstanceCount": "[if(parameters('enableAutoscaling'), parameters('minInstanceCount'), parameters('instanceCount'))]",
+                "maxInstanceCount": "[if(parameters('enableAutoscaling'), parameters('maxInstanceCount'), parameters('instanceCount'))]"
+              }
+            },
+            "networkInterfaceConfigurationName": {
+              "type": "string",
+              "metadata": {
+                "description": "The network interface configuration name"
+              },
+              "value": "[variables('networkInterfaceConfigurations')[0].name]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "networkSecurityGroups",
+        "virtualNetwork"
+      ]
+    },
+    "businessTierVmScaleSet": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "business-tier-vmss-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "vmScaleSetName": {
+            "value": "[format('{0}-business', reference('namingConventions').outputs.namingConvention.value.virtualMachineScaleSet)]"
+          },
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.businessTier]"
+          },
+          "loadBalancerBackendAddressPoolIds": {
+            "value": []
+          },
+          "applicationGatewayBackendAddressPoolIds": {
+            "value": []
+          },
+          "vmConfig": {
+            "value": {
+              "vmSize": "[parameters('environmentConfig').virtualMachineSize]",
+              "osType": "Linux",
+              "osDisk": {
+                "storageAccountType": "[if(equals(parameters('environmentConfig').skuTier, 'Premium'), 'Premium_LRS', 'Standard_LRS')]",
+                "diskSizeGB": 128
+              },
+              "dataDisks": [
+                {
+                  "diskSizeGB": 256,
+                  "storageAccountType": "[if(equals(parameters('environmentConfig').skuTier, 'Premium'), 'Premium_LRS', 'Standard_LRS')]",
+                  "lun": 0
+                }
+              ],
+              "networkInterface": {
+                "enableAcceleratedNetworking": "[not(equals(parameters('environmentConfig').skuTier, 'Basic'))]",
+                "enableIpForwarding": false
+              },
+              "availability": {
+                "availabilitySetId": null,
+                "availabilityZone": null
+              }
+            }
+          },
+          "tier": {
+            "value": "business"
+          },
+          "instanceCount": {
+            "value": "[parameters('environmentConfig').instanceCount]"
+          },
+          "enableAutoscaling": {
+            "value": "[parameters('environmentConfig').enableHighAvailability]"
+          },
+          "minInstanceCount": {
+            "value": 1
+          },
+          "maxInstanceCount": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', mul(parameters('environmentConfig').instanceCount, 2)), createObject('value', parameters('environmentConfig').instanceCount))]",
+          "availabilityZones": "[if(parameters('environmentConfig').enableHighAvailability, createObject('value', createArray('1', '2', '3')), createObject('value', createArray('1')))]",
+          "adminUsername": {
+            "value": "azureuser"
+          },
+          "sshPublicKey": {
+            "value": "ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABgQC7S..."
+          },
+          "customScriptExtension": {
+            "value": {}
+          },
+          "enableBootDiagnostics": {
+            "value": true
+          },
+          "networkSecurityGroupId": {
+            "value": "[reference('networkSecurityGroups').outputs.nsgIds.value.businessTier]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1660387721309899474"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            },
+            "VirtualMachineConfig": {
+              "type": "object",
+              "properties": {
+                "vmSize": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "VM size"
+                  }
+                },
+                "osType": {
+                  "type": "string",
+                  "allowedValues": [
+                    "Linux",
+                    "Windows"
+                  ],
+                  "metadata": {
+                    "description": "Operating system type"
+                  }
+                },
+                "osDisk": {
+                  "type": "object",
+                  "properties": {
+                    "storageAccountType": {
+                      "type": "string",
+                      "allowedValues": [
+                        "Premium_LRS",
+                        "StandardSSD_LRS",
+                        "Standard_LRS"
+                      ]
+                    },
+                    "diskSizeGB": {
+                      "type": "int",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "OS disk configuration"
+                  }
+                },
+                "dataDisks": {
+                  "type": "array",
+                  "items": {
+                    "type": "object",
+                    "properties": {
+                      "diskSizeGB": {
+                        "type": "int"
+                      },
+                      "storageAccountType": {
+                        "type": "string",
+                        "allowedValues": [
+                          "Premium_LRS",
+                          "StandardSSD_LRS",
+                          "Standard_LRS"
+                        ]
+                      },
+                      "lun": {
+                        "type": "int"
+                      }
+                    }
+                  },
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Data disk configurations"
+                  }
+                },
+                "networkInterface": {
+                  "type": "object",
+                  "properties": {
+                    "enableAcceleratedNetworking": {
+                      "type": "bool"
+                    },
+                    "enableIpForwarding": {
+                      "type": "bool"
+                    }
+                  },
+                  "metadata": {
+                    "description": "Network interface configuration"
+                  }
+                },
+                "availability": {
+                  "type": "object",
+                  "properties": {
+                    "availabilitySetId": {
+                      "type": "string",
+                      "nullable": true
+                    },
+                    "availabilityZone": {
+                      "type": "string",
+                      "nullable": true
+                    }
+                  },
+                  "metadata": {
+                    "description": "Availability configuration"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "vmScaleSetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name prefix for the VM scale set"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The subnet ID for the VM scale set"
+              }
+            },
+            "loadBalancerBackendAddressPoolIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "The load balancer backend address pool IDs (optional)"
+              }
+            },
+            "applicationGatewayBackendAddressPoolIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "The application gateway backend address pool IDs (optional)"
+              }
+            },
+            "vmConfig": {
+              "$ref": "#/definitions/VirtualMachineConfig",
+              "metadata": {
+                "description": "VM configuration"
+              }
+            },
+            "tier": {
+              "type": "string",
+              "allowedValues": [
+                "web",
+                "business",
+                "data"
+              ],
+              "metadata": {
+                "description": "The tier for this VM scale set (web, business, or data)"
+              }
+            },
+            "instanceCount": {
+              "type": "int",
+              "defaultValue": 2,
+              "minValue": 0,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Initial instance count for the scale set"
+              }
+            },
+            "enableAutoscaling": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable autoscaling"
+              }
+            },
+            "minInstanceCount": {
+              "type": "int",
+              "defaultValue": 1,
+              "minValue": 1,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Minimum instance count for autoscaling"
+              }
+            },
+            "maxInstanceCount": {
+              "type": "int",
+              "defaultValue": 10,
+              "minValue": 1,
+              "maxValue": 1000,
+              "metadata": {
+                "description": "Maximum instance count for autoscaling"
+              }
+            },
+            "availabilityZones": {
+              "type": "array",
+              "defaultValue": [
+                "1",
+                "2",
+                "3"
+              ],
+              "metadata": {
+                "description": "Availability zones for the scale set"
+              }
+            },
+            "adminUsername": {
+              "type": "string",
+              "metadata": {
+                "description": "Admin username for the VMs"
+              }
+            },
+            "adminPassword": {
+              "type": "securestring",
+              "nullable": true,
+              "metadata": {
+                "description": "Admin password for Windows VMs (use Key Vault reference)"
+              }
+            },
+            "sshPublicKey": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "SSH public key for Linux VMs"
+              }
+            },
+            "customScriptExtension": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Custom script extension settings (optional)"
+              }
+            },
+            "enableBootDiagnostics": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable boot diagnostics"
+              }
+            },
+            "bootDiagnosticsStorageUri": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Storage account URI for boot diagnostics (optional)"
+              }
+            },
+            "networkSecurityGroupId": {
+              "type": "string",
+              "nullable": true,
+              "metadata": {
+                "description": "Network security group ID for the network interface"
+              }
+            },
+            "enableAcceleratedNetworking": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable accelerated networking"
+              }
+            },
+            "enableIpForwarding": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable IP forwarding"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "Location for the VM scale set"
+              }
+            },
+            "upgradeMode": {
+              "type": "string",
+              "defaultValue": "Manual",
+              "allowedValues": [
+                "Automatic",
+                "Manual",
+                "Rolling"
+              ],
+              "metadata": {
+                "description": "Upgrade policy mode"
+              }
+            },
+            "singlePlacementGroup": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable single placement group"
+              }
+            },
+            "overprovision": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable over-provisioning"
+              }
+            }
+          },
+          "variables": {
+            "isWindows": "[equals(parameters('vmConfig').osType, 'Windows')]",
+            "isLinux": "[equals(parameters('vmConfig').osType, 'Linux')]",
+            "imageReference": "[if(variables('isWindows'), createObject('publisher', 'MicrosoftWindowsServer', 'offer', 'WindowsServer', 'sku', '2022-datacenter-azure-edition', 'version', 'latest'), createObject('publisher', 'Canonical', 'offer', '0001-com-ubuntu-server-jammy', 'sku', '22_04-lts-gen2', 'version', 'latest'))]",
+            "networkInterfaceConfigurations": [
+              {
+                "name": "[format('{0}-nic-config', parameters('vmScaleSetName'))]",
+                "properties": {
+                  "primary": true,
+                  "enableAcceleratedNetworking": "[parameters('vmConfig').networkInterface.enableAcceleratedNetworking]",
+                  "enableIPForwarding": "[parameters('vmConfig').networkInterface.enableIpForwarding]",
+                  "networkSecurityGroup": "[if(not(equals(parameters('networkSecurityGroupId'), null())), createObject('id', parameters('networkSecurityGroupId')), null())]",
+                  "ipConfigurations": [
+                    {
+                      "name": "[format('{0}-ip-config', parameters('vmScaleSetName'))]",
+                      "properties": {
+                        "primary": true,
+                        "subnet": {
+                          "id": "[parameters('subnetId')]"
+                        },
+                        "loadBalancerBackendAddressPools": "[map(parameters('loadBalancerBackendAddressPoolIds'), lambda('poolId', createObject('id', lambdaVariables('poolId'))))]",
+                        "applicationGatewayBackendAddressPools": "[map(parameters('applicationGatewayBackendAddressPoolIds'), lambda('poolId', createObject('id', lambdaVariables('poolId'))))]"
+                      }
+                    }
+                  ]
+                }
+              }
+            ],
+            "osProfile": "[if(variables('isWindows'), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'adminPassword', parameters('adminPassword'), 'windowsConfiguration', createObject('enableAutomaticUpdates', true(), 'provisionVMAgent', true(), 'patchSettings', createObject('patchMode', 'AutomaticByOS', 'automaticByPlatformSettings', createObject('rebootSetting', 'IfRequired')))), createObject('computerNamePrefix', take(parameters('vmScaleSetName'), 9), 'adminUsername', parameters('adminUsername'), 'disablePasswordAuthentication', true(), 'linuxConfiguration', createObject('ssh', createObject('publicKeys', createArray(createObject('path', format('/home/{0}/.ssh/authorized_keys', parameters('adminUsername')), 'keyData', parameters('sshPublicKey')))), 'patchSettings', createObject('patchMode', 'ImageDefault'))))]",
+            "storageProfile": {
+              "imageReference": "[variables('imageReference')]",
+              "osDisk": {
+                "createOption": "FromImage",
+                "caching": "ReadWrite",
+                "managedDisk": {
+                  "storageAccountType": "[parameters('vmConfig').osDisk.storageAccountType]"
+                },
+                "diskSizeGB": "[parameters('vmConfig').osDisk.diskSizeGB]"
+              },
+              "dataDisks": "[map(coalesce(parameters('vmConfig').dataDisks, createArray()), lambda('disk', createObject('lun', lambdaVariables('disk').lun, 'createOption', 'Empty', 'caching', 'ReadWrite', 'managedDisk', createObject('storageAccountType', lambdaVariables('disk').storageAccountType), 'diskSizeGB', lambdaVariables('disk').diskSizeGB)))]"
+            },
+            "extensionProfile": "[if(not(empty(parameters('customScriptExtension'))), createObject('extensions', createArray(createObject('name', 'CustomScriptExtension', 'properties', createObject('publisher', if(variables('isWindows'), 'Microsoft.Compute', 'Microsoft.Azure.Extensions'), 'type', if(variables('isWindows'), 'CustomScriptExtension', 'CustomScript'), 'typeHandlerVersion', if(variables('isWindows'), '1.10', '2.1'), 'autoUpgradeMinorVersion', true(), 'settings', parameters('customScriptExtension'))))), null())]"
+          },
+          "resources": {
+            "vmScaleSet": {
+              "type": "Microsoft.Compute/virtualMachineScaleSets",
+              "apiVersion": "2023-09-01",
+              "name": "[parameters('vmScaleSetName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "zones": "[parameters('availabilityZones')]",
+              "sku": {
+                "name": "[parameters('vmConfig').vmSize]",
+                "tier": "Standard",
+                "capacity": "[parameters('instanceCount')]"
+              },
+              "properties": {
+                "singlePlacementGroup": "[parameters('singlePlacementGroup')]",
+                "upgradePolicy": {
+                  "mode": "[parameters('upgradeMode')]",
+                  "rollingUpgradePolicy": "[if(equals(parameters('upgradeMode'), 'Rolling'), createObject('maxBatchInstancePercent', 20, 'maxUnhealthyInstancePercent', 20, 'maxUnhealthyUpgradedInstancePercent', 20, 'pauseTimeBetweenBatches', 'PT0S'), null())]"
+                },
+                "virtualMachineProfile": {
+                  "osProfile": "[variables('osProfile')]",
+                  "storageProfile": "[variables('storageProfile')]",
+                  "networkProfile": {
+                    "networkInterfaceConfigurations": "[variables('networkInterfaceConfigurations')]"
+                  },
+                  "extensionProfile": "[variables('extensionProfile')]",
+                  "diagnosticsProfile": "[if(parameters('enableBootDiagnostics'), createObject('bootDiagnostics', createObject('enabled', true(), 'storageUri', parameters('bootDiagnosticsStorageUri'))), null())]"
+                },
+                "overprovision": "[parameters('overprovision')]",
+                "doNotRunExtensionsOnOverprovisionedVMs": false,
+                "zoneBalance": true,
+                "platformFaultDomainCount": 1
+              }
+            },
+            "autoscaleSettings": {
+              "condition": "[parameters('enableAutoscaling')]",
+              "type": "Microsoft.Insights/autoscalesettings",
+              "apiVersion": "2022-10-01",
+              "name": "[format('{0}-autoscale', parameters('vmScaleSetName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "name": "[format('{0}-autoscale', parameters('vmScaleSetName'))]",
+                "targetResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                "enabled": true,
+                "profiles": [
+                  {
+                    "name": "Default",
+                    "capacity": {
+                      "minimum": "[string(parameters('minInstanceCount'))]",
+                      "maximum": "[string(parameters('maxInstanceCount'))]",
+                      "default": "[string(parameters('instanceCount'))]"
+                    },
+                    "rules": [
+                      {
+                        "metricTrigger": {
+                          "metricName": "Percentage CPU",
+                          "metricNamespace": "Microsoft.Compute/virtualMachineScaleSets",
+                          "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "GreaterThan",
+                          "threshold": 75
+                        },
+                        "scaleAction": {
+                          "direction": "Increase",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT5M"
+                        }
+                      },
+                      {
+                        "metricTrigger": {
+                          "metricName": "Percentage CPU",
+                          "metricNamespace": "Microsoft.Compute/virtualMachineScaleSets",
+                          "metricResourceUri": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                          "timeGrain": "PT1M",
+                          "statistic": "Average",
+                          "timeWindow": "PT5M",
+                          "timeAggregation": "Average",
+                          "operator": "LessThan",
+                          "threshold": 25
+                        },
+                        "scaleAction": {
+                          "direction": "Decrease",
+                          "type": "ChangeCount",
+                          "value": "1",
+                          "cooldown": "PT5M"
+                        }
+                      }
+                    ]
+                  }
+                ],
+                "notifications": []
+              },
+              "dependsOn": [
+                "vmScaleSet"
+              ]
+            }
+          },
+          "outputs": {
+            "vmScaleSetId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the VM scale set"
+              },
+              "value": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]"
+            },
+            "vmScaleSetName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the VM scale set"
+              },
+              "value": "[parameters('vmScaleSetName')]"
+            },
+            "autoscaleSettingsId": {
+              "type": "string",
+              "metadata": {
+                "description": "The autoscale settings resource ID"
+              },
+              "value": "[if(parameters('enableAutoscaling'), resourceId('Microsoft.Insights/autoscalesettings', format('{0}-autoscale', parameters('vmScaleSetName'))), '')]"
+            },
+            "vmScaleSetConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "The VM scale set configuration details"
+              },
+              "value": {
+                "resourceId": "[resourceId('Microsoft.Compute/virtualMachineScaleSets', parameters('vmScaleSetName'))]",
+                "name": "[parameters('vmScaleSetName')]",
+                "tier": "[parameters('tier')]",
+                "vmSize": "[parameters('vmConfig').vmSize]",
+                "osType": "[parameters('vmConfig').osType]",
+                "instanceCount": "[parameters('instanceCount')]",
+                "availabilityZones": "[parameters('availabilityZones')]",
+                "autoscalingEnabled": "[parameters('enableAutoscaling')]",
+                "minInstanceCount": "[if(parameters('enableAutoscaling'), parameters('minInstanceCount'), parameters('instanceCount'))]",
+                "maxInstanceCount": "[if(parameters('enableAutoscaling'), parameters('maxInstanceCount'), parameters('instanceCount'))]"
+              }
+            },
+            "networkInterfaceConfigurationName": {
+              "type": "string",
+              "metadata": {
+                "description": "The network interface configuration name"
+              },
+              "value": "[variables('networkInterfaceConfigurations')[0].name]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "networkSecurityGroups",
+        "virtualNetwork"
+      ]
     }
   },
   "outputs": {
@@ -3002,6 +5318,40 @@
           },
           "connectivityConfigurations": "[reference('virtualNetworkManager').outputs.connectivityConfigurationIds.value]",
           "securityAdminConfigurations": "[reference('virtualNetworkManager').outputs.securityAdminConfigurationIds.value]"
+        }
+      }
+    },
+    "security": {
+      "type": "object",
+      "value": {
+        "keyVault": {
+          "id": "[reference('keyVault').outputs.keyVaultId.value]",
+          "name": "[reference('keyVault').outputs.keyVaultName.value]",
+          "uri": "[reference('keyVault').outputs.keyVaultUri.value]",
+          "config": "[reference('keyVault').outputs.keyVaultConfig.value]"
+        }
+      }
+    },
+    "compute": {
+      "type": "object",
+      "value": {
+        "availabilitySets": {
+          "webTier": "[if(not(parameters('environmentConfig').enableHighAvailability), createObject('id', reference('webTierAvailabilitySet').outputs.availabilitySetId.value, 'name', reference('webTierAvailabilitySet').outputs.availabilitySetName.value, 'config', reference('webTierAvailabilitySet').outputs.availabilitySetConfig.value), createObject('id', '', 'name', '', 'config', createObject()))]",
+          "businessTier": "[if(not(parameters('environmentConfig').enableHighAvailability), createObject('id', reference('businessTierAvailabilitySet').outputs.availabilitySetId.value, 'name', reference('businessTierAvailabilitySet').outputs.availabilitySetName.value, 'config', reference('businessTierAvailabilitySet').outputs.availabilitySetConfig.value), createObject('id', '', 'name', '', 'config', createObject()))]"
+        },
+        "virtualMachineScaleSets": {
+          "webTier": {
+            "id": "[reference('webTierVmScaleSet').outputs.vmScaleSetId.value]",
+            "name": "[reference('webTierVmScaleSet').outputs.vmScaleSetName.value]",
+            "config": "[reference('webTierVmScaleSet').outputs.vmScaleSetConfig.value]",
+            "autoscaleSettingsId": "[reference('webTierVmScaleSet').outputs.autoscaleSettingsId.value]"
+          },
+          "businessTier": {
+            "id": "[reference('businessTierVmScaleSet').outputs.vmScaleSetId.value]",
+            "name": "[reference('businessTierVmScaleSet').outputs.vmScaleSetName.value]",
+            "config": "[reference('businessTierVmScaleSet').outputs.vmScaleSetConfig.value]",
+            "autoscaleSettingsId": "[reference('businessTierVmScaleSet').outputs.autoscaleSettingsId.value]"
+          }
         }
       }
     }
