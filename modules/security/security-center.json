@@ -1,0 +1,385 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "1415956194567796712"
+    }
+  },
+  "definitions": {
+    "TagConfiguration": {
+      "type": "object",
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "metadata": {
+            "description": "Environment tag"
+          }
+        },
+        "Workload": {
+          "type": "string",
+          "metadata": {
+            "description": "Workload tag"
+          }
+        },
+        "ManagedBy": {
+          "type": "string",
+          "metadata": {
+            "description": "Managed by tag"
+          }
+        },
+        "CostCenter": {
+          "type": "string",
+          "metadata": {
+            "description": "Cost center tag"
+          }
+        },
+        "Owner": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Owner tag"
+          }
+        },
+        "Project": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Project tag"
+          }
+        },
+        "DeploymentDate": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Deployment date tag"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "../shared/parameter-schemas.bicep"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "subscriptionId": {
+      "type": "string",
+      "defaultValue": "[subscription().subscriptionId]",
+      "metadata": {
+        "description": "The subscription ID for Security Center configuration"
+      }
+    },
+    "tags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "metadata": {
+        "description": "Tags to apply to all resources"
+      }
+    },
+    "enableDefenderPlans": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable Microsoft Defender for Cloud plans"
+      }
+    },
+    "defenderPlans": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "name": "VirtualMachines",
+          "tier": "Standard",
+          "subPlan": "P2"
+        },
+        {
+          "name": "AppServices",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "SqlServers",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "SqlServerVirtualMachines",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "StorageAccounts",
+          "tier": "Standard",
+          "subPlan": "DefenderForStorageV2"
+        },
+        {
+          "name": "KeyVaults",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "Arm",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "OpenSourceRelationalDatabases",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "Containers",
+          "tier": "Standard",
+          "subPlan": null
+        },
+        {
+          "name": "CloudPosture",
+          "tier": "Standard",
+          "subPlan": null
+        }
+      ],
+      "metadata": {
+        "description": "Microsoft Defender for Cloud plans to enable"
+      }
+    },
+    "securityContacts": {
+      "type": "array",
+      "defaultValue": [
+        {
+          "email": "security@contoso.com",
+          "phone": "+1-555-0123",
+          "alertNotifications": "On",
+          "notificationsByRole": "On"
+        }
+      ],
+      "metadata": {
+        "description": "Security contacts configuration"
+      }
+    },
+    "autoProvisioningSettings": {
+      "type": "object",
+      "defaultValue": {
+        "logAnalytics": "On",
+        "microsoftDefenderForEndpoint": "On",
+        "vulnerabilityAssessment": "On",
+        "guestConfiguration": "On"
+      },
+      "metadata": {
+        "description": "Auto provisioning settings"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Log Analytics workspace ID for Security Center integration"
+      }
+    },
+    "enableTelemetry": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable telemetry for the module"
+      }
+    }
+  },
+  "variables": {
+    "workspaceSettings": "[if(not(empty(parameters('logAnalyticsWorkspaceId'))), createObject('workspaceId', parameters('logAnalyticsWorkspaceId'), 'scope', parameters('subscriptionId')), null())]"
+  },
+  "resources": {
+    "defenderForCloudPlans": {
+      "copy": {
+        "name": "defenderForCloudPlans",
+        "count": "[length(parameters('defenderPlans'))]"
+      },
+      "condition": "[parameters('enableDefenderPlans')]",
+      "type": "Microsoft.Security/pricings",
+      "apiVersion": "2024-01-01",
+      "name": "[parameters('defenderPlans')[copyIndex()].name]",
+      "properties": {
+        "pricingTier": "[parameters('defenderPlans')[copyIndex()].tier]",
+        "subPlan": "[parameters('defenderPlans')[copyIndex()].subPlan]"
+      }
+    },
+    "securityContactsConfig": {
+      "copy": {
+        "name": "securityContactsConfig",
+        "count": "[length(parameters('securityContacts'))]"
+      },
+      "type": "Microsoft.Security/securityContacts",
+      "apiVersion": "2020-01-01-preview",
+      "name": "[format('default{0}', add(copyIndex(), 1))]",
+      "properties": {
+        "emails": "[parameters('securityContacts')[copyIndex()].email]",
+        "phone": "[parameters('securityContacts')[copyIndex()].phone]",
+        "alertNotifications": {
+          "state": "[parameters('securityContacts')[copyIndex()].alertNotifications]",
+          "minimalSeverity": "Medium"
+        },
+        "notificationsByRole": {
+          "state": "[parameters('securityContacts')[copyIndex()].notificationsByRole]",
+          "roles": [
+            "Owner",
+            "Contributor"
+          ]
+        }
+      }
+    },
+    "autoProvisioningLogAnalytics": {
+      "condition": "[equals(parameters('autoProvisioningSettings').logAnalytics, 'On')]",
+      "type": "Microsoft.Security/autoProvisioningSettings",
+      "apiVersion": "2017-08-01-preview",
+      "name": "default",
+      "properties": {
+        "autoProvision": "[parameters('autoProvisioningSettings').logAnalytics]"
+      }
+    },
+    "workspaceSettingsConfig": {
+      "condition": "[not(equals(variables('workspaceSettings'), null()))]",
+      "type": "Microsoft.Security/workspaceSettings",
+      "apiVersion": "2017-08-01-preview",
+      "name": "default",
+      "properties": {
+        "workspaceId": "[variables('workspaceSettings').workspaceId]",
+        "scope": "[variables('workspaceSettings').scope]"
+      }
+    },
+    "securityPolicyAssignment": {
+      "type": "Microsoft.Authorization/policyAssignments",
+      "apiVersion": "2022-06-01",
+      "name": "[format('ASC-Default-{0}', uniqueString(parameters('subscriptionId')))]",
+      "properties": {
+        "displayName": "Azure Security Benchmark",
+        "description": "Azure Security Benchmark initiative for Microsoft Defender for Cloud",
+        "policyDefinitionId": "/providers/Microsoft.Authorization/policySetDefinitions/1f3afdf9-d0c9-4c3d-847f-89da613e70a8",
+        "parameters": {},
+        "metadata": {
+          "assignedBy": "Bicep Template",
+          "category": "Security Center"
+        }
+      }
+    },
+    "customSecurityAssessments": {
+      "type": "Microsoft.Security/assessmentMetadata",
+      "apiVersion": "2021-06-01",
+      "name": "[format('custom-security-assessment-{0}', uniqueString(parameters('subscriptionId')))]",
+      "properties": {
+        "displayName": "[format('Custom Security Assessment for {0}', parameters('tags').Workload)]",
+        "description": "Custom security assessment for workload-specific security requirements",
+        "severity": "Medium",
+        "assessmentType": "CustomerManaged",
+        "categories": [
+          "Compute",
+          "Data",
+          "Networking"
+        ],
+        "userImpact": "Moderate",
+        "implementationEffort": "Moderate"
+      }
+    },
+    "telemetryDeployment": {
+      "condition": "[parameters('enableTelemetry')]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2022-09-01",
+      "name": "[format('pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-{0}', uniqueString(deployment().name))]",
+      "properties": {
+        "mode": "Incremental",
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "contentVersion": "1.0.0.0",
+          "resources": []
+        }
+      }
+    }
+  },
+  "outputs": {
+    "defenderPlansConfig": {
+      "type": "array",
+      "metadata": {
+        "description": "Microsoft Defender for Cloud plan configurations"
+      },
+      "copy": {
+        "count": "[length(parameters('defenderPlans'))]",
+        "input": {
+          "name": "[parameters('defenderPlans')[copyIndex()].name]",
+          "tier": "[reference(format('defenderForCloudPlans[{0}]', copyIndex())).pricingTier]",
+          "subPlan": "[reference(format('defenderForCloudPlans[{0}]', copyIndex())).subPlan]",
+          "resourceId": "[subscriptionResourceId('Microsoft.Security/pricings', parameters('defenderPlans')[copyIndex()].name)]"
+        }
+      }
+    },
+    "securityContactsConfig": {
+      "type": "array",
+      "metadata": {
+        "description": "Security contacts configuration"
+      },
+      "copy": {
+        "count": "[length(parameters('securityContacts'))]",
+        "input": {
+          "name": "[format('default{0}', add(copyIndex(), 1))]",
+          "email": "[parameters('securityContacts')[copyIndex()].email]",
+          "phone": "[parameters('securityContacts')[copyIndex()].phone]",
+          "resourceId": "[subscriptionResourceId('Microsoft.Security/securityContacts', format('default{0}', add(copyIndex(), 1)))]"
+        }
+      }
+    },
+    "autoProvisioningConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "Auto provisioning settings"
+      },
+      "value": {
+        "logAnalytics": "[parameters('autoProvisioningSettings').logAnalytics]",
+        "resourceId": "[subscriptionResourceId('Microsoft.Security/autoProvisioningSettings', 'default')]"
+      }
+    },
+    "workspaceSettingsConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "Workspace settings configuration"
+      },
+      "value": "[if(not(equals(variables('workspaceSettings'), null())), createObject('workspaceId', variables('workspaceSettings').workspaceId, 'scope', variables('workspaceSettings').scope, 'resourceId', subscriptionResourceId('Microsoft.Security/workspaceSettings', 'default')), createObject('workspaceId', '', 'scope', '', 'resourceId', ''))]"
+    },
+    "securityPolicyAssignment": {
+      "type": "object",
+      "metadata": {
+        "description": "Security policy assignment information"
+      },
+      "value": {
+        "name": "[format('ASC-Default-{0}', uniqueString(parameters('subscriptionId')))]",
+        "displayName": "[reference('securityPolicyAssignment').displayName]",
+        "policyDefinitionId": "[reference('securityPolicyAssignment').policyDefinitionId]",
+        "resourceId": "[subscriptionResourceId('Microsoft.Authorization/policyAssignments', format('ASC-Default-{0}', uniqueString(parameters('subscriptionId'))))]"
+      }
+    },
+    "customSecurityAssessment": {
+      "type": "object",
+      "metadata": {
+        "description": "Custom security assessment information"
+      },
+      "value": {
+        "name": "[format('custom-security-assessment-{0}', uniqueString(parameters('subscriptionId')))]",
+        "displayName": "[reference('customSecurityAssessments').displayName]",
+        "severity": "[reference('customSecurityAssessments').severity]",
+        "resourceId": "[subscriptionResourceId('Microsoft.Security/assessmentMetadata', format('custom-security-assessment-{0}', uniqueString(parameters('subscriptionId'))))]"
+      }
+    },
+    "securityCenterConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "Security Center configuration summary"
+      },
+      "value": {
+        "subscriptionId": "[parameters('subscriptionId')]",
+        "defenderPlansEnabled": "[parameters('enableDefenderPlans')]",
+        "defenderPlansCount": "[length(parameters('defenderPlans'))]",
+        "securityContactsCount": "[length(parameters('securityContacts'))]",
+        "logAnalyticsIntegration": "[not(equals(variables('workspaceSettings'), null()))]",
+        "autoProvisioningEnabled": "[equals(parameters('autoProvisioningSettings').logAnalytics, 'On')]"
+      }
+    }
+  }
+}
