@@ -116,6 +116,61 @@ Each environment has specific configurations optimized for its purpose:
   - Comprehensive monitoring (365-day log retention)
   - Network: 10.2.0.0/16 address space
 
+## Module Usage Examples
+
+### Key Vault Module
+
+The Key Vault module provides secure secret management with comprehensive security controls:
+
+```bicep
+module keyVault 'modules/security/key-vault.bicep' = {
+  name: 'key-vault-deployment'
+  params: {
+    keyVaultName: 'contoso-webapp-prod-kv'
+    location: 'East US'
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    keyVaultConfig: {
+      sku: 'premium'
+      enableSoftDelete: true
+      softDeleteRetentionInDays: 90
+      enablePurgeProtection: true
+      enableRbacAuthorization: true
+      networkAcls: {
+        bypass: 'AzureServices'
+        defaultAction: 'Deny'
+        ipRules: []
+        virtualNetworkRules: []
+      }
+    }
+    allowedSubnetIds: [
+      '/subscriptions/.../subnets/web-tier-subnet'
+      '/subscriptions/.../subnets/business-tier-subnet'
+    ]
+    keyVaultAdministrators: [
+      'user-object-id-1'
+      'user-object-id-2'
+    ]
+    keyVaultSecretsUsers: [
+      'managed-identity-object-id'
+    ]
+    enableDiagnostics: true
+    logAnalyticsWorkspaceId: '/subscriptions/.../workspaces/law-workspace'
+  }
+}
+```
+
+#### Key Vault Configuration Options
+
+- **SKU**: `standard` (default) or `premium` (for HSM-backed keys)
+- **Soft Delete**: Configurable retention period (7-90 days)
+- **Network Access**: Support for subnet restrictions and IP allowlists
+- **RBAC Roles**: Built-in role assignments for administrators and service accounts
+- **Monitoring**: Optional diagnostic settings integration with Log Analytics
+
 ## Security Features
 
 ### Network Security
@@ -131,6 +186,11 @@ Each environment has specific configurations optimized for its purpose:
 - **Virtual Network Manager**: Centralized security admin rules blocking high-risk ports (RDP/SSH) from internet
 
 ### Service Security
+- **Key Vault Integration**: Centralized secret management with RBAC and network restrictions
+  - Soft delete and purge protection for production environments
+  - Network access controls with subnet and IP restrictions
+  - Built-in role assignments for secure access management
+  - Comprehensive audit logging and diagnostic monitoring
 - **Private Endpoints**: Secure connectivity for data services (enabled in staging/production)
 - **Service Endpoints**: Secure access to Key Vault, Storage, and SQL services from subnets
 - **Web Application Firewall**: OWASP Core Rule Set protection (WAF_v2 in production)
@@ -138,13 +198,18 @@ Each environment has specific configurations optimized for its purpose:
 
 ### Data Protection
 - **Encryption**: All data encrypted at rest and in transit
-- **Key Vault Integration**: Centralized secret and certificate management
+- **Key Vault Security**: 
+  - Centralized secret and certificate management with RBAC authorization
+  - Network access controls with subnet restrictions and IP allowlists
+  - Soft delete protection with configurable retention periods
+  - Purge protection for production environments to prevent accidental deletion
+  - HSM-backed keys available with Premium SKU
 - **Access Controls**: RBAC and network-based access restrictions
 - **Audit Logging**: Comprehensive logging for security events and administrative operations
 
 ## Deployed Infrastructure Components
 
-The main template currently deploys the following networking infrastructure:
+The main template currently deploys the following infrastructure components:
 
 ### Virtual Network Manager
 - **Network Groups**: Environment-specific groupings (dev/staging/prod for web, business, data tiers)
@@ -169,6 +234,21 @@ The main template currently deploys the following networking infrastructure:
 - **Conditional Deployment**: Enabled for staging and production environments
 - **Enhanced Protection**: Standard DDoS protection plan for public-facing resources
 - **Monitoring Integration**: Diagnostic settings for DDoS protection telemetry
+
+### Security Infrastructure
+
+#### Key Vault Module
+- **Secure Secret Management**: Centralized storage for secrets, keys, and certificates
+- **RBAC Authorization**: Role-based access control with built-in Azure roles
+  - Key Vault Administrator: Full management permissions
+  - Key Vault Secrets User: Read access to secrets for applications
+  - Key Vault Certificate User: Certificate management for SSL/TLS
+- **Network Security**: Private network access with subnet and IP restrictions
+- **Compliance Features**: 
+  - Soft delete with configurable retention (7-90 days)
+  - Purge protection for production environments
+  - Comprehensive audit logging and monitoring
+- **Integration Ready**: Diagnostic settings for Log Analytics workspace integration
 
 ## Git Repository
 
@@ -249,6 +329,10 @@ This project is version controlled with Git. The repository includes:
    # Verify networking resources
    az network vnet list --resource-group contoso-webapp-dev-rg --output table
    az network nsg list --resource-group contoso-webapp-dev-rg --output table
+   
+   # Verify Key Vault deployment (when security modules are added)
+   az keyvault list --resource-group contoso-webapp-dev-rg --output table
+   az keyvault show --name contoso-webapp-dev-kv --query "properties.{VaultUri:vaultUri,SoftDelete:enableSoftDelete,PurgeProtection:enablePurgeProtection}"
    ```
 
 ### Troubleshooting Common Issues
@@ -257,6 +341,11 @@ This project is version controlled with Git. The repository includes:
 - **Permission Errors**: Ensure you have Contributor role on the subscription/resource group
 - **Naming Conflicts**: Verify resource names are unique (especially Key Vault and Storage Account names)
 - **Network Address Conflicts**: Ensure VNet address spaces don't overlap with existing networks
+- **Key Vault Access Issues**: 
+  - Verify object IDs for role assignments are correct
+  - Ensure network access rules allow your deployment source
+  - Check that RBAC authorization is enabled if using role assignments
+  - Validate subnet IDs if using VNet integration
 
 ## Contributing
 

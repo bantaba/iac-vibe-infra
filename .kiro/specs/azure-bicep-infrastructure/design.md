@@ -51,7 +51,8 @@ Subnet Architecture (per environment):
 - ✅ Virtual Network with segmented subnets and service endpoints
 - ✅ Network Security Groups with comprehensive tier-specific rules
 - ✅ DDoS Protection Plan (conditional deployment for staging/production)
-- ⏳ Security modules (Key Vault, Managed Identity) - Next phase
+- ✅ Key Vault module with RBAC, network controls, and monitoring integration
+- ⏳ Managed Identity and Security Center modules - Next phase
 - ⏳ Compute modules (Application Gateway, Load Balancers) - Next phase
 - ⏳ Data modules (SQL Database, Storage Accounts) - Next phase
 
@@ -73,7 +74,7 @@ bicep-infrastructure/
 │   │   ├── network-security-groups.bicep # NSG rules
 │   │   └── ddos-protection.bicep # DDoS protection plan
 │   ├── security/
-│   │   ├── key-vault.bicep    # Key Vault and secrets
+│   │   ├── key-vault.bicep    # Key Vault with RBAC and network controls ✅
 │   │   ├── managed-identity.bicep # Managed identities
 │   │   └── security-center.bicep # Security Center configuration
 │   ├── compute/
@@ -112,6 +113,24 @@ bicep-infrastructure/
 - **Backend Pools**: Virtual machines in business and data tiers
 - **Load Balancing Rules**: Distribution algorithms and session persistence
 - **Health Probes**: TCP and HTTP health checks
+
+#### Key Vault Interface
+- **RBAC Authorization**: Built-in role assignments for secure access management
+  - Key Vault Administrator: Full management permissions for administrators
+  - Key Vault Secrets User: Read access to secrets for applications and services
+  - Key Vault Certificate User: Certificate management for SSL/TLS operations
+- **Network Security**: Configurable network access controls
+  - Subnet-based access restrictions for VNet integration
+  - IP allowlist support for specific client access
+  - Azure Services bypass for platform integration
+- **Data Protection**: Enterprise-grade security features
+  - Soft delete with configurable retention period (7-90 days)
+  - Purge protection to prevent accidental permanent deletion
+  - Premium SKU support for HSM-backed cryptographic operations
+- **Monitoring Integration**: Comprehensive observability
+  - Diagnostic settings for Log Analytics workspace integration
+  - Audit logging for all access and administrative operations
+  - Telemetry tracking for deployment and usage analytics
 
 ## Data Models
 
@@ -185,6 +204,32 @@ type SubnetConfig = {
 }
 ```
 
+### Security Configuration Schema
+
+```bicep
+// Key Vault configuration
+type KeyVaultConfig = {
+  sku: 'standard' | 'premium'
+  enableSoftDelete: bool
+  softDeleteRetentionInDays: int // 7-90 days
+  enablePurgeProtection: bool
+  enableRbacAuthorization: bool
+  networkAcls: {
+    bypass: 'AzureServices' | 'None'
+    defaultAction: 'Allow' | 'Deny'
+    ipRules: string[]?
+    virtualNetworkRules: string[]?
+  }
+}
+
+// Key Vault role assignments
+type KeyVaultRoleAssignment = {
+  principalId: string
+  roleDefinitionId: string
+  principalType: 'User' | 'ServicePrincipal' | 'Group'
+}
+```
+
 ## Error Handling
 
 ### Deployment Validation
@@ -219,8 +264,29 @@ resource applicationGateway 'Microsoft.Network/applicationGateways@2023-05-01' =
   }
 }
 
+// Key Vault with error handling for role assignments
+resource keyVault 'Microsoft.KeyVault/vaults@2023-07-01' = {
+  name: keyVaultName
+  location: location
+  properties: {
+    // Key Vault configuration
+  }
+}
+
+// Conditional role assignments with error handling
+resource keyVaultRoleAssignments 'Microsoft.Authorization/roleAssignments@2022-04-01' = [for principalId in keyVaultAdministrators: if (!empty(principalId)) {
+  name: guid(keyVault.id, principalId, roleDefinitions.keyVaultAdministrator)
+  scope: keyVault
+  properties: {
+    roleDefinitionId: roleDefinitions.keyVaultAdministrator
+    principalId: principalId
+    principalType: 'User'
+  }
+}]
+
 // Output with conditional logic
 output applicationGatewayId string = deployApplicationGateway ? applicationGateway.id : ''
+output keyVaultUri string = keyVault.properties.vaultUri
 ```
 
 ## Testing Strategy
@@ -293,8 +359,14 @@ az deployment group validate `
 
 ### Identity and Access Management
 
+- **Key Vault Security**: 
+  - RBAC-based authorization with built-in Azure roles
+  - Network access controls with subnet and IP restrictions
+  - Soft delete protection with configurable retention (7-90 days)
+  - Purge protection for production environments
+  - HSM-backed keys support with Premium SKU
+  - Comprehensive audit logging and diagnostic monitoring
 - **Managed Identities**: System-assigned identities for all Azure services
-- **Key Vault Integration**: Centralized secret management with RBAC
 - **Azure AD Integration**: Single sign-on and conditional access policies
 - **Least Privilege Access**: Minimal required permissions for all service accounts
 

@@ -224,6 +224,31 @@ Before submitting changes, ensure:
 - Test in isolated environment
 - Document usage examples
 
+### Testing Key Vault Module
+
+When testing the Key Vault module:
+
+1. **Parameter Validation**:
+   ```powershell
+   # Test with minimal configuration
+   az deployment group validate --resource-group test-rg --template-file modules/security/key-vault.bicep --parameters keyVaultName=testkv123 location="East US" tags='{Environment:"test"}'
+   ```
+
+2. **RBAC Testing**:
+   - Use your own object ID for administrator role testing
+   - Create test managed identities for service principal role testing
+   - Verify role assignments are created correctly
+
+3. **Network Security Testing**:
+   - Test with default network restrictions (deny all)
+   - Test with subnet allowlist configuration
+   - Verify IP allowlist functionality
+
+4. **Monitoring Integration**:
+   - Deploy with Log Analytics workspace integration
+   - Verify diagnostic settings are configured
+   - Test audit log generation
+
 ## Security Considerations
 
 ### Sensitive Information
@@ -233,6 +258,13 @@ Before submitting changes, ensure:
 - Use Azure CLI authentication (`az login`) instead of service principal credentials in files
 - Never commit `.azure` directories or Azure credential files
 - Reference secrets in Bicep templates using Key Vault resource references
+
+### Key Vault Module Security
+- **RBAC Configuration**: Use proper object IDs for role assignments (users, service principals, managed identities)
+- **Network Security**: Configure subnet restrictions and IP allowlists appropriately for your environment
+- **Soft Delete**: Always enable soft delete with appropriate retention period (minimum 7 days, recommended 90 days for production)
+- **Purge Protection**: Enable for production environments to prevent accidental permanent deletion
+- **Monitoring**: Enable diagnostic settings to track access patterns and security events
 
 ### Security Scanning
 - Run Checkov before submitting PRs
