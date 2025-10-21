@@ -34,6 +34,8 @@ List the modules that were changed:
 - [ ] Template validation passed (`.\scripts\validate.ps1`)
 - [ ] Security scan passed (Checkov)
 - [ ] Compute module tests passed (`.\scripts\test-compute-modules.ps1`)
+- [ ] Data layer module tests passed (`.\scripts\test-data-layer.ps1`)
+- [ ] Private endpoints tests passed (`.\scripts\test-private-endpoints.ps1`)
 - [ ] Deployed successfully in development environment
 - [ ] All existing functionality still works
 - [ ] New functionality works as expected

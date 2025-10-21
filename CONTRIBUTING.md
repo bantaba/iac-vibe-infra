@@ -101,16 +101,25 @@ Before submitting changes, ensure:
    .\scripts\security-scan.ps1 -Directory . -SoftFail
    ```
 
-3. **Module Testing** (for compute modules):
+3. **Module Testing**:
    ```powershell
    # Test all compute modules
    .\scripts\test-compute-modules.ps1
    
-   # Test specific module with verbose output
+   # Test specific compute module with verbose output
    .\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway -VerboseOutput
+   
+   # Test all data layer modules
+   .\scripts\test-data-layer.ps1
+   
+   # Test specific data layer module with verbose output
+   .\scripts\test-data-layer.ps1 -TestScope SqlServer -VerboseOutput
+   .\scripts\test-data-layer.ps1 -TestScope StorageAccount -VerboseOutput
+   .\scripts\test-data-layer.ps1 -TestScope PrivateEndpoints -VerboseOutput
    
    # Test for specific environment
    .\scripts\test-compute-modules.ps1 -Environment staging -VerboseOutput
+   .\scripts\test-data-layer.ps1 -Environment staging -VerboseOutput
    ```
 
 4. **Deployment Testing**:
@@ -235,6 +244,63 @@ Before submitting changes, ensure:
 - Run security scans
 - Test in isolated environment
 - Document usage examples
+
+### Testing Data Layer Modules
+
+The project includes comprehensive unit tests for data layer modules. Use the dedicated test script to validate SQL Server, Storage Account, and Private Endpoints configurations:
+
+#### Data Layer Test Script Usage
+
+```powershell
+# Test all data layer modules
+.\scripts\test-data-layer.ps1
+
+# Test specific modules
+.\scripts\test-data-layer.ps1 -TestScope SqlServer
+.\scripts\test-data-layer.ps1 -TestScope StorageAccount
+.\scripts\test-data-layer.ps1 -TestScope PrivateEndpoints
+.\scripts\test-data-layer.ps1 -TestScope Integration
+
+# Test with verbose output for detailed validation information
+.\scripts\test-data-layer.ps1 -VerboseOutput
+
+# Test for specific environment
+.\scripts\test-data-layer.ps1 -Environment staging -VerboseOutput
+```
+
+#### Data Layer Test Coverage
+
+The test script validates:
+
+**SQL Server Module:**
+- Template syntax and compilation
+- Azure AD authentication configuration
+- Transparent Data Encryption (TDE) settings
+- Advanced Data Security (Microsoft Defender for SQL)
+- Network security and TLS configuration
+- Backup and recovery policies
+- Diagnostic settings and monitoring
+
+**Storage Account Module:**
+- Template syntax validation
+- Network access controls and firewall rules
+- Encryption configuration (infrastructure encryption, CMEK support)
+- Blob security features (versioning, soft delete, public access controls)
+- Lifecycle management policies
+- Container and file share configurations
+
+**Private Endpoints Module:**
+- Template syntax validation
+- Supported service types (SQL, Storage, Key Vault, etc.)
+- DNS zone configuration with cloud compatibility
+- Private endpoint connectivity settings
+- Custom DNS configuration support
+- Multi-cloud compatibility validation
+
+**Integration Testing:**
+- Main template module integration
+- Parameter file validation
+- Dependency management verification
 
 ### Testing Key Vault Module
 

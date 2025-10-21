@@ -471,24 +471,45 @@ output keyVaultUri string = keyVault.properties.vaultUri
    - Parameter validation testing
    - Resource property validation
    - Naming convention compliance testing
+   - **Compute Module Testing**: Comprehensive validation using `scripts/test-compute-modules.ps1`
+   - **Data Layer Testing**: Comprehensive validation using `scripts/test-data-layer.ps1`
 
 2. **Integration Testing**
    - End-to-end deployment testing in isolated environments
    - Cross-module dependency validation
    - Network connectivity testing
    - Security configuration validation
+   - **Module Integration Testing**: Validates dependencies between data layer modules
 
 3. **Security Testing**
    - Azure Security Center compliance checks
    - Network security group rule validation
    - Private endpoint connectivity testing
    - Key Vault access policy validation
+   - **SQL Server Security Testing**: Azure AD authentication, TDE, Advanced Data Security validation
+   - **Storage Account Security Testing**: Network access controls, encryption, blob security features
 
 4. **Performance Testing**
    - Deployment time optimization
    - Resource provisioning validation
    - Load balancer configuration testing
    - Database performance baseline establishment
+
+### Automated Testing Framework
+
+The project includes dedicated test scripts for comprehensive module validation:
+
+#### Data Layer Testing (`scripts/test-data-layer.ps1`)
+- **SQL Server Module**: Template syntax, Azure AD authentication, TDE, Advanced Data Security, network security, backup policies, monitoring integration
+- **Storage Account Module**: Template syntax, network access controls, encryption configuration, blob security features, lifecycle management, container/file share configuration
+- **Private Endpoints Module**: Template syntax, service type support, DNS zone configuration, connectivity settings, custom DNS configuration, multi-cloud compatibility
+- **Integration Testing**: Main template integration, parameter file validation, dependency management
+
+#### Compute Module Testing (`scripts/test-compute-modules.ps1`)
+- **Application Gateway Module**: Template syntax, WAF configuration, SSL certificate support, health probes, backend pool management
+- **Load Balancer Module**: Template syntax, health probe functionality, load balancing rules, tier-specific configuration
+- **Virtual Machine Module**: Template syntax, availability zone deployment, autoscaling configuration
+- **Availability Set Module**: Template syntax, fault domain and update domain configuration
 
 ### Testing Environments
 
@@ -498,6 +519,7 @@ output keyVaultUri string = keyVault.properties.vaultUri
 
 ### Validation Scripts
 
+#### Template Validation Script
 ```powershell
 # Template validation script
 param(
@@ -519,6 +541,73 @@ az deployment group validate `
     --resource-group $ResourceGroupName `
     --template-file $TemplateFile `
     --parameters @$ParameterFile
+```
+
+#### Data Layer Testing Script
+```powershell
+# Data layer module testing script
+param(
+    [Parameter(Mandatory=$false)]
+    [string]$TestScope = "All",  # All, SqlServer, StorageAccount, PrivateEndpoints, Integration
+    
+    [Parameter(Mandatory=$false)]
+    [string]$Environment = "dev",
+    
+    [Parameter(Mandatory=$false)]
+    [switch]$VerboseOutput
+)
+
+# Test specific modules or all data layer components
+.\scripts\test-data-layer.ps1 -TestScope SqlServer -VerboseOutput
+.\scripts\test-data-layer.ps1 -TestScope StorageAccount -Environment staging
+.\scripts\test-data-layer.ps1 -TestScope PrivateEndpoints -VerboseOutput
+.\scripts\test-data-layer.ps1 -TestScope Integration
+```
+
+#### Test Result Format
+```
+Starting Data Layer Unit Tests...
+Test Scope: All
+Environment: dev
+
+Testing SQL Server Module...
+✓ SQL Server template syntax
+✓ SQL Server Azure AD authentication
+✓ SQL Server Transparent Data Encryption
+✓ SQL Server Advanced Data Security
+✓ SQL Server network security configuration
+✓ SQL Server backup and recovery configuration
+✓ SQL Server diagnostic settings and monitoring
+
+Testing Storage Account Module...
+✓ Storage Account template syntax
+✓ Storage Account network access controls
+✓ Storage Account encryption configuration
+✓ Storage Account blob security features
+✓ Storage Account lifecycle management
+✓ Storage Account container and file share configuration
+
+Testing Private Endpoints Module...
+✓ Private Endpoints template syntax
+✓ Private Endpoints supported service types
+✓ Private Endpoints DNS zone configuration
+✓ Private Endpoints connectivity configuration
+✓ Private Endpoints custom DNS configuration
+✓ Private Endpoints multi-cloud compatibility
+
+Testing Data Layer Integration...
+✓ Data layer main template integration
+✓ Data layer parameter file configurations
+✓ Data layer dependency management
+
+==================================================
+Test Summary
+==================================================
+Total Tests: 21
+Passed: 21
+Failed: 0
+
+All tests passed!
 ```
 
 ## Security Considerations

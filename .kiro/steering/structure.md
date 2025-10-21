@@ -18,7 +18,10 @@ bicep-infrastructure/
 ├── scripts/                   # Deployment and validation scripts
 │   ├── deploy.ps1             # Main deployment script
 │   ├── validate.ps1           # Template validation script
-│   └── security-scan.ps1      # Checkov security scanning script
+│   ├── security-scan.ps1      # Checkov security scanning script
+│   ├── test-compute-modules.ps1 # Compute module unit tests
+│   ├── test-data-layer.ps1    # Data layer module unit tests
+│   └── test-private-endpoints.ps1 # Private endpoints module tests
 ├── .checkov.yaml              # Checkov configuration file
 └── .checkovignore             # Checkov ignore patterns
 ```

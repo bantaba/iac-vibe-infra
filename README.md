@@ -29,7 +29,9 @@ bicep-infrastructure/
 │   ├── deploy.ps1             # Main deployment script
 │   ├── validate.ps1           # Template validation script
 │   ├── security-scan.ps1      # Checkov security scanning script
-│   └── test-compute-modules.ps1 # Compute module unit tests
+│   ├── test-compute-modules.ps1 # Compute module unit tests
+│   ├── test-data-layer.ps1    # Data layer module unit tests
+│   └── test-private-endpoints.ps1 # Private endpoints module tests
 ├── .checkov.yaml              # Checkov configuration file
 └── .checkovignore             # Checkov ignore patterns
 ```
@@ -81,6 +83,14 @@ bicep-infrastructure/
    
    # Test specific compute module with verbose output
    .\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway -VerboseOutput
+   
+   # Test all data layer modules (SQL Server, Storage Account, Private Endpoints)
+   .\scripts\test-data-layer.ps1
+   
+   # Test specific data layer module with verbose output
+   .\scripts\test-data-layer.ps1 -TestScope SqlServer -VerboseOutput
+   .\scripts\test-data-layer.ps1 -TestScope StorageAccount -VerboseOutput
+   .\scripts\test-data-layer.ps1 -TestScope PrivateEndpoints -VerboseOutput
    
    # Test private endpoints module
    .\scripts\test-private-endpoints.ps1 -Environment dev -VerboseOutput
@@ -462,7 +472,7 @@ module storageAccount 'modules/data/storage-account.bicep' = {
 
 ### Module Testing Overview
 
-The project includes comprehensive unit tests for infrastructure modules to validate configuration, functionality, and cloud compatibility:
+The project includes comprehensive unit tests for infrastructure modules to validate configuration, functionality, and cloud compatibility. Testing is organized by module category with dedicated test scripts for compute and data layer components:
 
 ### Compute Module Testing
 
@@ -530,6 +540,72 @@ The test script is designed to integrate with CI/CD pipelines:
 - Returns exit code 0 for success, 1 for failure
 - Supports automated testing in build pipelines
 - Provides structured output for parsing by automation tools
+
+### Data Layer Module Testing
+
+The project includes comprehensive testing for data layer modules to validate security features, compliance, and integration:
+
+#### Test Script Usage
+
+```powershell
+# Test all data layer modules
+.\scripts\test-data-layer.ps1
+
+# Test specific module
+.\scripts\test-data-layer.ps1 -TestScope SqlServer
+.\scripts\test-data-layer.ps1 -TestScope StorageAccount
+.\scripts\test-data-layer.ps1 -TestScope PrivateEndpoints
+.\scripts\test-data-layer.ps1 -TestScope Integration
+
+# Test with verbose output for detailed information
+.\scripts\test-data-layer.ps1 -VerboseOutput
+
+# Test for specific environment
+.\scripts\test-data-layer.ps1 -Environment staging -VerboseOutput
+```
+
+#### Test Coverage
+
+The data layer test script validates the following aspects:
+
+**SQL Server Module Tests:**
+- Template syntax validation using `az bicep build`
+- Azure AD authentication configuration with tenant integration
+- Transparent Data Encryption (TDE) enablement validation
+- Advanced Data Security (Microsoft Defender for SQL) configuration
+- Network security settings including TLS 1.2 enforcement
+- Backup and recovery configuration with retention policies
+- Diagnostic settings and monitoring integration
+
+**Storage Account Module Tests:**
+- Template syntax validation
+- Network access controls with subnet and IP restrictions
+- Encryption configuration including infrastructure encryption
+- Blob security features (versioning, soft delete, public access controls)
+- Lifecycle management policies for automated data tiering
+- Container and file share configuration validation
+
+**Private Endpoints Module Tests:**
+- Template syntax validation
+- Supported service types validation (SQL, Storage, Key Vault, etc.)
+- DNS zone configuration with cloud-compatible naming
+- Private endpoint connectivity configuration
+- Custom DNS configuration support
+- Multi-cloud compatibility using Azure `environment()` function
+
+**Integration Tests:**
+- Main template integration validation
+- Parameter file configuration checks
+- Dependency management between data layer modules
+
+#### Test Results
+
+The data layer test script provides:
+- ✓ Passed tests with detailed configuration validation
+- ✗ Failed tests with specific error messages and troubleshooting guidance
+- Test summary with comprehensive statistics
+- Environment-specific validation results
+- Security and compliance validation feedback
 
 ### Private Endpoints Module Testing
 
