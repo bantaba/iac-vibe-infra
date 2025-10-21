@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "233423861359809686"
+      "templateHash": "1359260816169904493"
     }
   },
   "definitions": {
@@ -9352,7 +9352,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1565733943090668544"
+              "templateHash": "14586416306715185298"
             }
           },
           "definitions": {
@@ -9446,6 +9446,40 @@
             },
             "privateEndpointConfigs": {
               "type": "array",
+              "items": {
+                "type": "object",
+                "properties": {
+                  "name": {
+                    "type": "string"
+                  },
+                  "privateLinkServiceId": {
+                    "type": "string"
+                  },
+                  "groupId": {
+                    "type": "string",
+                    "allowedValues": [
+                      "agentsvc",
+                      "cognitiveServices",
+                      "cosmosDb",
+                      "eventHub",
+                      "keyVault",
+                      "monitor",
+                      "ods",
+                      "oms",
+                      "redis",
+                      "search",
+                      "serviceBus",
+                      "sqlServer",
+                      "storageBlob",
+                      "storageDfs",
+                      "storageFile",
+                      "storageQueue",
+                      "storageTable",
+                      "storageWeb"
+                    ]
+                  }
+                }
+              },
               "defaultValue": [],
               "metadata": {
                 "description": "Private endpoint configurations"
@@ -9471,18 +9505,38 @@
               "metadata": {
                 "description": "Custom DNS servers for private DNS zones"
               }
+            },
+            "enableCustomDnsConfiguration": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable custom DNS configuration for private endpoints"
+              }
             }
           },
           "variables": {
+            "copy": [
+              {
+                "name": "dnsZoneVnetLinksArray",
+                "count": "[length(parameters('privateEndpointConfigs'))]",
+                "input": {
+                  "name": "[parameters('privateEndpointConfigs')[copyIndex('dnsZoneVnetLinksArray')].name]",
+                  "groupId": "[parameters('privateEndpointConfigs')[copyIndex('dnsZoneVnetLinksArray')].groupId]",
+                  "dnsZoneName": "[variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex('dnsZoneVnetLinksArray')].groupId]]",
+                  "vnetLinkId": "[if(parameters('enablePrivateDnsZones'), resourceId('Microsoft.Network/privateDnsZones/virtualNetworkLinks', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex('dnsZoneVnetLinksArray')].groupId], format('{0}-vnet-link', parameters('privateEndpointConfigs')[copyIndex('dnsZoneVnetLinksArray')].groupId)), '')]",
+                  "registrationEnabled": false
+                }
+              }
+            ],
             "privateDnsZoneNames": {
-              "sqlServer": "privatelink.database.windows.net",
-              "storageBlob": "privatelink.blob.core.windows.net",
-              "storageFile": "privatelink.file.core.windows.net",
-              "storageQueue": "privatelink.queue.core.windows.net",
-              "storageTable": "privatelink.table.core.windows.net",
-              "storageWeb": "privatelink.web.core.windows.net",
-              "storageDfs": "privatelink.dfs.core.windows.net",
-              "keyVault": "privatelink.vaultcore.azure.net",
+              "sqlServer": "[format('privatelink{0}', environment().suffixes.sqlServerHostname)]",
+              "storageBlob": "[format('privatelink.blob.{0}', environment().suffixes.storage)]",
+              "storageFile": "[format('privatelink.file.{0}', environment().suffixes.storage)]",
+              "storageQueue": "[format('privatelink.queue.{0}', environment().suffixes.storage)]",
+              "storageTable": "[format('privatelink.table.{0}', environment().suffixes.storage)]",
+              "storageWeb": "[format('privatelink.web.{0}', environment().suffixes.storage)]",
+              "storageDfs": "[format('privatelink.dfs.{0}', environment().suffixes.storage)]",
+              "keyVault": "[format('privatelink{0}', environment().suffixes.keyvaultDns)]",
               "cosmosDb": "privatelink.documents.azure.com",
               "serviceBus": "privatelink.servicebus.windows.net",
               "eventHub": "privatelink.servicebus.windows.net",
@@ -9557,6 +9611,7 @@
                   }
                 ],
                 "customNetworkInterfaceName": "[format('{0}-{1}-nic', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name)]",
+                "customDnsConfigs": "[if(and(parameters('enableCustomDnsConfiguration'), greater(length(parameters('customDnsServers')), 0)), createArray(createObject('fqdn', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId], 'ipAddresses', parameters('customDnsServers'))), createArray())]",
                 "ipConfigurations": []
               }
             },
@@ -9626,7 +9681,9 @@
                   "networkInterfaceId": "[reference(format('privateEndpoints[{0}]', copyIndex())).networkInterfaces[0].id]",
                   "privateIpAddress": "[if(greater(length(reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs), 0), reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs[0].ipAddresses[0], '')]",
                   "fqdn": "[if(greater(length(reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs), 0), reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs[0].fqdn, '')]",
-                  "dnsZoneId": "[if(parameters('enablePrivateDnsZones'), if(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId), parameters('existingPrivateDnsZoneIds')[parameters('privateEndpointConfigs')[copyIndex()].groupId], resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId])), '')]"
+                  "dnsZoneId": "[if(parameters('enablePrivateDnsZones'), if(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId), parameters('existingPrivateDnsZoneIds')[parameters('privateEndpointConfigs')[copyIndex()].groupId], resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId])), '')]",
+                  "dnsZoneName": "[variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId]]",
+                  "connectionState": "Approved"
                 }
               }
             },
@@ -9636,6 +9693,42 @@
                 "description": "Private DNS zone names"
               },
               "value": "[variables('privateDnsZoneNames')]"
+            },
+            "networkInterfaceDetails": {
+              "type": "array",
+              "metadata": {
+                "description": "Private endpoint network interface details"
+              },
+              "copy": {
+                "count": "[length(parameters('privateEndpointConfigs'))]",
+                "input": {
+                  "name": "[parameters('privateEndpointConfigs')[copyIndex()].name]",
+                  "networkInterfaceId": "[reference(format('privateEndpoints[{0}]', copyIndex())).networkInterfaces[0].id]",
+                  "privateIpAddress": "",
+                  "subnetId": "[parameters('subnetId')]"
+                }
+              }
+            },
+            "dnsZoneVnetLinks": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone virtual network links"
+              },
+              "value": "[if(parameters('enablePrivateDnsZones'), variables('dnsZoneVnetLinksArray'), createArray())]"
+            },
+            "deploymentSummary": {
+              "type": "object",
+              "metadata": {
+                "description": "Summary of private endpoint deployment"
+              },
+              "value": {
+                "totalEndpoints": "[length(parameters('privateEndpointConfigs'))]",
+                "enabledPrivateDnsZones": "[parameters('enablePrivateDnsZones')]",
+                "customDnsConfiguration": "[parameters('enableCustomDnsConfiguration')]",
+                "subnetId": "[parameters('subnetId')]",
+                "virtualNetworkId": "[parameters('virtualNetworkId')]",
+                "supportedServicesCount": "[length(items(variables('privateDnsZoneNames')))]"
+              }
             }
           }
         }

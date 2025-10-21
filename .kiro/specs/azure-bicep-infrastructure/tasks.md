@@ -144,7 +144,12 @@
   - ✅ Enhanced cloud compatibility for Azure Commercial, Government, and China deployments
   - _Requirements: 5.1, 7.1_
 
-- [ ] 5.5 Integrate data layer modules into main template
+- [x] 5.5 Integrate data layer modules into main template
+
+
+
+
+
   - Add SQL Database deployment to main.bicep
   - Deploy storage accounts with private endpoints
   - Configure private endpoint DNS integration
