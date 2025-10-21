@@ -1,0 +1,42 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": {
+      "value": "contoso"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "workloadName": {
+      "value": "webapp"
+    },
+    "tags": {
+      "value": {
+        "Environment": "dev",
+        "Workload": "webapp",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT",
+        "Compliance": "Required"
+      }
+    },
+    "enableSecurityBenchmark": {
+      "value": true
+    },
+    "enableCustomPolicies": {
+      "value": true
+    },
+    "policyScope": {
+      "value": "resourceGroup"
+    },
+    "complianceNotificationEmails": {
+      "value": [
+        "security@contoso.com",
+        "compliance@contoso.com"
+      ]
+    }
+  }
+}

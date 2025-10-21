@@ -1,0 +1,48 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": {
+      "value": "contoso"
+    },
+    "environment": {
+      "value": "dev"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "workloadName": {
+      "value": "webapp"
+    },
+    "tags": {
+      "value": {
+        "Environment": "dev",
+        "Workload": "webapp",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT",
+        "SecurityBaseline": "Enabled"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/{subscription-id}/resourceGroups/{rg-name}/providers/Microsoft.OperationalInsights/workspaces/{workspace-name}"
+    },
+    "enableSecurityBaseline": {
+      "value": true
+    },
+    "enableAuditLogging": {
+      "value": true
+    },
+    "securityBaselineConfig": {
+      "value": {
+        "requireHttpsOnly": true,
+        "requireTlsVersion": "1.2",
+        "enableAdvancedThreatProtection": true,
+        "requirePrivateEndpoints": true,
+        "enableNetworkSecurityGroups": true,
+        "requireManagedIdentity": true,
+        "enableDiagnosticSettings": true,
+        "auditRetentionDays": 365
+      }
+    }
+  }
+}

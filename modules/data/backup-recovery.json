@@ -1,0 +1,75 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "resourcePrefix": {
+      "value": "contoso"
+    },
+    "environment": {
+      "value": "prod"
+    },
+    "location": {
+      "value": "East US"
+    },
+    "workloadName": {
+      "value": "webapp"
+    },
+    "tags": {
+      "value": {
+        "Environment": "prod",
+        "Workload": "webapp",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT",
+        "BackupEnabled": "true",
+        "DisasterRecovery": "Enabled"
+      }
+    },
+    "recoveryVaultConfig": {
+      "value": {
+        "skuName": "Standard",
+        "enableCrossRegionRestore": true,
+        "enableSoftDelete": true,
+        "softDeleteRetentionDays": 14,
+        "enableSecuritySettings": true
+      }
+    },
+    "sqlBackupConfig": {
+      "value": {
+        "shortTermRetentionDays": 35,
+        "enableLongTermRetention": true,
+        "weeklyRetention": "P12W",
+        "monthlyRetention": "P12M",
+        "yearlyRetention": "P7Y",
+        "weekOfYear": 1,
+        "enableGeoRedundantBackup": true,
+        "enableAutomatedBackupTesting": true
+      }
+    },
+    "storageBackupConfig": {
+      "value": {
+        "enablePointInTimeRestore": true,
+        "pointInTimeRestoreDays": 30,
+        "enableBlobVersioning": true,
+        "enableBlobSoftDelete": true,
+        "blobSoftDeleteRetentionDays": 30,
+        "enableContainerSoftDelete": true,
+        "containerSoftDeleteRetentionDays": 30,
+        "enableCrossRegionReplication": true
+      }
+    },
+    "disasterRecoveryConfig": {
+      "value": {
+        "enableCrossRegionReplication": true,
+        "secondaryRegion": "West US 2",
+        "replicationFrequency": "Daily",
+        "retentionRange": "P30D",
+        "enableAutomatedFailover": false,
+        "enableBackupTesting": true,
+        "testingSchedule": "Weekly"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "value": "/subscriptions/{subscription-id}/resourceGroups/{rg-name}/providers/Microsoft.OperationalInsights/workspaces/{workspace-name}"
+    }
+  }
+}

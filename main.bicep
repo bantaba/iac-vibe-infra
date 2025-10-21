@@ -246,6 +246,50 @@ module keyVault 'modules/security/key-vault.bicep' = {
   ]
 }
 
+// Deploy Azure Policy compliance
+module azurePolicy 'modules/security/azure-policy.bicep' = {
+  name: 'azure-policy-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    workloadName: workloadName
+    tags: tags
+    enableSecurityBenchmark: true
+    enableCustomPolicies: true
+    policyScope: 'resourceGroup'
+    complianceNotificationEmails: [] // Should be provided via parameters
+  }
+}
+
+// Deploy security baseline configuration
+module securityBaseline 'modules/security/security-baseline.bicep' = {
+  name: 'security-baseline-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    workloadName: workloadName
+    tags: tags
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    enableSecurityBaseline: true
+    enableAuditLogging: true
+    securityBaselineConfig: {
+      requireHttpsOnly: true
+      requireTlsVersion: '1.2'
+      enableAdvancedThreatProtection: true
+      requirePrivateEndpoints: environment == 'prod'
+      enableNetworkSecurityGroups: true
+      requireManagedIdentity: true
+      enableDiagnosticSettings: true
+      auditRetentionDays: environment == 'prod' ? 365 : 90
+    }
+  }
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
+}
+
 // ========================================
 // COMPUTE MODULES
 // ========================================
@@ -995,6 +1039,60 @@ module storageAccount 'modules/data/storage-account.bicep' = {
   ]
 }
 
+// Deploy Backup and Disaster Recovery
+module backupRecovery 'modules/data/backup-recovery.bicep' = {
+  name: 'backup-recovery-deployment'
+  params: {
+    resourcePrefix: resourcePrefix
+    environment: environment
+    location: location
+    workloadName: workloadName
+    tags: tags
+    recoveryVaultConfig: {
+      skuName: 'Standard'
+      enableCrossRegionRestore: environment == 'prod'
+      enableSoftDelete: true
+      softDeleteRetentionDays: environment == 'prod' ? 14 : 7
+      enableSecuritySettings: true
+    }
+    sqlBackupConfig: {
+      shortTermRetentionDays: environment == 'prod' ? 35 : 7
+      enableLongTermRetention: environment == 'prod'
+      weeklyRetention: 'P12W'
+      monthlyRetention: 'P12M'
+      yearlyRetention: 'P7Y'
+      weekOfYear: 1
+      enableGeoRedundantBackup: environment == 'prod'
+      enableAutomatedBackupTesting: true
+    }
+    storageBackupConfig: {
+      enablePointInTimeRestore: environment == 'prod'
+      pointInTimeRestoreDays: environment == 'prod' ? 30 : 7
+      enableBlobVersioning: true
+      enableBlobSoftDelete: true
+      blobSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+      enableContainerSoftDelete: true
+      containerSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+      enableCrossRegionReplication: environment == 'prod'
+    }
+    disasterRecoveryConfig: {
+      enableCrossRegionReplication: environment == 'prod'
+      secondaryRegion: environment == 'prod' ? 'West US 2' : location
+      replicationFrequency: 'Daily'
+      retentionRange: environment == 'prod' ? 'P30D' : 'P7D'
+      enableAutomatedFailover: false
+      enableBackupTesting: true
+      testingSchedule: 'Weekly'
+    }
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+  }
+  dependsOn: [
+    sqlServer
+    storageAccount
+    logAnalyticsWorkspace
+  ]
+}
+
 // Deploy Private Endpoints (if enabled)
 module privateEndpoints 'modules/data/private-endpoints.bicep' = if (environmentConfig.enablePrivateEndpoints) {
   name: 'private-endpoints-deployment'
@@ -1110,6 +1208,17 @@ output security object = {
     uri: keyVault.outputs.keyVaultUri
     config: keyVault.outputs.keyVaultConfig
   }
+  azurePolicy: {
+    policyDefinitionIds: azurePolicy.outputs.policyDefinitionIds
+    policySetDefinitionId: azurePolicy.outputs.policySetDefinitionId
+    policyAssignmentIds: azurePolicy.outputs.policyAssignmentIds
+    complianceReportingEnabled: azurePolicy.outputs.complianceReportingEnabled
+  }
+  securityBaseline: {
+    securityBaselineConfig: securityBaseline.outputs.securityBaselineConfig
+    auditLoggingEnabled: securityBaseline.outputs.auditLoggingEnabled
+    complianceStatus: securityBaseline.outputs.complianceStatus
+  }
 }
 
 // Compute outputs
@@ -1221,6 +1330,15 @@ output data object = {
     dnsZones: {}
     configs: []
     dnsZoneNames: {}
+  }
+  backupRecovery: {
+    recoveryServicesVaultId: backupRecovery.outputs.recoveryServicesVaultId
+    recoveryServicesVaultName: backupRecovery.outputs.recoveryServicesVaultName
+    backupPolicyIds: backupRecovery.outputs.backupPolicyIds
+    backupConfiguration: backupRecovery.outputs.backupConfiguration
+    crossRegionReplicationEnabled: backupRecovery.outputs.crossRegionReplicationEnabled
+    backupTestingEnabled: backupRecovery.outputs.backupTestingEnabled
+    recoveryConfiguration: backupRecovery.outputs.recoveryConfiguration
   }
 }
 
