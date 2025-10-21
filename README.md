@@ -187,6 +187,82 @@ Each environment has specific configurations optimized for its purpose:
 
 ## Module Usage Examples
 
+### Managed Identity Module
+
+The Managed Identity module creates user-assigned managed identities for secure service-to-service authentication:
+
+```bicep
+module managedIdentities 'modules/security/managed-identity.bicep' = {
+  name: 'managed-identities-deployment'
+  params: {
+    managedIdentityBaseName: 'contoso-webapp-prod'
+    userAssignedIdentities: [
+      {
+        name: 'application-services'
+        description: 'Managed identity for application services'
+        roleAssignments: []
+      }
+      {
+        name: 'key-vault-access'
+        description: 'Managed identity for Key Vault access'
+        roleAssignments: []
+      }
+      {
+        name: 'storage-access'
+        description: 'Managed identity for storage account access'
+        roleAssignments: []
+      }
+      {
+        name: 'sql-access'
+        description: 'Managed identity for SQL database access'
+        roleAssignments: []
+      }
+      {
+        name: 'application-gateway'
+        description: 'Managed identity for Application Gateway Key Vault access'
+        roleAssignments: []
+      }
+    ]
+    enableDiagnostics: true
+    logAnalyticsWorkspaceId: '/subscriptions/.../workspaces/law-workspace'
+    enableTelemetry: true
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    location: 'East US'
+  }
+}
+```
+
+#### Managed Identity Configuration Options
+
+- **User-Assigned Identities**: Create multiple specialized identities for different service roles
+- **Service Integration**: Seamless authentication between Azure services without stored credentials
+- **RBAC Integration**: Automatic role assignments for secure service-to-service communication
+- **Monitoring**: Optional diagnostic settings integration with Log Analytics workspace
+- **Telemetry**: Optional deployment telemetry for usage tracking and optimization
+- **Principal Management**: Automatic generation of principal IDs and client IDs for service authentication
+
+#### Using Managed Identity Outputs
+
+The module provides comprehensive outputs for integration with other services:
+
+```bicep
+// Reference managed identity in Key Vault role assignments
+keyVaultSecretsUsers: [
+  managedIdentities.outputs.managedIdentityLookup.keyVaultAccess.principalId
+  managedIdentities.outputs.managedIdentityLookup.applicationGateway.principalId
+]
+
+// Use managed identity for Application Gateway Key Vault access
+managedIdentityId: managedIdentities.outputs.managedIdentityLookup.applicationGateway.id
+
+// Reference managed identity for SQL Server Azure AD authentication
+azureAdAdministratorObjectId: managedIdentities.outputs.managedIdentityLookup.sqlAccess.principalId
+```
+
 ### Public IP Module
 
 The Public IP module creates Standard SKU public IP addresses for Application Gateway and other public-facing resources:
@@ -700,13 +776,26 @@ The main template deploys the following infrastructure components:
 
 ### Security Infrastructure
 
+#### Managed Identities
+- **User-Assigned Identities**: Five specialized managed identities for different service roles
+  - Application Services: General application service authentication
+  - Key Vault Access: Dedicated identity for Key Vault operations
+  - Storage Access: Storage account access and operations
+  - SQL Access: Database authentication and operations
+  - Application Gateway: SSL certificate retrieval from Key Vault
+- **Service Integration**: Seamless authentication between Azure services without stored credentials
+- **RBAC Integration**: Automatic role assignments for secure service-to-service communication
+- **Monitoring**: Comprehensive diagnostic settings with Log Analytics integration
+- **Telemetry**: Optional deployment telemetry for usage tracking and optimization
+
 #### Key Vault Module
 - **Secure Secret Management**: Centralized storage for secrets, keys, and certificates
 - **RBAC Authorization**: Role-based access control with built-in Azure roles
   - Key Vault Administrator: Full management permissions
-  - Key Vault Secrets User: Read access to secrets for applications
-  - Key Vault Certificate User: Certificate management for SSL/TLS
+  - Key Vault Secrets User: Read access to secrets for applications (includes managed identities)
+  - Key Vault Certificate User: Certificate management for SSL/TLS (includes Application Gateway identity)
 - **Network Security**: Private network access with subnet and IP restrictions
+- **Managed Identity Integration**: Seamless access for Application Gateway SSL certificate retrieval
 - **Compliance Features**: 
   - Soft delete with configurable retention (7-90 days)
   - Purge protection for production environments

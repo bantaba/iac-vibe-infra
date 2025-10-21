@@ -52,14 +52,15 @@ Subnet Architecture (per environment):
 - ✅ Network Security Groups with comprehensive tier-specific rules
 - ✅ DDoS Protection Plan (conditional deployment for staging/production)
 - ✅ Public IP Address module with Standard SKU and zone redundancy support
-- ✅ Key Vault module with RBAC, network controls, and monitoring integration
-- ✅ Application Gateway module with WAF, SSL termination, and backend pool management
+- ✅ Managed Identity module with user-assigned identities and RBAC integration
+- ✅ Key Vault module with RBAC, network controls, and managed identity integration
+- ✅ Application Gateway module with WAF, SSL termination, and managed identity for Key Vault access
 - ✅ Load Balancer modules for internal traffic distribution
 - ✅ SQL Server module with comprehensive security, backup, and monitoring features
 - ✅ Storage Account module with lifecycle management, encryption, and private endpoint support
 - ✅ Private Endpoints module for secure data service connectivity
-- ⏳ Managed Identity and Security Center modules - Next phase
-- ⏳ Monitoring modules (Log Analytics, Application Insights) - Next phase
+- ✅ Monitoring modules (Log Analytics, Application Insights, Alerts) with comprehensive observability
+- ⏳ Security Center module - Next phase
 
 ## Components and Interfaces
 
@@ -127,6 +128,19 @@ bicep-infrastructure/
 - **Load Balancing Rules**: Distribution algorithms and session persistence
 - **Health Probes**: TCP and HTTP health checks
 
+#### Managed Identity Interface
+- **User-Assigned Identities**: Five specialized identities for different service roles
+  - Application Services: General application service authentication
+  - Key Vault Access: Dedicated identity for Key Vault operations and secret retrieval
+  - Storage Access: Storage account access and blob/file operations
+  - SQL Access: Database authentication and Azure AD integration
+  - Application Gateway: SSL certificate retrieval from Key Vault for HTTPS termination
+- **Service Integration**: Seamless authentication between Azure services without stored credentials
+- **RBAC Integration**: Automatic role assignments for secure service-to-service communication
+- **Monitoring Integration**: Comprehensive diagnostic settings with Log Analytics workspace integration
+- **Telemetry Support**: Optional deployment telemetry for usage tracking and optimization
+- **Principal Management**: Automatic generation of principal IDs and client IDs for service authentication
+
 #### SQL Server Interface
 - **Database Configuration**: Configurable SKUs from Basic to Business Critical with vCore options
 - **Security Features**:
@@ -162,8 +176,12 @@ bicep-infrastructure/
 #### Key Vault Interface
 - **RBAC Authorization**: Built-in role assignments for secure access management
   - Key Vault Administrator: Full management permissions for administrators
-  - Key Vault Secrets User: Read access to secrets for applications and services
-  - Key Vault Certificate User: Certificate management for SSL/TLS operations
+  - Key Vault Secrets User: Read access to secrets for applications and managed identities
+  - Key Vault Certificate User: Certificate management for SSL/TLS operations (includes Application Gateway identity)
+- **Managed Identity Integration**: Seamless service authentication
+  - Application Gateway identity for SSL certificate retrieval
+  - Key Vault Access identity for centralized secret management
+  - Automatic role assignments for secure service-to-service communication
 - **Network Security**: Configurable network access controls
   - Subnet-based access restrictions for VNet integration
   - IP allowlist support for specific client access
@@ -277,6 +295,59 @@ type PublicIpOutputs = {
 ### Security Configuration Schema
 
 ```bicep
+// Managed Identity configuration
+type ManagedIdentityConfig = {
+  name: string
+  description: string
+  roleAssignments: {
+    role: string
+    scope: string
+  }[]
+}
+
+// Managed Identity outputs
+type ManagedIdentityOutputs = {
+  ids: string[]
+  names: string[]
+  principalIds: string[]
+  clientIds: string[]
+  configs: {
+    name: string
+    id: string
+    principalId: string
+    clientId: string
+    purpose: string
+    type: 'UserAssigned'
+  }[]
+  lookup: {
+    applicationServices: {
+      id: string
+      principalId: string
+      clientId: string
+    }
+    keyVaultAccess: {
+      id: string
+      principalId: string
+      clientId: string
+    }
+    storageAccess: {
+      id: string
+      principalId: string
+      clientId: string
+    }
+    sqlAccess: {
+      id: string
+      principalId: string
+      clientId: string
+    }
+    applicationGateway: {
+      id: string
+      principalId: string
+      clientId: string
+    }
+  }
+}
+
 // Key Vault configuration
 type KeyVaultConfig = {
   sku: 'standard' | 'premium'

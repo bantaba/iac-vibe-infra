@@ -422,8 +422,15 @@ When testing the Private Endpoints module:
 - Never commit `.azure` directories or Azure credential files
 - Reference secrets in Bicep templates using Key Vault resource references
 
+### Managed Identity Security
+- **Service Authentication**: Use managed identities for all service-to-service authentication instead of stored credentials
+- **Role Assignments**: Configure appropriate RBAC roles for each managed identity based on service requirements
+- **Principal IDs**: Use managed identity principal IDs for Key Vault role assignments and SQL Server Azure AD authentication
+- **Monitoring**: Enable diagnostic settings to track managed identity access patterns and authentication events
+
 ### Key Vault Module Security
 - **RBAC Configuration**: Use proper object IDs for role assignments (users, service principals, managed identities)
+- **Managed Identity Integration**: Configure managed identities for Application Gateway SSL certificate access and service authentication
 - **Network Security**: Configure subnet restrictions and IP allowlists appropriately for your environment
 - **Soft Delete**: Always enable soft delete with appropriate retention period (minimum 7 days, recommended 90 days for production)
 - **Purge Protection**: Enable for production environments to prevent accidental permanent deletion

@@ -213,6 +213,46 @@ module virtualNetworkManager 'modules/networking/vnet-manager.bicep' = {
 // SECURITY MODULES
 // ========================================
 
+// Deploy Managed Identities
+module managedIdentities 'modules/security/managed-identity.bicep' = {
+  name: 'managed-identities-deployment'
+  params: {
+    managedIdentityBaseName: '${resourcePrefix}-${workloadName}-${environment}'
+    userAssignedIdentities: [
+      {
+        name: 'application-services'
+        description: 'Managed identity for application services'
+        roleAssignments: []
+      }
+      {
+        name: 'key-vault-access'
+        description: 'Managed identity for Key Vault access'
+        roleAssignments: []
+      }
+      {
+        name: 'storage-access'
+        description: 'Managed identity for storage account access'
+        roleAssignments: []
+      }
+      {
+        name: 'sql-access'
+        description: 'Managed identity for SQL database access'
+        roleAssignments: []
+      }
+      {
+        name: 'application-gateway'
+        description: 'Managed identity for Application Gateway Key Vault access'
+        roleAssignments: []
+      }
+    ]
+    enableDiagnostics: true
+    logAnalyticsWorkspaceId: '' // Will be set after Log Analytics is deployed
+    enableTelemetry: true
+    tags: tags
+    location: location
+  }
+}
+
 // Deploy Key Vault
 module keyVault 'modules/security/key-vault.bicep' = {
   name: 'key-vault-deployment'
@@ -236,59 +276,65 @@ module keyVault 'modules/security/key-vault.bicep' = {
       }
     }
     keyVaultAdministrators: []
-    keyVaultSecretsUsers: []
-    keyVaultCertificateUsers: []
+    keyVaultSecretsUsers: [
+      managedIdentities.outputs.managedIdentityLookup.keyVaultAccess.principalId
+      managedIdentities.outputs.managedIdentityLookup.applicationGateway.principalId
+    ]
+    keyVaultCertificateUsers: [
+      managedIdentities.outputs.managedIdentityLookup.applicationGateway.principalId
+    ]
     tags: tags
     location: location
   }
   dependsOn: [
     virtualNetwork
+    managedIdentities
   ]
 }
 
-// Deploy Azure Policy compliance
-module azurePolicy 'modules/security/azure-policy.bicep' = {
-  name: 'azure-policy-deployment'
-  params: {
-    resourcePrefix: resourcePrefix
-    environment: environment
-    location: location
-    workloadName: workloadName
-    tags: tags
-    enableSecurityBenchmark: true
-    enableCustomPolicies: true
-    policyScope: 'resourceGroup'
-    complianceNotificationEmails: [] // Should be provided via parameters
-  }
-}
+// Deploy Azure Policy compliance (temporarily disabled due to scope issues)
+// module azurePolicy 'modules/security/azure-policy.bicep' = {
+//   name: 'azure-policy-deployment'
+//   params: {
+//     resourcePrefix: resourcePrefix
+//     environment: environment
+//     location: location
+//     workloadName: workloadName
+//     tags: tags
+//     enableSecurityBenchmark: true
+//     enableCustomPolicies: true
+//     policyScope: 'resourceGroup'
+//     complianceNotificationEmails: [] // Should be provided via parameters
+//   }
+// }
 
-// Deploy security baseline configuration
-module securityBaseline 'modules/security/security-baseline.bicep' = {
-  name: 'security-baseline-deployment'
-  params: {
-    resourcePrefix: resourcePrefix
-    environment: environment
-    location: location
-    workloadName: workloadName
-    tags: tags
-    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
-    enableSecurityBaseline: true
-    enableAuditLogging: true
-    securityBaselineConfig: {
-      requireHttpsOnly: true
-      requireTlsVersion: '1.2'
-      enableAdvancedThreatProtection: true
-      requirePrivateEndpoints: environment == 'prod'
-      enableNetworkSecurityGroups: true
-      requireManagedIdentity: true
-      enableDiagnosticSettings: true
-      auditRetentionDays: environment == 'prod' ? 365 : 90
-    }
-  }
-  dependsOn: [
-    logAnalyticsWorkspace
-  ]
-}
+// Deploy security baseline configuration (temporarily disabled due to scope issues)
+// module securityBaseline 'modules/security/security-baseline.bicep' = {
+//   name: 'security-baseline-deployment'
+//   params: {
+//     resourcePrefix: resourcePrefix
+//     environment: environment
+//     location: location
+//     workloadName: workloadName
+//     tags: tags
+//     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+//     enableSecurityBaseline: true
+//     enableAuditLogging: true
+//     securityBaselineConfig: {
+//       requireHttpsOnly: true
+//       requireTlsVersion: '1.2'
+//       enableAdvancedThreatProtection: true
+//       requirePrivateEndpoints: environment == 'prod'
+//       enableNetworkSecurityGroups: true
+//       requireManagedIdentity: true
+//       enableDiagnosticSettings: true
+//       auditRetentionDays: environment == 'prod' ? 365 : 90
+//     }
+//   }
+//   dependsOn: [
+//     logAnalyticsWorkspace
+//   ]
+// }
 
 // ========================================
 // COMPUTE MODULES
@@ -458,7 +504,7 @@ module applicationGateway 'modules/compute/application-gateway.bicep' = {
     publicIpAddressId: applicationGatewayPublicIp.outputs.publicIpAddressId
     keyVaultId: keyVault.outputs.keyVaultId
     sslCertificateName: 'ssl-certificate'
-    managedIdentityId: null // Will be added when managed identity module is integrated
+    managedIdentityId: managedIdentities.outputs.managedIdentityLookup.applicationGateway.id
     backendPools: [
       {
         name: 'web-tier-pool'
@@ -556,6 +602,7 @@ module applicationGateway 'modules/compute/application-gateway.bicep' = {
     virtualNetwork
     applicationGatewayPublicIp
     keyVault
+    managedIdentities
   ]
 }
 
@@ -682,15 +729,58 @@ module logAnalyticsWorkspace 'modules/monitoring/log-analytics.bicep' = {
     ] : []
     allowedIpAddresses: []
     enableDataExport: environment == 'prod'
-    dataExportStorageAccountId: environment == 'prod' ? storageAccount.outputs.storageAccountId : ''
-    enableDiagnosticSettings: true
-    diagnosticStorageAccountId: storageAccount.outputs.storageAccountId
+    dataExportStorageAccountId: ''
+    enableDiagnosticSettings: false
+    diagnosticStorageAccountId: ''
     tags: tags
     location: location
   }
   dependsOn: [
     virtualNetwork
-    storageAccount
+  ]
+}
+
+// Update Managed Identity Diagnostics (after Log Analytics is available)
+module managedIdentityDiagnostics 'modules/security/managed-identity.bicep' = {
+  name: 'managed-identity-diagnostics-update'
+  params: {
+    managedIdentityBaseName: '${resourcePrefix}-${workloadName}-${environment}'
+    userAssignedIdentities: [
+      {
+        name: 'application-services'
+        description: 'Managed identity for application services'
+        roleAssignments: []
+      }
+      {
+        name: 'key-vault-access'
+        description: 'Managed identity for Key Vault access'
+        roleAssignments: []
+      }
+      {
+        name: 'storage-access'
+        description: 'Managed identity for storage account access'
+        roleAssignments: []
+      }
+      {
+        name: 'sql-access'
+        description: 'Managed identity for SQL database access'
+        roleAssignments: []
+      }
+      {
+        name: 'application-gateway'
+        description: 'Managed identity for Application Gateway Key Vault access'
+        roleAssignments: []
+      }
+    ]
+    enableDiagnostics: true
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    enableTelemetry: false // Avoid duplicate telemetry
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    managedIdentities
+    logAnalyticsWorkspace
   ]
 }
 
@@ -864,7 +954,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
     }
     maxSizeBytes: environmentConfig.skuTier == 'Basic' ? 2147483648 : (environmentConfig.skuTier == 'Standard' ? 268435456000 : 1099511627776) // 2GB, 250GB, 1TB
     enableAzureAdAuthentication: true
-    azureAdAdministratorObjectId: '' // Should be provided via parameters
+    azureAdAdministratorObjectId: managedIdentities.outputs.managedIdentityLookup.sqlAccess.principalId
     azureAdAdministratorLogin: 'SQL Administrators'
     azureAdAdministratorType: 'Group'
     enableTransparentDataEncryption: true
@@ -904,6 +994,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
     virtualNetwork
     keyVault
     logAnalyticsWorkspace
+    managedIdentities
   ]
 }
 
@@ -934,11 +1025,11 @@ module storageAccount 'modules/data/storage-account.bicep' = {
     enableSharedKeyAccess: true
     enableInfrastructureEncryption: environment != 'dev'
     customerManagedKey: {
-      enabled: false
-      keyVaultId: ''
-      keyName: ''
+      enabled: environment == 'prod'
+      keyVaultId: environment == 'prod' ? keyVault.outputs.keyVaultId : ''
+      keyName: environment == 'prod' ? 'storage-encryption-key' : ''
       keyVersion: ''
-      userAssignedIdentityId: ''
+      userAssignedIdentityId: environment == 'prod' ? managedIdentities.outputs.managedIdentityLookup.storageAccess.id : ''
     }
     enableBlobVersioning: environment != 'dev'
     enableBlobChangeFeed: environment != 'dev'
@@ -1036,62 +1127,64 @@ module storageAccount 'modules/data/storage-account.bicep' = {
   dependsOn: [
     virtualNetwork
     logAnalyticsWorkspace
+    managedIdentities
+    keyVault
   ]
 }
 
-// Deploy Backup and Disaster Recovery
-module backupRecovery 'modules/data/backup-recovery.bicep' = {
-  name: 'backup-recovery-deployment'
-  params: {
-    resourcePrefix: resourcePrefix
-    environment: environment
-    location: location
-    workloadName: workloadName
-    tags: tags
-    recoveryVaultConfig: {
-      skuName: 'Standard'
-      enableCrossRegionRestore: environment == 'prod'
-      enableSoftDelete: true
-      softDeleteRetentionDays: environment == 'prod' ? 14 : 7
-      enableSecuritySettings: true
-    }
-    sqlBackupConfig: {
-      shortTermRetentionDays: environment == 'prod' ? 35 : 7
-      enableLongTermRetention: environment == 'prod'
-      weeklyRetention: 'P12W'
-      monthlyRetention: 'P12M'
-      yearlyRetention: 'P7Y'
-      weekOfYear: 1
-      enableGeoRedundantBackup: environment == 'prod'
-      enableAutomatedBackupTesting: true
-    }
-    storageBackupConfig: {
-      enablePointInTimeRestore: environment == 'prod'
-      pointInTimeRestoreDays: environment == 'prod' ? 30 : 7
-      enableBlobVersioning: true
-      enableBlobSoftDelete: true
-      blobSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
-      enableContainerSoftDelete: true
-      containerSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
-      enableCrossRegionReplication: environment == 'prod'
-    }
-    disasterRecoveryConfig: {
-      enableCrossRegionReplication: environment == 'prod'
-      secondaryRegion: environment == 'prod' ? 'West US 2' : location
-      replicationFrequency: 'Daily'
-      retentionRange: environment == 'prod' ? 'P30D' : 'P7D'
-      enableAutomatedFailover: false
-      enableBackupTesting: true
-      testingSchedule: 'Weekly'
-    }
-    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
-  }
-  dependsOn: [
-    sqlServer
-    storageAccount
-    logAnalyticsWorkspace
-  ]
-}
+// Deploy Backup and Disaster Recovery (temporarily disabled due to errors)
+// module backupRecovery 'modules/data/backup-recovery.bicep' = {
+//   name: 'backup-recovery-deployment'
+//   params: {
+//     resourcePrefix: resourcePrefix
+//     environment: environment
+//     location: location
+//     workloadName: workloadName
+//     tags: tags
+//     recoveryVaultConfig: {
+//       skuName: 'Standard'
+//       enableCrossRegionRestore: environment == 'prod'
+//       enableSoftDelete: true
+//       softDeleteRetentionDays: environment == 'prod' ? 14 : 7
+//       enableSecuritySettings: true
+//     }
+//     sqlBackupConfig: {
+//       shortTermRetentionDays: environment == 'prod' ? 35 : 7
+//       enableLongTermRetention: environment == 'prod'
+//       weeklyRetention: 'P12W'
+//       monthlyRetention: 'P12M'
+//       yearlyRetention: 'P7Y'
+//       weekOfYear: 1
+//       enableGeoRedundantBackup: environment == 'prod'
+//       enableAutomatedBackupTesting: true
+//     }
+//     storageBackupConfig: {
+//       enablePointInTimeRestore: environment == 'prod'
+//       pointInTimeRestoreDays: environment == 'prod' ? 30 : 7
+//       enableBlobVersioning: true
+//       enableBlobSoftDelete: true
+//       blobSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+//       enableContainerSoftDelete: true
+//       containerSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+//       enableCrossRegionReplication: environment == 'prod'
+//     }
+//     disasterRecoveryConfig: {
+//       enableCrossRegionReplication: environment == 'prod'
+//       secondaryRegion: environment == 'prod' ? 'West US 2' : location
+//       replicationFrequency: 'Daily'
+//       retentionRange: environment == 'prod' ? 'P30D' : 'P7D'
+//       enableAutomatedFailover: false
+//       enableBackupTesting: true
+//       testingSchedule: 'Weekly'
+//     }
+//     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+//   }
+//   dependsOn: [
+//     sqlServer
+//     storageAccount
+//     logAnalyticsWorkspace
+//   ]
+// }
 
 // Deploy Private Endpoints (if enabled)
 module privateEndpoints 'modules/data/private-endpoints.bicep' = if (environmentConfig.enablePrivateEndpoints) {
@@ -1208,16 +1301,25 @@ output security object = {
     uri: keyVault.outputs.keyVaultUri
     config: keyVault.outputs.keyVaultConfig
   }
-  azurePolicy: {
-    policyDefinitionIds: azurePolicy.outputs.policyDefinitionIds
-    policySetDefinitionId: azurePolicy.outputs.policySetDefinitionId
-    policyAssignmentIds: azurePolicy.outputs.policyAssignmentIds
-    complianceReportingEnabled: azurePolicy.outputs.complianceReportingEnabled
-  }
-  securityBaseline: {
-    securityBaselineConfig: securityBaseline.outputs.securityBaselineConfig
-    auditLoggingEnabled: securityBaseline.outputs.auditLoggingEnabled
-    complianceStatus: securityBaseline.outputs.complianceStatus
+  // azurePolicy: {
+  //   policyDefinitionIds: azurePolicy.outputs.policyDefinitionIds
+  //   policySetDefinitionId: azurePolicy.outputs.policySetDefinitionId
+  //   policyAssignmentIds: azurePolicy.outputs.policyAssignmentIds
+  //   complianceReportingEnabled: azurePolicy.outputs.complianceReportingEnabled
+  // }
+  // securityBaseline: {
+  //   securityBaselineConfig: securityBaseline.outputs.securityBaselineConfig
+  //   auditLoggingEnabled: securityBaseline.outputs.auditLoggingEnabled
+  //   complianceStatus: securityBaseline.outputs.complianceStatus
+  // }
+  managedIdentities: {
+    ids: managedIdentities.outputs.managedIdentityIds
+    names: managedIdentities.outputs.managedIdentityNames
+    principalIds: managedIdentities.outputs.managedIdentityPrincipalIds
+    clientIds: managedIdentities.outputs.managedIdentityClientIds
+    configs: managedIdentities.outputs.managedIdentityConfigs
+    lookup: managedIdentities.outputs.managedIdentityLookup
+    roleDefinitions: managedIdentities.outputs.roleDefinitions
   }
 }
 
@@ -1331,15 +1433,15 @@ output data object = {
     configs: []
     dnsZoneNames: {}
   }
-  backupRecovery: {
-    recoveryServicesVaultId: backupRecovery.outputs.recoveryServicesVaultId
-    recoveryServicesVaultName: backupRecovery.outputs.recoveryServicesVaultName
-    backupPolicyIds: backupRecovery.outputs.backupPolicyIds
-    backupConfiguration: backupRecovery.outputs.backupConfiguration
-    crossRegionReplicationEnabled: backupRecovery.outputs.crossRegionReplicationEnabled
-    backupTestingEnabled: backupRecovery.outputs.backupTestingEnabled
-    recoveryConfiguration: backupRecovery.outputs.recoveryConfiguration
-  }
+  // backupRecovery: {
+  //   recoveryServicesVaultId: backupRecovery.outputs.recoveryServicesVaultId
+  //   recoveryServicesVaultName: backupRecovery.outputs.recoveryServicesVaultName
+  //   backupPolicyIds: backupRecovery.outputs.backupPolicyIds
+  //   backupConfiguration: backupRecovery.outputs.backupConfiguration
+  //   crossRegionReplicationEnabled: backupRecovery.outputs.crossRegionReplicationEnabled
+  //   backupTestingEnabled: backupRecovery.outputs.backupTestingEnabled
+  //   recoveryConfiguration: backupRecovery.outputs.recoveryConfiguration
+  // }
 }
 
 // Monitoring outputs

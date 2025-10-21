@@ -198,7 +198,7 @@ var outboundRulesCollection = [for rule in outboundRules: {
 resource loadBalancer 'Microsoft.Network/loadBalancers@2023-09-01' = {
   name: loadBalancerName
   location: location
-  tags: tags.?
+  tags: tags
   sku: {
     name: sku
     tier: 'Regional'
