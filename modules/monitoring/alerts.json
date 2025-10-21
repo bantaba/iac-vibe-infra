@@ -1,0 +1,662 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "5391062900094577726"
+    }
+  },
+  "definitions": {
+    "TagConfiguration": {
+      "type": "object",
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "metadata": {
+            "description": "Environment tag"
+          }
+        },
+        "Workload": {
+          "type": "string",
+          "metadata": {
+            "description": "Workload tag"
+          }
+        },
+        "ManagedBy": {
+          "type": "string",
+          "metadata": {
+            "description": "Managed by tag"
+          }
+        },
+        "CostCenter": {
+          "type": "string",
+          "metadata": {
+            "description": "Cost center tag"
+          }
+        },
+        "Owner": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Owner tag"
+          }
+        },
+        "Project": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Project tag"
+          }
+        },
+        "DeploymentDate": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Deployment date tag"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "../shared/parameter-schemas.bicep"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "alertNamePrefix": {
+      "type": "string",
+      "metadata": {
+        "description": "The prefix for alert rule names"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location for alert resources"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the Log Analytics workspace"
+      }
+    },
+    "applicationInsightsId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the Application Insights instance"
+      }
+    },
+    "alertEmailAddresses": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Email addresses for alert notifications"
+      }
+    },
+    "alertSmsNumbers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "SMS phone numbers for critical alerts"
+      }
+    },
+    "alertWebhookUrls": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Webhook URLs for alert notifications"
+      }
+    },
+    "enableSecurityAlerts": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable security alerts"
+      }
+    },
+    "enablePerformanceAlerts": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable performance alerts"
+      }
+    },
+    "enableAvailabilityAlerts": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable availability alerts"
+      }
+    },
+    "monitoredResourceIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Resource IDs to monitor for alerts"
+      }
+    },
+    "tags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "metadata": {
+        "description": "Tags to apply to alert resources"
+      }
+    }
+  },
+  "variables": {
+    "actionGroupName": "[format('{0}-action-group', parameters('alertNamePrefix'))]",
+    "criticalActionGroupName": "[format('{0}-critical-action-group', parameters('alertNamePrefix'))]"
+  },
+  "resources": {
+    "actionGroup": {
+      "type": "Microsoft.Insights/actionGroups",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('actionGroupName')]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "emailReceivers",
+            "count": "[length(parameters('alertEmailAddresses'))]",
+            "input": {
+              "name": "[format('email-{0}', copyIndex('emailReceivers'))]",
+              "emailAddress": "[parameters('alertEmailAddresses')[copyIndex('emailReceivers')]]",
+              "useCommonAlertSchema": true
+            }
+          },
+          {
+            "name": "smsReceivers",
+            "count": "[length(parameters('alertSmsNumbers'))]",
+            "input": {
+              "name": "[format('sms-{0}', copyIndex('smsReceivers'))]",
+              "countryCode": "1",
+              "phoneNumber": "[parameters('alertSmsNumbers')[copyIndex('smsReceivers')]]"
+            }
+          },
+          {
+            "name": "webhookReceivers",
+            "count": "[length(parameters('alertWebhookUrls'))]",
+            "input": {
+              "name": "[format('webhook-{0}', copyIndex('webhookReceivers'))]",
+              "serviceUri": "[parameters('alertWebhookUrls')[copyIndex('webhookReceivers')]]",
+              "useCommonAlertSchema": true
+            }
+          }
+        ],
+        "groupShortName": "[substring(variables('actionGroupName'), 0, min(length(variables('actionGroupName')), 12))]",
+        "enabled": true
+      }
+    },
+    "criticalActionGroup": {
+      "type": "Microsoft.Insights/actionGroups",
+      "apiVersion": "2023-01-01",
+      "name": "[variables('criticalActionGroupName')]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "copy": [
+          {
+            "name": "emailReceivers",
+            "count": "[length(parameters('alertEmailAddresses'))]",
+            "input": {
+              "name": "[format('email-{0}', copyIndex('emailReceivers'))]",
+              "emailAddress": "[parameters('alertEmailAddresses')[copyIndex('emailReceivers')]]",
+              "useCommonAlertSchema": true
+            }
+          },
+          {
+            "name": "smsReceivers",
+            "count": "[length(parameters('alertSmsNumbers'))]",
+            "input": {
+              "name": "[format('sms-{0}', copyIndex('smsReceivers'))]",
+              "countryCode": "1",
+              "phoneNumber": "[parameters('alertSmsNumbers')[copyIndex('smsReceivers')]]"
+            }
+          },
+          {
+            "name": "webhookReceivers",
+            "count": "[length(parameters('alertWebhookUrls'))]",
+            "input": {
+              "name": "[format('webhook-{0}', copyIndex('webhookReceivers'))]",
+              "serviceUri": "[parameters('alertWebhookUrls')[copyIndex('webhookReceivers')]]",
+              "useCommonAlertSchema": true
+            }
+          }
+        ],
+        "groupShortName": "[substring(variables('criticalActionGroupName'), 0, min(length(variables('criticalActionGroupName')), 12))]",
+        "enabled": true
+      }
+    },
+    "securityFailedLoginsAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-failed-logins', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security - Multiple Failed Login Attempts",
+        "description": "Alert when there are multiple failed login attempts from the same IP",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityEvent | where EventID == 4625 | summarize FailedAttempts = count() by IpAddress | where FailedAttempts > 5",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "IpAddress",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
+    },
+    "securityPrivilegeEscalationAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-privilege-escalation', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security - Privilege Escalation Detected",
+        "description": "Alert when privilege escalation activities are detected",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityEvent | where EventID in (4672, 4673, 4674) | summarize count() by Account",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "Account",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
+    },
+    "performanceCpuAlert": {
+      "condition": "[and(parameters('enablePerformanceAlerts'), not(empty(parameters('monitoredResourceIds'))))]",
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-performance-high-cpu', parameters('alertNamePrefix'))]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Performance - High CPU Usage",
+        "description": "Alert when CPU usage exceeds 80% for 10 minutes",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT10M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "HighCPU",
+              "metricName": "Percentage CPU",
+              "metricNamespace": "Microsoft.Compute/virtualMachines",
+              "operator": "GreaterThan",
+              "threshold": 80,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          }
+        ],
+        "scopes": "[parameters('monitoredResourceIds')]"
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    },
+    "performanceMemoryAlert": {
+      "condition": "[and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-performance-low-memory', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Performance - Low Available Memory",
+        "description": "Alert when available memory is below 10% for 5 minutes",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "Perf | where ObjectName == \"Memory\" and CounterName == \"Available MBytes\" | summarize AvgMemory = avg(CounterValue) by Computer | where AvgMemory < 1024",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "Computer",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    },
+    "performanceDiskSpaceAlert": {
+      "condition": "[and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-performance-low-disk-space', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Performance - Low Disk Space",
+        "description": "Alert when disk free space is below 10%",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "Perf | where ObjectName == \"LogicalDisk\" and CounterName == \"% Free Space\" | summarize AvgFreeSpace = avg(CounterValue) by Computer, InstanceName | where AvgFreeSpace < 10",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "Computer",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                },
+                {
+                  "name": "InstanceName",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    },
+    "availabilityApplicationInsightsAlert": {
+      "condition": "[and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId'))))]",
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-availability-app-insights', parameters('alertNamePrefix'))]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Availability - Application Insights Availability",
+        "description": "Alert when application availability drops below 95%",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "LowAvailability",
+              "metricName": "availabilityResults/availabilityPercentage",
+              "metricNamespace": "Microsoft.Insights/components",
+              "operator": "LessThan",
+              "threshold": 95,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          }
+        ],
+        "scopes": [
+          "[parameters('applicationInsightsId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
+    },
+    "availabilityResponseTimeAlert": {
+      "condition": "[and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId'))))]",
+      "type": "Microsoft.Insights/metricAlerts",
+      "apiVersion": "2018-03-01",
+      "name": "[format('{0}-availability-response-time', parameters('alertNamePrefix'))]",
+      "location": "Global",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Availability - High Response Time",
+        "description": "Alert when average response time exceeds 5 seconds",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT1M",
+        "windowSize": "PT5M",
+        "criteria": {
+          "odata.type": "Microsoft.Azure.Monitor.SingleResourceMultipleMetricCriteria",
+          "allOf": [
+            {
+              "name": "HighResponseTime",
+              "metricName": "requests/duration",
+              "metricNamespace": "Microsoft.Insights/components",
+              "operator": "GreaterThan",
+              "threshold": 5000,
+              "timeAggregation": "Average",
+              "criterionType": "StaticThresholdCriterion"
+            }
+          ]
+        },
+        "actions": [
+          {
+            "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          }
+        ],
+        "scopes": [
+          "[parameters('applicationInsightsId')]"
+        ]
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    },
+    "databaseConnectionAlert": {
+      "condition": "[and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-database-connection-failures', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Database - Connection Failures",
+        "description": "Alert when database connection failures exceed threshold",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "AzureDiagnostics | where ResourceProvider == \"MICROSOFT.SQL\" and Category == \"Errors\" | summarize ErrorCount = count() by Resource | where ErrorCount > 10",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "Resource",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    }
+  },
+  "outputs": {
+    "actionGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the general action group"
+      },
+      "value": "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+    },
+    "criticalActionGroupId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the critical action group"
+      },
+      "value": "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+    },
+    "alertRuleIds": {
+      "type": "array",
+      "metadata": {
+        "description": "The resource IDs of all created alert rules"
+      },
+      "value": [
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-failed-logins', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-privilege-escalation', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('monitoredResourceIds')))), resourceId('Microsoft.Insights/metricAlerts', format('{0}-performance-high-cpu', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-performance-low-memory', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-performance-low-disk-space', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), resourceId('Microsoft.Insights/metricAlerts', format('{0}-availability-app-insights', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), resourceId('Microsoft.Insights/metricAlerts', format('{0}-availability-response-time', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-database-connection-failures', parameters('alertNamePrefix'))), '')]"
+      ]
+    },
+    "alertsConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "The monitoring alerts configuration"
+      },
+      "value": {
+        "actionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]",
+        "criticalActionGroupId": "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]",
+        "securityAlertsEnabled": "[parameters('enableSecurityAlerts')]",
+        "performanceAlertsEnabled": "[parameters('enablePerformanceAlerts')]",
+        "availabilityAlertsEnabled": "[parameters('enableAvailabilityAlerts')]",
+        "alertRuleCount": "[length(filter(createArray(if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security1', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('monitoredResourceIds')))), 'perf1', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf3', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail1', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'db1', '')), lambda('item', not(empty(lambdaVariables('item'))))))]"
+      }
+    }
+  }
+}

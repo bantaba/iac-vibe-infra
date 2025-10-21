@@ -1,0 +1,260 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "13117641415181030679"
+    }
+  },
+  "definitions": {
+    "TagConfiguration": {
+      "type": "object",
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "metadata": {
+            "description": "Environment tag"
+          }
+        },
+        "Workload": {
+          "type": "string",
+          "metadata": {
+            "description": "Workload tag"
+          }
+        },
+        "ManagedBy": {
+          "type": "string",
+          "metadata": {
+            "description": "Managed by tag"
+          }
+        },
+        "CostCenter": {
+          "type": "string",
+          "metadata": {
+            "description": "Cost center tag"
+          }
+        },
+        "Owner": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Owner tag"
+          }
+        },
+        "Project": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Project tag"
+          }
+        },
+        "DeploymentDate": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Deployment date tag"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "../shared/parameter-schemas.bicep"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "diagnosticSettingName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the diagnostic setting"
+      }
+    },
+    "targetResourceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the target resource to configure diagnostics for"
+      }
+    },
+    "logAnalyticsWorkspaceId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the Log Analytics workspace"
+      }
+    },
+    "storageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the Storage Account for log archival"
+      }
+    },
+    "eventHubAuthorizationRuleId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The resource ID of the Event Hub for log streaming"
+      }
+    },
+    "eventHubName": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "The name of the Event Hub"
+      }
+    },
+    "logRetentionDays": {
+      "type": "int",
+      "defaultValue": 90,
+      "minValue": 1,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Log retention period in days for storage account"
+      }
+    },
+    "metricRetentionDays": {
+      "type": "int",
+      "defaultValue": 90,
+      "minValue": 1,
+      "maxValue": 365,
+      "metadata": {
+        "description": "Metric retention period in days for storage account"
+      }
+    },
+    "enableAllLogs": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable all log categories"
+      }
+    },
+    "enableAllMetrics": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable all metrics"
+      }
+    },
+    "logCategories": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Specific log categories to enable (if enableAllLogs is false)"
+      }
+    },
+    "metricCategories": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Specific metric categories to enable (if enableAllMetrics is false)"
+      }
+    },
+    "tags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "defaultValue": {
+        "Environment": "dev",
+        "Workload": "monitoring",
+        "ManagedBy": "Bicep",
+        "CostCenter": "IT"
+      },
+      "metadata": {
+        "description": "Tags to apply to resources"
+      }
+    }
+  },
+  "variables": {
+    "hasLogAnalytics": "[not(empty(parameters('logAnalyticsWorkspaceId')))]",
+    "hasStorageAccount": "[not(empty(parameters('storageAccountId')))]",
+    "hasEventHub": "[and(not(empty(parameters('eventHubAuthorizationRuleId'))), not(empty(parameters('eventHubName'))))]",
+    "hasDestination": "[or(or(variables('hasLogAnalytics'), variables('hasStorageAccount')), variables('hasEventHub'))]",
+    "commonLogCategories": {
+      "Microsoft.KeyVault/vaults": [
+        "AuditEvent",
+        "AzurePolicyEvaluationDetails"
+      ],
+      "Microsoft.Storage/storageAccounts": [
+        "StorageRead",
+        "StorageWrite",
+        "StorageDelete"
+      ],
+      "Microsoft.Sql/servers/databases": [
+        "SQLInsights",
+        "AutomaticTuning",
+        "QueryStoreRuntimeStatistics",
+        "QueryStoreWaitStatistics",
+        "Errors",
+        "DatabaseWaitStatistics",
+        "Timeouts",
+        "Blocks",
+        "Deadlocks"
+      ],
+      "Microsoft.Network/applicationGateways": [
+        "ApplicationGatewayAccessLog",
+        "ApplicationGatewayPerformanceLog",
+        "ApplicationGatewayFirewallLog"
+      ],
+      "Microsoft.Network/loadBalancers": [
+        "LoadBalancerAlertEvent",
+        "LoadBalancerProbeHealthStatus"
+      ],
+      "Microsoft.Network/networkSecurityGroups": [
+        "NetworkSecurityGroupEvent",
+        "NetworkSecurityGroupRuleCounter"
+      ],
+      "Microsoft.Network/virtualNetworks": [
+        "VMProtectionAlerts"
+      ],
+      "Microsoft.Compute/virtualMachines": [
+        "Microsoft-Windows-Kernel-Process/Analytic",
+        "Microsoft-Windows-Kernel-Network/Analytic"
+      ]
+    },
+    "resourceTypeParts": "[split(parameters('targetResourceId'), '/')]",
+    "resourceType": "[if(greater(length(variables('resourceTypeParts')), 7), format('{0}/{1}', variables('resourceTypeParts')[6], variables('resourceTypeParts')[7]), 'Unknown')]",
+    "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]",
+    "finalLogCategories": "[if(parameters('enableAllLogs'), createArray(), if(empty(parameters('logCategories')), variables('defaultLogCategories'), parameters('logCategories')))]"
+  },
+  "resources": {
+    "diagnosticSetting": {
+      "condition": "[variables('hasDestination')]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "name": "[parameters('diagnosticSettingName')]",
+      "properties": {
+        "workspaceId": "[if(variables('hasLogAnalytics'), parameters('logAnalyticsWorkspaceId'), null())]",
+        "storageAccountId": "[if(variables('hasStorageAccount'), parameters('storageAccountId'), null())]",
+        "eventHubAuthorizationRuleId": "[if(variables('hasEventHub'), parameters('eventHubAuthorizationRuleId'), null())]",
+        "eventHubName": "[if(variables('hasEventHub'), parameters('eventHubName'), null())]",
+        "logs": "[if(parameters('enableAllLogs'), createArray(createObject('categoryGroup', 'allLogs', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('logRetentionDays')), null())), createObject('categoryGroup', 'audit', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('logRetentionDays')), null()))), createArray())]",
+        "metrics": "[if(parameters('enableAllMetrics'), createArray(createObject('category', 'AllMetrics', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('metricRetentionDays')), null()))), createArray())]"
+      }
+    }
+  },
+  "outputs": {
+    "diagnosticSettingId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the diagnostic setting"
+      },
+      "value": "[if(variables('hasDestination'), resourceId('Microsoft.Insights/diagnosticSettings', parameters('diagnosticSettingName')), '')]"
+    },
+    "diagnosticSettingName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the diagnostic setting"
+      },
+      "value": "[if(variables('hasDestination'), parameters('diagnosticSettingName'), '')]"
+    },
+    "diagnosticSettingConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "The configuration of the diagnostic setting"
+      },
+      "value": "[if(variables('hasDestination'), createObject('id', resourceId('Microsoft.Insights/diagnosticSettings', parameters('diagnosticSettingName')), 'name', parameters('diagnosticSettingName'), 'targetResourceId', parameters('targetResourceId'), 'workspaceId', if(variables('hasLogAnalytics'), parameters('logAnalyticsWorkspaceId'), ''), 'storageAccountId', if(variables('hasStorageAccount'), parameters('storageAccountId'), ''), 'eventHubAuthorizationRuleId', if(variables('hasEventHub'), parameters('eventHubAuthorizationRuleId'), ''), 'eventHubName', if(variables('hasEventHub'), parameters('eventHubName'), ''), 'logRetentionDays', parameters('logRetentionDays'), 'metricRetentionDays', parameters('metricRetentionDays')), createObject())]"
+    }
+  }
+}

@@ -1,0 +1,522 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "languageVersion": "2.0",
+  "contentVersion": "1.0.0.0",
+  "metadata": {
+    "_generator": {
+      "name": "bicep",
+      "version": "0.38.33.27573",
+      "templateHash": "7023259806112555371"
+    }
+  },
+  "definitions": {
+    "TagConfiguration": {
+      "type": "object",
+      "properties": {
+        "Environment": {
+          "type": "string",
+          "metadata": {
+            "description": "Environment tag"
+          }
+        },
+        "Workload": {
+          "type": "string",
+          "metadata": {
+            "description": "Workload tag"
+          }
+        },
+        "ManagedBy": {
+          "type": "string",
+          "metadata": {
+            "description": "Managed by tag"
+          }
+        },
+        "CostCenter": {
+          "type": "string",
+          "metadata": {
+            "description": "Cost center tag"
+          }
+        },
+        "Owner": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Owner tag"
+          }
+        },
+        "Project": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Project tag"
+          }
+        },
+        "DeploymentDate": {
+          "type": "string",
+          "nullable": true,
+          "metadata": {
+            "description": "Deployment date tag"
+          }
+        }
+      },
+      "metadata": {
+        "__bicep_imported_from!": {
+          "sourceTemplate": "../shared/parameter-schemas.bicep"
+        }
+      }
+    }
+  },
+  "parameters": {
+    "workspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Log Analytics workspace"
+      }
+    },
+    "location": {
+      "type": "string",
+      "defaultValue": "[resourceGroup().location]",
+      "metadata": {
+        "description": "The location for the Log Analytics workspace"
+      }
+    },
+    "workspaceSku": {
+      "type": "string",
+      "defaultValue": "PerGB2018",
+      "allowedValues": [
+        "Free",
+        "Standard",
+        "Premium",
+        "PerNode",
+        "PerGB2018",
+        "Standalone",
+        "CapacityReservation"
+      ],
+      "metadata": {
+        "description": "The SKU of the Log Analytics workspace"
+      }
+    },
+    "retentionInDays": {
+      "type": "int",
+      "defaultValue": 90,
+      "minValue": 30,
+      "maxValue": 730,
+      "metadata": {
+        "description": "The data retention period in days"
+      }
+    },
+    "dailyQuotaGb": {
+      "type": "int",
+      "defaultValue": 10,
+      "minValue": 1,
+      "maxValue": 1000,
+      "metadata": {
+        "description": "The daily quota for data ingestion in GB"
+      }
+    },
+    "enablePublicNetworkAccess": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable public network access"
+      }
+    },
+    "allowedSubnetIds": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Subnet IDs allowed to access the workspace"
+      }
+    },
+    "allowedIpAddresses": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "IP addresses allowed to access the workspace"
+      }
+    },
+    "enableDataExport": {
+      "type": "bool",
+      "defaultValue": false,
+      "metadata": {
+        "description": "Enable data export"
+      }
+    },
+    "dataExportStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Storage account ID for data export"
+      }
+    },
+    "tags": {
+      "$ref": "#/definitions/TagConfiguration",
+      "metadata": {
+        "description": "Tags to apply to the Log Analytics workspace"
+      }
+    },
+    "enableDiagnosticSettings": {
+      "type": "bool",
+      "defaultValue": true,
+      "metadata": {
+        "description": "Enable diagnostic settings for the workspace itself"
+      }
+    },
+    "diagnosticStorageAccountId": {
+      "type": "string",
+      "defaultValue": "",
+      "metadata": {
+        "description": "Diagnostic settings storage account ID"
+      }
+    }
+  },
+  "variables": {
+    "copy": [
+      {
+        "name": "ipRules",
+        "count": "[length(parameters('allowedIpAddresses'))]",
+        "input": {
+          "value": "[parameters('allowedIpAddresses')[copyIndex('ipRules')]]",
+          "action": "Allow"
+        }
+      },
+      {
+        "name": "virtualNetworkRules",
+        "count": "[length(parameters('allowedSubnetIds'))]",
+        "input": {
+          "id": "[parameters('allowedSubnetIds')[copyIndex('virtualNetworkRules')]]",
+          "action": "Allow"
+        }
+      }
+    ],
+    "workspaceConfig": {
+      "sku": {
+        "name": "[parameters('workspaceSku')]"
+      },
+      "retentionInDays": "[parameters('retentionInDays')]",
+      "workspaceCapping": {
+        "dailyQuotaGb": "[parameters('dailyQuotaGb')]"
+      },
+      "publicNetworkAccessForIngestion": "[if(parameters('enablePublicNetworkAccess'), 'Enabled', 'Disabled')]",
+      "publicNetworkAccessForQuery": "[if(parameters('enablePublicNetworkAccess'), 'Enabled', 'Disabled')]"
+    },
+    "networkAccessControl": {
+      "defaultAction": "Deny",
+      "ipRules": "[variables('ipRules')]",
+      "virtualNetworkRules": "[variables('virtualNetworkRules')]"
+    }
+  },
+  "resources": {
+    "logAnalyticsWorkspace": {
+      "type": "Microsoft.OperationalInsights/workspaces",
+      "apiVersion": "2023-09-01",
+      "name": "[parameters('workspaceName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": "[if(not(parameters('enablePublicNetworkAccess')), union(variables('workspaceConfig'), createObject('networkAccessControl', variables('networkAccessControl'))), variables('workspaceConfig'))]"
+    },
+    "dataCollectionRule": {
+      "type": "Microsoft.Insights/dataCollectionRules",
+      "apiVersion": "2023-03-11",
+      "name": "[format('{0}-dcr', parameters('workspaceName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "description": "[format('Data collection rule for {0}', parameters('workspaceName'))]",
+        "dataSources": {
+          "performanceCounters": [
+            {
+              "name": "perfCounterDataSource60",
+              "streams": [
+                "Microsoft-Perf"
+              ],
+              "samplingFrequencyInSeconds": 60,
+              "counterSpecifiers": [
+                "\\Processor(_Total)\\% Processor Time",
+                "\\Memory\\Available MBytes",
+                "\\LogicalDisk(_Total)\\Disk Reads/sec",
+                "\\LogicalDisk(_Total)\\Disk Writes/sec",
+                "\\LogicalDisk(_Total)\\% Free Space",
+                "\\Network Interface(*)\\Bytes Total/sec"
+              ]
+            }
+          ],
+          "windowsEventLogs": [
+            {
+              "name": "eventLogsDataSource",
+              "streams": [
+                "Microsoft-Event"
+              ],
+              "xPathQueries": [
+                "Application!*[System[(Level=1 or Level=2 or Level=3)]]",
+                "Security!*[System[(band(Keywords,13510798882111488))]]",
+                "System!*[System[(Level=1 or Level=2 or Level=3)]]"
+              ]
+            }
+          ],
+          "syslog": [
+            {
+              "name": "syslogDataSource",
+              "streams": [
+                "Microsoft-Syslog"
+              ],
+              "facilityNames": [
+                "auth",
+                "authpriv",
+                "cron",
+                "daemon",
+                "kern",
+                "lpr",
+                "mail",
+                "mark",
+                "news",
+                "syslog",
+                "user",
+                "uucp"
+              ],
+              "logLevels": [
+                "Alert",
+                "Critical",
+                "Emergency",
+                "Error",
+                "Warning"
+              ]
+            }
+          ]
+        },
+        "destinations": {
+          "logAnalytics": [
+            {
+              "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+              "name": "la-destination"
+            }
+          ]
+        },
+        "dataFlows": [
+          {
+            "streams": [
+              "Microsoft-Perf"
+            ],
+            "destinations": [
+              "la-destination"
+            ],
+            "transformKql": "source",
+            "outputStream": "Microsoft-Perf"
+          },
+          {
+            "streams": [
+              "Microsoft-Event"
+            ],
+            "destinations": [
+              "la-destination"
+            ],
+            "transformKql": "source",
+            "outputStream": "Microsoft-Event"
+          },
+          {
+            "streams": [
+              "Microsoft-Syslog"
+            ],
+            "destinations": [
+              "la-destination"
+            ],
+            "transformKql": "source",
+            "outputStream": "Microsoft-Syslog"
+          }
+        ]
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "dataExportRule": {
+      "condition": "[and(parameters('enableDataExport'), not(empty(parameters('dataExportStorageAccountId'))))]",
+      "type": "Microsoft.OperationalInsights/workspaces/dataExports",
+      "apiVersion": "2020-08-01",
+      "name": "[format('{0}/{1}', parameters('workspaceName'), 'export-all-logs')]",
+      "properties": {
+        "destination": {
+          "resourceId": "[parameters('dataExportStorageAccountId')]",
+          "type": "StorageAccount"
+        },
+        "tableNames": [
+          "Heartbeat",
+          "Perf",
+          "Event",
+          "Syslog",
+          "SecurityEvent",
+          "AzureActivity",
+          "AzureDiagnostics"
+        ],
+        "enable": true
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "securitySolution": {
+      "type": "Microsoft.OperationsManagement/solutions",
+      "apiVersion": "2015-11-01-preview",
+      "name": "[format('Security({0})', parameters('workspaceName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+      },
+      "plan": {
+        "name": "[format('Security({0})', parameters('workspaceName'))]",
+        "publisher": "Microsoft",
+        "product": "OMSGallery/Security",
+        "promotionCode": ""
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "updatesSolution": {
+      "type": "Microsoft.OperationsManagement/solutions",
+      "apiVersion": "2015-11-01-preview",
+      "name": "[format('Updates({0})', parameters('workspaceName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+      },
+      "plan": {
+        "name": "[format('Updates({0})', parameters('workspaceName'))]",
+        "publisher": "Microsoft",
+        "product": "OMSGallery/Updates",
+        "promotionCode": ""
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "changeTrackingSolution": {
+      "type": "Microsoft.OperationsManagement/solutions",
+      "apiVersion": "2015-11-01-preview",
+      "name": "[format('ChangeTracking({0})', parameters('workspaceName'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "workspaceResourceId": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+      },
+      "plan": {
+        "name": "[format('ChangeTracking({0})', parameters('workspaceName'))]",
+        "publisher": "Microsoft",
+        "product": "OMSGallery/ChangeTracking",
+        "promotionCode": ""
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    },
+    "workspaceDiagnosticSettings": {
+      "condition": "[and(parameters('enableDiagnosticSettings'), not(empty(parameters('diagnosticStorageAccountId'))))]",
+      "type": "Microsoft.Insights/diagnosticSettings",
+      "apiVersion": "2021-05-01-preview",
+      "scope": "[format('Microsoft.OperationalInsights/workspaces/{0}', parameters('workspaceName'))]",
+      "name": "[format('{0}-diagnostics', parameters('workspaceName'))]",
+      "properties": {
+        "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+        "logs": [
+          {
+            "categoryGroup": "audit",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('retentionInDays')]"
+            }
+          },
+          {
+            "categoryGroup": "allLogs",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('retentionInDays')]"
+            }
+          }
+        ],
+        "metrics": [
+          {
+            "category": "AllMetrics",
+            "enabled": true,
+            "retentionPolicy": {
+              "enabled": true,
+              "days": "[parameters('retentionInDays')]"
+            }
+          }
+        ]
+      },
+      "dependsOn": [
+        "logAnalyticsWorkspace"
+      ]
+    }
+  },
+  "outputs": {
+    "workspaceId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the Log Analytics workspace"
+      },
+      "value": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]"
+    },
+    "workspaceName": {
+      "type": "string",
+      "metadata": {
+        "description": "The name of the Log Analytics workspace"
+      },
+      "value": "[parameters('workspaceName')]"
+    },
+    "customerId": {
+      "type": "string",
+      "metadata": {
+        "description": "The customer ID (workspace ID) of the Log Analytics workspace"
+      },
+      "value": "[reference('logAnalyticsWorkspace').customerId]"
+    },
+    "primarySharedKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The primary shared key of the Log Analytics workspace"
+      },
+      "value": "[listKeys('logAnalyticsWorkspace', '2023-09-01').primarySharedKey]"
+    },
+    "secondarySharedKey": {
+      "type": "securestring",
+      "metadata": {
+        "description": "The secondary shared key of the Log Analytics workspace"
+      },
+      "value": "[listKeys('logAnalyticsWorkspace', '2023-09-01').secondarySharedKey]"
+    },
+    "dataCollectionRuleId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the data collection rule"
+      },
+      "value": "[resourceId('Microsoft.Insights/dataCollectionRules', format('{0}-dcr', parameters('workspaceName')))]"
+    },
+    "dataExportRuleId": {
+      "type": "string",
+      "metadata": {
+        "description": "The resource ID of the data export rule"
+      },
+      "value": "[if(and(parameters('enableDataExport'), not(empty(parameters('dataExportStorageAccountId')))), resourceId('Microsoft.OperationalInsights/workspaces/dataExports', parameters('workspaceName'), 'export-all-logs'), '')]"
+    },
+    "workspaceConfig": {
+      "type": "object",
+      "metadata": {
+        "description": "The Log Analytics workspace configuration"
+      },
+      "value": {
+        "id": "[resourceId('Microsoft.OperationalInsights/workspaces', parameters('workspaceName'))]",
+        "name": "[parameters('workspaceName')]",
+        "customerId": "[reference('logAnalyticsWorkspace').customerId]",
+        "location": "[reference('logAnalyticsWorkspace', '2023-09-01', 'full').location]",
+        "sku": "[reference('logAnalyticsWorkspace').sku.name]",
+        "retentionInDays": "[reference('logAnalyticsWorkspace').retentionInDays]",
+        "dailyQuotaGb": "[reference('logAnalyticsWorkspace').workspaceCapping.dailyQuotaGb]"
+      }
+    }
+  }
+}

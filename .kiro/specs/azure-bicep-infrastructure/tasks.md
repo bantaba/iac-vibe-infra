@@ -167,40 +167,57 @@
   - ✅ Test network security configurations, backup policies, and monitoring integration
   - _Requirements: 5.1, 5.2, 7.1, 7.2_
 
-- [ ] 6. Implement monitoring and logging modules
+- [x] 6. Implement monitoring and logging modules
 
-- [ ] 6.1 Create Log Analytics workspace module
+
+
+
+
+
+- [x] 6.1 Create Log Analytics workspace module
+
+
   - Implement Log Analytics workspace with retention policies
   - Configure data collection rules and workspace permissions
   - Add workspace security and access controls
   - _Requirements: 6.1, 6.2_
 
-- [ ] 6.2 Implement diagnostic settings modules
+- [x] 6.2 Implement diagnostic settings modules
+
+
   - Create diagnostic settings for all Azure resources
   - Configure log forwarding to Log Analytics workspace
   - Add metric collection and retention policies
   - _Requirements: 6.2, 7.5_
 
-- [ ] 6.3 Create monitoring alerts module
+- [x] 6.3 Create monitoring alerts module
+
+
   - Implement security and performance alerts
   - Configure alert rules and notification channels
   - Add action groups for alert notifications
   - _Requirements: 6.3_
 
-- [ ] 6.4 Implement Application Insights module
+- [x] 6.4 Implement Application Insights module
+
+
   - Create Application Insights for application performance monitoring
   - Configure custom metrics and availability tests
   - Add integration with Log Analytics workspace
   - _Requirements: 6.1_
 
-- [ ] 6.5 Integrate monitoring modules into main template
+- [x] 6.5 Integrate monitoring modules into main template
+
+
   - Add Log Analytics workspace deployment to main.bicep
   - Deploy Application Insights and diagnostic settings
   - Configure monitoring alerts and action groups
   - Wire up monitoring dependencies and outputs
   - _Requirements: 6.1, 6.2, 6.3_
 
-- [ ] 6.6 Write monitoring module unit tests
+- [x] 6.6 Write monitoring module unit tests
+
+
 
   - Create tests for Log Analytics workspace configuration
   - Write tests for diagnostic settings and alert rules
