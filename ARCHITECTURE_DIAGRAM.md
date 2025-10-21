@@ -2,6 +2,9 @@
 
 ## High-Level Infrastructure Overview
 
+<div style="width: 100%; height: 800px; border: 1px solid #ccc; overflow: auto; position: relative;">
+<div style="transform-origin: 0 0; transition: transform 0.3s ease;" id="diagram-container">
+
 ```mermaid
 graph TB
     %% Internet and External Access
@@ -114,6 +117,62 @@ graph TB
     class VNET,VNM,PIP,NSG_WEB,NSG_BIZ,NSG_DATA,NSG_MGMT networkClass
     class LAW,AI,ALERTS monitorClass
 ```
+
+</div>
+
+<!-- Zoom Controls -->
+<div style="position: absolute; top: 10px; right: 10px; z-index: 1000; background: white; padding: 10px; border-radius: 5px; box-shadow: 0 2px 5px rgba(0,0,0,0.2);">
+  <button onclick="zoomIn()" style="margin: 2px; padding: 5px 10px; cursor: pointer;">🔍 Zoom In</button>
+  <button onclick="zoomOut()" style="margin: 2px; padding: 5px 10px; cursor: pointer;">🔍 Zoom Out</button>
+  <button onclick="resetZoom()" style="margin: 2px; padding: 5px 10px; cursor: pointer;">↻ Reset</button>
+</div>
+
+</div>
+
+<script>
+let currentZoom = 1;
+const zoomStep = 0.2;
+const minZoom = 0.5;
+const maxZoom = 3;
+
+function zoomIn() {
+    if (currentZoom < maxZoom) {
+        currentZoom += zoomStep;
+        applyZoom();
+    }
+}
+
+function zoomOut() {
+    if (currentZoom > minZoom) {
+        currentZoom -= zoomStep;
+        applyZoom();
+    }
+}
+
+function resetZoom() {
+    currentZoom = 1;
+    applyZoom();
+}
+
+function applyZoom() {
+    const container = document.getElementById('diagram-container');
+    if (container) {
+        container.style.transform = `scale(${currentZoom})`;
+    }
+}
+
+// Mouse wheel zoom
+document.addEventListener('wheel', function(e) {
+    if (e.ctrlKey || e.metaKey) {
+        e.preventDefault();
+        if (e.deltaY < 0) {
+            zoomIn();
+        } else {
+            zoomOut();
+        }
+    }
+});
+</script>
 
 ## Architecture Layers
 
