@@ -618,6 +618,190 @@ module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
 }
 
 // ========================================
+// MONITORING MODULES
+// ========================================
+
+// Deploy Log Analytics Workspace
+module logAnalyticsWorkspace 'modules/monitoring/log-analytics.bicep' = {
+  name: 'log-analytics-workspace-deployment'
+  params: {
+    workspaceName: namingConventions.outputs.namingConvention.logAnalyticsWorkspace
+    workspaceSku: environmentConfig.skuTier == 'Basic' ? 'PerGB2018' : 'PerGB2018'
+    retentionInDays: environmentConfig.logRetentionDays
+    dailyQuotaGb: environmentConfig.skuTier == 'Basic' ? 5 : (environmentConfig.skuTier == 'Standard' ? 10 : 50)
+    enablePublicNetworkAccess: !environmentConfig.enablePrivateEndpoints
+    allowedSubnetIds: environmentConfig.enablePrivateEndpoints ? [
+      virtualNetwork.outputs.subnetIds.management
+      virtualNetwork.outputs.subnetIds.webTier
+      virtualNetwork.outputs.subnetIds.businessTier
+      virtualNetwork.outputs.subnetIds.dataTier
+    ] : []
+    allowedIpAddresses: []
+    enableDataExport: environment == 'prod'
+    dataExportStorageAccountId: environment == 'prod' ? storageAccount.outputs.storageAccountId : ''
+    enableDiagnosticSettings: true
+    diagnosticStorageAccountId: storageAccount.outputs.storageAccountId
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+    storageAccount
+  ]
+}
+
+// Deploy Application Insights
+module applicationInsights 'modules/monitoring/application-insights.bicep' = {
+  name: 'application-insights-deployment'
+  params: {
+    applicationInsightsName: namingConventions.outputs.namingConvention.applicationInsights
+    applicationType: 'web'
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    enablePublicNetworkAccessForIngestion: !environmentConfig.enablePrivateEndpoints
+    enablePublicNetworkAccessForQuery: !environmentConfig.enablePrivateEndpoints
+    retentionInDays: environmentConfig.logRetentionDays
+    dailyDataCapInGB: environmentConfig.skuTier == 'Basic' ? 1 : (environmentConfig.skuTier == 'Standard' ? 5 : 20)
+    enableDailyDataCapReset: true
+    samplingPercentage: environment == 'dev' ? 50 : 100
+    enableRequestSource: true
+    availabilityTestUrls: [
+      'https://${applicationGateway.outputs.publicIpAddress}/health'
+    ]
+    availabilityTestLocations: [
+      'us-east-1'
+      'us-west-1'
+      'europe-west-1'
+    ]
+    enableCustomMetrics: true
+    enableLiveMetrics: true
+    enableProfiler: environment != 'dev'
+    enableSnapshotDebugger: environment == 'prod'
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    logAnalyticsWorkspace
+    applicationGateway
+  ]
+}
+
+// Deploy Monitoring Alerts
+module monitoringAlerts 'modules/monitoring/alerts.bicep' = {
+  name: 'monitoring-alerts-deployment'
+  params: {
+    alertNamePrefix: '${resourcePrefix}-${workloadName}-${environment}'
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    applicationInsightsId: applicationInsights.outputs.applicationInsightsId
+    alertEmailAddresses: [] // Should be provided via parameters
+    alertSmsNumbers: [] // Should be provided via parameters
+    alertWebhookUrls: [] // Should be provided via parameters
+    enableSecurityAlerts: true
+    enablePerformanceAlerts: true
+    enableAvailabilityAlerts: true
+    monitoredResourceIds: [
+      webTierVmScaleSet.outputs.vmScaleSetId
+      businessTierVmScaleSet.outputs.vmScaleSetId
+      applicationGateway.outputs.applicationGatewayId
+      sqlServer.outputs.sqlServerId
+      storageAccount.outputs.storageAccountId
+    ]
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    logAnalyticsWorkspace
+    applicationInsights
+    webTierVmScaleSet
+    businessTierVmScaleSet
+    applicationGateway
+    sqlServer
+    storageAccount
+  ]
+}
+
+// Deploy Diagnostic Settings for Key Resources
+module keyVaultDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
+  name: 'key-vault-diagnostics-deployment'
+  params: {
+    diagnosticSettingName: '${keyVault.outputs.keyVaultName}-diagnostics'
+    targetResourceId: keyVault.outputs.keyVaultId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    storageAccountId: storageAccount.outputs.storageAccountId
+    enableAllLogs: true
+    enableAllMetrics: true
+    logRetentionDays: environmentConfig.logRetentionDays
+    metricRetentionDays: environmentConfig.logRetentionDays
+    tags: tags
+  }
+  dependsOn: [
+    keyVault
+    logAnalyticsWorkspace
+    storageAccount
+  ]
+}
+
+module applicationGatewayDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
+  name: 'application-gateway-diagnostics-deployment'
+  params: {
+    diagnosticSettingName: '${applicationGateway.outputs.applicationGatewayName}-diagnostics'
+    targetResourceId: applicationGateway.outputs.applicationGatewayId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    storageAccountId: storageAccount.outputs.storageAccountId
+    enableAllLogs: true
+    enableAllMetrics: true
+    logRetentionDays: environmentConfig.logRetentionDays
+    metricRetentionDays: environmentConfig.logRetentionDays
+    tags: tags
+  }
+  dependsOn: [
+    applicationGateway
+    logAnalyticsWorkspace
+    storageAccount
+  ]
+}
+
+module loadBalancerDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = [for (lbName, i) in ['business', 'data']: {
+  name: '${lbName}-tier-load-balancer-diagnostics-deployment'
+  params: {
+    diagnosticSettingName: '${lbName}-tier-load-balancer-diagnostics'
+    targetResourceId: lbName == 'business' ? businessTierLoadBalancer.outputs.loadBalancerId : dataTierLoadBalancer.outputs.loadBalancerId
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    storageAccountId: storageAccount.outputs.storageAccountId
+    enableAllLogs: true
+    enableAllMetrics: true
+    logRetentionDays: environmentConfig.logRetentionDays
+    metricRetentionDays: environmentConfig.logRetentionDays
+    tags: tags
+  }
+  dependsOn: [
+    businessTierLoadBalancer
+    dataTierLoadBalancer
+    logAnalyticsWorkspace
+    storageAccount
+  ]
+}]
+
+module networkSecurityGroupDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = [for (nsgName, i) in ['web', 'business', 'data', 'management']: {
+  name: '${nsgName}-tier-nsg-diagnostics-deployment'
+  params: {
+    diagnosticSettingName: '${nsgName}-tier-nsg-diagnostics'
+    targetResourceId: networkSecurityGroups.outputs.nsgIds['${nsgName}Tier']
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    storageAccountId: storageAccount.outputs.storageAccountId
+    enableAllLogs: true
+    enableAllMetrics: true
+    logRetentionDays: environmentConfig.logRetentionDays
+    metricRetentionDays: environmentConfig.logRetentionDays
+    tags: tags
+  }
+  dependsOn: [
+    networkSecurityGroups
+    logAnalyticsWorkspace
+    storageAccount
+  ]
+}]
+
+// ========================================
 // DATA LAYER MODULES
 // ========================================
 
@@ -667,7 +851,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
       weekOfYear: 1
     }
     enableDiagnosticSettings: true
-    logAnalyticsWorkspaceId: '' // Will be added when monitoring modules are integrated
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
     diagnosticStorageAccountId: storageAccount.outputs.storageAccountId
     tags: tags
     location: location
@@ -675,6 +859,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
   dependsOn: [
     virtualNetwork
     keyVault
+    logAnalyticsWorkspace
   ]
 }
 
@@ -757,7 +942,7 @@ module storageAccount 'modules/data/storage-account.bicep' = {
       }
     ]
     enableDiagnosticSettings: true
-    logAnalyticsWorkspaceId: '' // Will be added when monitoring modules are integrated
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
     diagnosticStorageAccountId: '' // Self-reference not allowed, will use separate storage for diagnostics
     blobContainers: [
       {
@@ -806,6 +991,7 @@ module storageAccount 'modules/data/storage-account.bicep' = {
   }
   dependsOn: [
     virtualNetwork
+    logAnalyticsWorkspace
   ]
 }
 
@@ -1035,5 +1221,29 @@ output data object = {
     dnsZones: {}
     configs: []
     dnsZoneNames: {}
+  }
+}
+
+// Monitoring outputs
+output monitoring object = {
+  logAnalyticsWorkspace: {
+    id: logAnalyticsWorkspace.outputs.workspaceId
+    name: logAnalyticsWorkspace.outputs.workspaceName
+    customerId: logAnalyticsWorkspace.outputs.customerId
+    dataCollectionRuleId: logAnalyticsWorkspace.outputs.dataCollectionRuleId
+    config: logAnalyticsWorkspace.outputs.workspaceConfig
+  }
+  applicationInsights: {
+    id: applicationInsights.outputs.applicationInsightsId
+    name: applicationInsights.outputs.applicationInsightsName
+    appId: applicationInsights.outputs.appId
+    availabilityTestIds: applicationInsights.outputs.availabilityTestIds
+    config: applicationInsights.outputs.applicationInsightsConfig
+  }
+  alerts: {
+    actionGroupId: monitoringAlerts.outputs.actionGroupId
+    criticalActionGroupId: monitoringAlerts.outputs.criticalActionGroupId
+    alertRuleIds: monitoringAlerts.outputs.alertRuleIds
+    config: monitoringAlerts.outputs.alertsConfig
   }
 }
