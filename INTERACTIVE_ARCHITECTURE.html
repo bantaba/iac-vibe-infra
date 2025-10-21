@@ -1,0 +1,452 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Azure Bicep Infrastructure Architecture</title>
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+    <style>
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            margin: 0;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        
+        .container {
+            max-width: 100%;
+            background: white;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0, 0, 0, 0.1);
+            overflow: hidden;
+        }
+        
+        .header {
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            color: white;
+            padding: 20px;
+            text-align: center;
+        }
+        
+        .diagram-wrapper {
+            position: relative;
+            width: 100%;
+            height: 800px;
+            overflow: auto;
+            border: 2px solid #e1e5e9;
+            background: #fafbfc;
+        }
+        
+        .diagram-container {
+            transform-origin: 0 0;
+            transition: transform 0.3s ease;
+            min-width: 100%;
+            min-height: 100%;
+        }
+        
+        .controls {
+            position: absolute;
+            top: 15px;
+            right: 15px;
+            z-index: 1000;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 15px;
+            border-radius: 8px;
+            box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+            backdrop-filter: blur(10px);
+        }
+        
+        .control-btn {
+            display: block;
+            width: 120px;
+            margin: 5px 0;
+            padding: 8px 12px;
+            border: none;
+            border-radius: 5px;
+            background: #4CAF50;
+            color: white;
+            cursor: pointer;
+            font-size: 12px;
+            transition: all 0.2s ease;
+        }
+        
+        .control-btn:hover {
+            background: #45a049;
+            transform: translateY(-1px);
+        }
+        
+        .zoom-info {
+            text-align: center;
+            margin: 10px 0;
+            font-size: 12px;
+            color: #666;
+        }
+        
+        .legend {
+            padding: 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e1e5e9;
+        }
+        
+        .legend-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin-top: 15px;
+        }
+        
+        .legend-item {
+            display: flex;
+            align-items: center;
+            padding: 8px;
+            background: white;
+            border-radius: 5px;
+            box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+        }
+        
+        .legend-color {
+            width: 20px;
+            height: 20px;
+            border-radius: 3px;
+            margin-right: 10px;
+        }
+        
+        .fullscreen-btn {
+            background: #2196F3;
+        }
+        
+        .fullscreen-btn:hover {
+            background: #1976D2;
+        }
+        
+        .reset-btn {
+            background: #FF9800;
+        }
+        
+        .reset-btn:hover {
+            background: #F57C00;
+        }
+        
+        .info-panel {
+            position: absolute;
+            bottom: 15px;
+            left: 15px;
+            background: rgba(255, 255, 255, 0.95);
+            padding: 10px;
+            border-radius: 5px;
+            font-size: 12px;
+            color: #666;
+            backdrop-filter: blur(10px);
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>🏗️ Azure Bicep Infrastructure Architecture</h1>
+            <p>Interactive High-Level Infrastructure Overview</p>
+        </div>
+        
+        <div class="diagram-wrapper" id="diagram-wrapper">
+            <div class="diagram-container" id="diagram-container">
+                <div class="mermaid" id="architecture-diagram">
+graph TB
+    %% Internet and External Access
+    Internet([🌐 Internet]) --> WAF[🛡️ Web Application Firewall]
+    
+    %% DDoS Protection
+    DDoS[🛡️ DDoS Protection Plan] --> WAF
+    
+    %% Application Gateway Layer
+    WAF --> AGW[⚖️ Application Gateway<br/>🔒 SSL Termination<br/>📊 Layer 7 Load Balancing]
+    
+    %% Public IP
+    PIP[🌐 Public IP<br/>⭐ Standard SKU<br/>🔄 Zone Redundant] --> AGW
+    
+    %% Virtual Network Manager
+    VNM[🎛️ Virtual Network Manager<br/>🏢 Centralized Network Governance] -.-> VNET
+    
+    %% Virtual Network and Subnets
+    subgraph VNET[🏠 Virtual Network - Hub]
+        subgraph AGW_SUBNET[📡 Application Gateway Subnet]
+            AGW
+        end
+        
+        subgraph WEB_SUBNET[🌐 Web Tier Subnet]
+            VMSS_WEB[💻 VM Scale Set - Web<br/>📈 Auto-scaling<br/>🔄 Zone Redundant]
+        end
+        
+        subgraph BIZ_SUBNET[⚙️ Business Tier Subnet]
+            ILB_BIZ[⚖️ Internal Load Balancer<br/>📊 Business Tier]
+            VMSS_BIZ[💻 VM Scale Set - Business<br/>📈 Auto-scaling<br/>🔄 Zone Redundant]
+        end
+        
+        subgraph DATA_SUBNET[🗄️ Data Tier Subnet]
+            ILB_DATA[⚖️ Internal Load Balancer<br/>📊 Data Tier]
+            SQL[🗃️ Azure SQL Database<br/>🔒 TDE Enabled<br/>🛡️ Advanced Security]
+            STORAGE[💾 Storage Account<br/>🔐 Private Endpoints<br/>🔒 Encryption at Rest]
+        end
+        
+        subgraph MGMT_SUBNET[🔧 Management Subnet]
+            BASTION[🏰 Azure Bastion<br/>🔒 Secure Access]
+        end
+    end
+    
+    %% Network Security Groups
+    NSG_WEB[🛡️ NSG - Web Tier] --> WEB_SUBNET
+    NSG_BIZ[🛡️ NSG - Business Tier] --> BIZ_SUBNET
+    NSG_DATA[🛡️ NSG - Data Tier] --> DATA_SUBNET
+    NSG_MGMT[🛡️ NSG - Management] --> MGMT_SUBNET
+    
+    %% Traffic Flow
+    AGW --> VMSS_WEB
+    VMSS_WEB --> ILB_BIZ
+    ILB_BIZ --> VMSS_BIZ
+    VMSS_BIZ --> ILB_DATA
+    ILB_DATA --> SQL
+    VMSS_BIZ --> STORAGE
+    
+    %% Security and Identity
+    subgraph SECURITY[🔐 Security & Identity Layer]
+        KV[🗝️ Key Vault<br/>🔒 Secrets & Certificates<br/>👤 RBAC Enabled]
+        MI[🆔 Managed Identities<br/>5️⃣ User-Assigned<br/>🔐 Service Authentication]
+        AAD[👥 Azure Active Directory<br/>🆔 Identity Management]
+    end
+    
+    %% Private Endpoints
+    PE_SQL[🔐 Private Endpoint<br/>🗃️ SQL Database] --> SQL
+    PE_STORAGE[🔐 Private Endpoint<br/>💾 Storage Account] --> STORAGE
+    PE_KV[🔐 Private Endpoint<br/>🗝️ Key Vault] --> KV
+    
+    %% Monitoring and Logging
+    subgraph MONITORING[📊 Monitoring & Logging]
+        LAW[📋 Log Analytics Workspace<br/>📊 Centralized Logging]
+        AI[📈 Application Insights<br/>📊 APM & Telemetry]
+        ALERTS[🚨 Azure Monitor Alerts<br/>⚡ Proactive Monitoring]
+    end
+    
+    %% Managed Identity Connections
+    MI -.-> KV
+    MI -.-> SQL
+    MI -.-> STORAGE
+    AGW -.-> MI
+    VMSS_WEB -.-> MI
+    VMSS_BIZ -.-> MI
+    
+    %% Monitoring Connections
+    VMSS_WEB --> LAW
+    VMSS_BIZ --> LAW
+    SQL --> LAW
+    STORAGE --> LAW
+    AGW --> LAW
+    
+    VMSS_WEB --> AI
+    VMSS_BIZ --> AI
+    
+    LAW --> ALERTS
+    AI --> ALERTS
+    
+    %% Styling
+    classDef internetClass fill:#ff6b6b,stroke:#d63031,stroke-width:3px,color:#fff
+    classDef securityClass fill:#74b9ff,stroke:#0984e3,stroke-width:3px,color:#fff
+    classDef computeClass fill:#55a3ff,stroke:#2d3436,stroke-width:3px,color:#fff
+    classDef dataClass fill:#fd79a8,stroke:#e84393,stroke-width:3px,color:#fff
+    classDef networkClass fill:#00b894,stroke:#00a085,stroke-width:3px,color:#fff
+    classDef monitorClass fill:#fdcb6e,stroke:#e17055,stroke-width:3px,color:#fff
+    
+    class Internet,WAF,DDoS internetClass
+    class KV,MI,AAD,PE_SQL,PE_STORAGE,PE_KV securityClass
+    class AGW,VMSS_WEB,VMSS_BIZ,ILB_BIZ,ILB_DATA,BASTION computeClass
+    class SQL,STORAGE dataClass
+    class VNET,VNM,PIP,NSG_WEB,NSG_BIZ,NSG_DATA,NSG_MGMT networkClass
+    class LAW,AI,ALERTS monitorClass
+                </div>
+            </div>
+            
+            <div class="controls">
+                <button class="control-btn" onclick="zoomIn()">🔍 Zoom In</button>
+                <button class="control-btn" onclick="zoomOut()">🔍 Zoom Out</button>
+                <button class="control-btn reset-btn" onclick="resetZoom()">↻ Reset Zoom</button>
+                <button class="control-btn fullscreen-btn" onclick="toggleFullscreen()">⛶ Fullscreen</button>
+                <div class="zoom-info" id="zoom-info">Zoom: 100%</div>
+            </div>
+            
+            <div class="info-panel">
+                <strong>💡 Navigation Tips:</strong><br>
+                • Ctrl/Cmd + Mouse Wheel to zoom<br>
+                • Click and drag to pan<br>
+                • Use controls for precise zoom
+            </div>
+        </div>
+        
+        <div class="legend">
+            <h3>🎨 Architecture Legend</h3>
+            <div class="legend-grid">
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #ff6b6b;"></div>
+                    <span><strong>Internet/Edge:</strong> External access points</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #74b9ff;"></div>
+                    <span><strong>Security:</strong> Identity & access management</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #55a3ff;"></div>
+                    <span><strong>Compute:</strong> Application workloads</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #fd79a8;"></div>
+                    <span><strong>Data:</strong> Storage & databases</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #00b894;"></div>
+                    <span><strong>Network:</strong> Connectivity & routing</span>
+                </div>
+                <div class="legend-item">
+                    <div class="legend-color" style="background-color: #fdcb6e;"></div>
+                    <span><strong>Monitoring:</strong> Observability & alerts</span>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // Initialize Mermaid
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            flowchart: {
+                useMaxWidth: false,
+                htmlLabels: true,
+                curve: 'basis'
+            }
+        });
+
+        // Zoom functionality
+        let currentZoom = 1;
+        const zoomStep = 0.2;
+        const minZoom = 0.3;
+        const maxZoom = 5;
+
+        function updateZoomInfo() {
+            document.getElementById('zoom-info').textContent = `Zoom: ${Math.round(currentZoom * 100)}%`;
+        }
+
+        function zoomIn() {
+            if (currentZoom < maxZoom) {
+                currentZoom += zoomStep;
+                applyZoom();
+            }
+        }
+
+        function zoomOut() {
+            if (currentZoom > minZoom) {
+                currentZoom -= zoomStep;
+                applyZoom();
+            }
+        }
+
+        function resetZoom() {
+            currentZoom = 1;
+            applyZoom();
+        }
+
+        function applyZoom() {
+            const container = document.getElementById('diagram-container');
+            if (container) {
+                container.style.transform = `scale(${currentZoom})`;
+                updateZoomInfo();
+            }
+        }
+
+        function toggleFullscreen() {
+            const wrapper = document.getElementById('diagram-wrapper');
+            if (!document.fullscreenElement) {
+                wrapper.requestFullscreen().catch(err => {
+                    console.log(`Error attempting to enable fullscreen: ${err.message}`);
+                });
+            } else {
+                document.exitFullscreen();
+            }
+        }
+
+        // Mouse wheel zoom
+        document.getElementById('diagram-wrapper').addEventListener('wheel', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                e.preventDefault();
+                if (e.deltaY < 0) {
+                    zoomIn();
+                } else {
+                    zoomOut();
+                }
+            }
+        });
+
+        // Pan functionality
+        let isPanning = false;
+        let startX, startY, scrollLeft, scrollTop;
+
+        const wrapper = document.getElementById('diagram-wrapper');
+
+        wrapper.addEventListener('mousedown', function(e) {
+            if (e.button === 0) { // Left mouse button
+                isPanning = true;
+                startX = e.pageX - wrapper.offsetLeft;
+                startY = e.pageY - wrapper.offsetTop;
+                scrollLeft = wrapper.scrollLeft;
+                scrollTop = wrapper.scrollTop;
+                wrapper.style.cursor = 'grabbing';
+            }
+        });
+
+        wrapper.addEventListener('mouseleave', function() {
+            isPanning = false;
+            wrapper.style.cursor = 'default';
+        });
+
+        wrapper.addEventListener('mouseup', function() {
+            isPanning = false;
+            wrapper.style.cursor = 'default';
+        });
+
+        wrapper.addEventListener('mousemove', function(e) {
+            if (!isPanning) return;
+            e.preventDefault();
+            const x = e.pageX - wrapper.offsetLeft;
+            const y = e.pageY - wrapper.offsetTop;
+            const walkX = (x - startX) * 2;
+            const walkY = (y - startY) * 2;
+            wrapper.scrollLeft = scrollLeft - walkX;
+            wrapper.scrollTop = scrollTop - walkY;
+        });
+
+        // Initialize zoom info
+        updateZoomInfo();
+
+        // Keyboard shortcuts
+        document.addEventListener('keydown', function(e) {
+            if (e.ctrlKey || e.metaKey) {
+                switch(e.key) {
+                    case '=':
+                    case '+':
+                        e.preventDefault();
+                        zoomIn();
+                        break;
+                    case '-':
+                        e.preventDefault();
+                        zoomOut();
+                        break;
+                    case '0':
+                        e.preventDefault();
+                        resetZoom();
+                        break;
+                }
+            }
+            if (e.key === 'F11') {
+                e.preventDefault();
+                toggleFullscreen();
+            }
+        });
+    </script>
+</body>
+</html>
