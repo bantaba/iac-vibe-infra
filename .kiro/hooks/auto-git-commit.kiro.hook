@@ -1,6 +1,6 @@
 {
   "enabled": false,
-  "name": "Auto Git Commit",
+  "name": "Git Auto Commit",
   "description": "Automatically commits changes to the git repository whenever Bicep templates, parameter files, or scripts are modified",
   "version": "1",
   "when": {
