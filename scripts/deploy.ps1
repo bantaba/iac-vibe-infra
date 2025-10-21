@@ -1,11 +1,8 @@
-# Deployment script for Azure Bicep Infrastructure
+# Deployment script for Azure Bicep Infrastructure (Subscription-level deployment)
 param(
     [Parameter(Mandatory=$true)]
     [ValidateSet('dev', 'staging', 'prod')]
     [string]$Environment,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$ResourceGroupName,
     
     [Parameter(Mandatory=$false)]
     [string]$Location = "East US",
@@ -27,8 +24,8 @@ $ErrorActionPreference = "Stop"
 $ParameterFile = "parameters/$Environment.parameters.json"
 $DeploymentName = "bicep-infrastructure-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
-Write-Host "Starting deployment for $Environment environment..." -ForegroundColor Green
-Write-Host "Resource Group: $ResourceGroupName" -ForegroundColor Cyan
+Write-Host "Starting subscription-level deployment for $Environment environment..." -ForegroundColor Green
+Write-Host "Deployment Scope: Subscription" -ForegroundColor Cyan
 Write-Host "Location: $Location" -ForegroundColor Cyan
 Write-Host "Template: $TemplateFile" -ForegroundColor Cyan
 Write-Host "Parameters: $ParameterFile" -ForegroundColor Cyan
@@ -53,24 +50,13 @@ try {
     Write-Host "Authenticated as: $($account.user.name)" -ForegroundColor Green
     Write-Host "Subscription: $($account.name) ($($account.id))" -ForegroundColor Green
     
-    # Check if resource group exists, create if it doesn't
-    Write-Host "Checking resource group..." -ForegroundColor Yellow
-    $rgExists = az group exists --name $ResourceGroupName
-    if ($rgExists -eq "false") {
-        Write-Host "Creating resource group: $ResourceGroupName" -ForegroundColor Yellow
-        az group create --name $ResourceGroupName --location $Location
-        if ($LASTEXITCODE -ne 0) {
-            throw "Failed to create resource group"
-        }
-        Write-Host "Resource group created successfully" -ForegroundColor Green
-    } else {
-        Write-Host "Resource group exists" -ForegroundColor Green
-    }
+    # Note: Resource groups will be created by the subscription-level template
+    Write-Host "Note: Resource groups will be created automatically by the subscription-level template" -ForegroundColor Yellow
     
     # Run validation if not skipped
     if (!$SkipValidation) {
-        Write-Host "Running template validation..." -ForegroundColor Yellow
-        & ".\scripts\validate.ps1" -TemplateFile $TemplateFile -ParameterFile $ParameterFile -ResourceGroupName $ResourceGroupName
+        Write-Host "Running subscription-level template validation..." -ForegroundColor Yellow
+        & ".\scripts\validate.ps1" -TemplateFile $TemplateFile -ParameterFile $ParameterFile -Location $Location
         if ($LASTEXITCODE -ne 0) {
             throw "Template validation failed"
         }
@@ -96,9 +82,9 @@ try {
     
     # Run what-if analysis if requested
     if ($WhatIf) {
-        Write-Host "Running what-if analysis..." -ForegroundColor Yellow
-        az deployment group what-if `
-            --resource-group $ResourceGroupName `
+        Write-Host "Running subscription-level what-if analysis..." -ForegroundColor Yellow
+        az deployment sub what-if `
+            --location $Location `
             --template-file $TemplateFile `
             --parameters "@$ParameterFile" `
             --name $DeploymentName
@@ -114,12 +100,12 @@ try {
         }
     }
     
-    # Deploy the infrastructure
-    Write-Host "Starting deployment: $DeploymentName" -ForegroundColor Green
+    # Deploy the infrastructure at subscription level
+    Write-Host "Starting subscription-level deployment: $DeploymentName" -ForegroundColor Green
     $deploymentStart = Get-Date
     
-    az deployment group create `
-        --resource-group $ResourceGroupName `
+    az deployment sub create `
+        --location $Location `
         --template-file $TemplateFile `
         --parameters "@$ParameterFile" `
         --name $DeploymentName `
@@ -137,8 +123,7 @@ try {
     
     # Show deployment outputs
     Write-Host "Retrieving deployment outputs..." -ForegroundColor Yellow
-    $outputs = az deployment group show `
-        --resource-group $ResourceGroupName `
+    $outputs = az deployment sub show `
         --name $DeploymentName `
         --query "properties.outputs" `
         --output json | ConvertFrom-Json
@@ -148,9 +133,16 @@ try {
         $outputs | ConvertTo-Json -Depth 10 | Write-Host
     }
     
-    # List deployed resources
-    Write-Host "Deployed resources:" -ForegroundColor Cyan
-    az resource list --resource-group $ResourceGroupName --output table
+    # List created resource groups
+    Write-Host "Created resource groups:" -ForegroundColor Cyan
+    az group list --query "[?tags.ManagedBy=='Bicep']" --output table
+    
+    # List deployed resources in the main resource group (if outputs are available)
+    if ($outputs -and $outputs.resourcePrefix -and $outputs.workloadName -and $outputs.environment) {
+        $rgName = "$($outputs.resourcePrefix.value)-$($outputs.workloadName.value)-$($outputs.environment.value)-rg"
+        Write-Host "Deployed resources in $rgName:" -ForegroundColor Cyan
+        az resource list --resource-group $rgName --output table
+    }
     
     Write-Host "Deployment completed successfully!" -ForegroundColor Green
     
@@ -159,9 +151,9 @@ try {
     
     # Show deployment logs if deployment was attempted
     if ($DeploymentName) {
-        Write-Host "Checking deployment status..." -ForegroundColor Yellow
+        Write-Host "Checking subscription-level deployment status..." -ForegroundColor Yellow
         try {
-            az deployment group show --resource-group $ResourceGroupName --name $DeploymentName --output table
+            az deployment sub show --name $DeploymentName --output table
         } catch {
             Write-Warning "Could not retrieve deployment status"
         }

@@ -6,7 +6,42 @@ The Security Center module provides subscription-level security monitoring and t
 
 ## Recent Updates
 
-### Conditional Output Generation (Latest)
+### Telemetry Deployment Enhancement (Latest)
+
+The Security Center module has been improved with enhanced telemetry deployment resource configuration:
+
+**Change**: Enhanced telemetry deployment resource naming and location specification for better deployment reliability.
+
+**Before**:
+```bicep
+resource telemetryDeployment 'Microsoft.Resources/deployments@2022-09-01' = if (enableTelemetry) {
+  name: 'pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-${uniqueString(deployment().name)}'
+  properties: {
+    mode: 'Incremental'
+    // ...
+  }
+}
+```
+
+**After**:
+```bicep
+resource telemetryDeployment 'Microsoft.Resources/deployments@2022-09-01' = if (enableTelemetry) {
+  name: 'pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-${uniqueString(deployment().name, location)}'
+  location: location
+  properties: {
+    mode: 'Incremental'
+    // ...
+  }
+}
+```
+
+**Benefits**:
+- Improved resource name uniqueness by including location in the unique string generation
+- Explicit location specification ensures proper regional deployment of telemetry resources
+- Enhanced deployment reliability across different Azure regions and environments
+- Better tracking and management of telemetry resources in multi-region deployments
+
+### Conditional Output Generation
 
 The Security Center module has been enhanced with conditional output generation to improve deployment reliability across different environments:
 

@@ -18,6 +18,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   - Added `if (enableDefenderPlans)` condition to `defenderPlansConfig` output array
   - Ensures proper resource referencing in development environments where Security Center is disabled
   - Maintains template compatibility across all environments while optimizing costs
+- **Security Center Module**: Improved telemetry deployment resource naming and location specification
+  - Enhanced `uniqueString()` function to include location parameter for better resource name uniqueness
+  - Added explicit `location` property to telemetry deployment resource for proper regional deployment
+  - Ensures consistent telemetry resource deployment across different Azure regions and environments
 
 ### Added
 - **Security Center Integration**: Microsoft Defender for Cloud deployment with subscription-level security monitoring

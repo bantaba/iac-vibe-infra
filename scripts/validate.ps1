@@ -1,13 +1,10 @@
-# Template validation script for Azure Bicep Infrastructure
+# Template validation script for Azure Bicep Infrastructure (Subscription-level deployment)
 param(
     [Parameter(Mandatory=$true)]
     [string]$TemplateFile,
     
     [Parameter(Mandatory=$true)]
     [string]$ParameterFile,
-    
-    [Parameter(Mandatory=$true)]
-    [string]$ResourceGroupName,
     
     [Parameter(Mandatory=$false)]
     [string]$Location = "East US",
@@ -109,23 +106,23 @@ try {
     
     Write-Host "Bicep syntax validation passed" -ForegroundColor Green
     
-    # Validate Azure deployment (if Azure CLI is authenticated)
-    Write-Host "Validating Azure deployment..." -ForegroundColor Yellow
+    # Validate Azure subscription-level deployment (if Azure CLI is authenticated)
+    Write-Host "Validating Azure subscription-level deployment..." -ForegroundColor Yellow
     try {
-        $validateResult = az deployment group validate `
-            --resource-group $ResourceGroupName `
+        $validateResult = az deployment sub validate `
+            --location $Location `
             --template-file $TemplateFile `
             --parameters "@$ParameterFile" 2>&1
         
         if ($LASTEXITCODE -ne 0) {
-            Write-Warning "Azure deployment validation failed: $validateResult"
-            Write-Host "This may be due to authentication or resource group issues" -ForegroundColor Yellow
+            Write-Warning "Azure subscription-level deployment validation failed: $validateResult"
+            Write-Host "This may be due to authentication or subscription permission issues" -ForegroundColor Yellow
         } else {
-            Write-Host "Azure deployment validation passed" -ForegroundColor Green
+            Write-Host "Azure subscription-level deployment validation passed" -ForegroundColor Green
         }
     } catch {
         Write-Warning "Could not validate Azure deployment: $_"
-        Write-Host "Ensure you are logged in to Azure CLI and the resource group exists" -ForegroundColor Yellow
+        Write-Host "Ensure you are logged in to Azure CLI and have appropriate subscription permissions" -ForegroundColor Yellow
     }
     
     Write-Host "Template validation completed successfully!" -ForegroundColor Green

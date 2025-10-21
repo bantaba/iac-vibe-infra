@@ -6,7 +6,7 @@ This project implements a secure, multi-tier application architecture using Azur
 
 ```
 bicep-infrastructure/
-├── main.bicep                 # Main orchestration template
+├── main.bicep                 # Main subscription-level orchestration template
 ├── parameters/                # Environment-specific parameter files
 │   ├── dev.parameters.json    # Development environment
 │   ├── staging.parameters.json # Staging environment
@@ -38,6 +38,7 @@ bicep-infrastructure/
 
 ## Key Features
 
+- **Subscription-Level Deployment**: Single template manages entire infrastructure stack with centralized governance and cross-resource group orchestration
 - **Modular Architecture**: Reusable Bicep modules for networking, security, compute, and data components
 - **Multi-Environment Support**: Separate configurations for dev, staging, and production environments
 - **Multi-Cloud Compatibility**: Dynamic DNS resolution and cloud-compatible configurations for Azure Commercial, Government, and China clouds
@@ -49,6 +50,7 @@ bicep-infrastructure/
 - **Environment-Specific Configuration**: Optimized settings for development, staging, and production workloads
 - **Secure Data Layer**: Azure SQL Database with private endpoints, encryption, and comprehensive security features
 - **Enterprise Storage**: Storage accounts with lifecycle management, private endpoints, and advanced security controls
+- **Subscription-Level Security**: Microsoft Defender for Cloud and Azure Policy deployment at subscription scope
 
 ## Getting Started
 
@@ -61,22 +63,23 @@ bicep-infrastructure/
 
 ### Deployment
 
-1. **Create Resource Group**:
+> **Important**: This template uses **subscription-level deployment** (`targetScope = 'subscription'`). The template creates its own resource groups and manages resources at the subscription scope, providing centralized governance and cross-resource group orchestration.
+
+1. **Validate templates**:
    ```powershell
-   az group create --name contoso-webapp-dev-rg --location "East US"
+   # Validate Bicep syntax
+   az bicep build --file main.bicep
+   
+   # Validate subscription-level deployment
+   az deployment sub validate --location "East US" --template-file main.bicep --parameters @parameters/dev.parameters.json
    ```
 
-2. **Validate templates**:
-   ```powershell
-   .\scripts\validate.ps1 -TemplateFile main.bicep -ParameterFile parameters\dev.parameters.json -ResourceGroupName contoso-webapp-dev-rg
-   ```
-
-3. **Run security scan**:
+2. **Run security scan**:
    ```powershell
    checkov -d . --framework bicep --config-file .checkov.yaml
    ```
 
-4. **Test modules** (optional):
+3. **Test modules** (optional):
    ```powershell
    # Test all compute modules
    .\scripts\test-compute-modules.ps1
@@ -105,28 +108,66 @@ bicep-infrastructure/
    .\scripts\test-security-compliance.ps1 -TestScope SecurityBaseline -VerboseOutput
    ```
 
-5. **Deploy infrastructure**:
+4. **Deploy infrastructure** (subscription-level):
    ```powershell
    # Development environment
-   az deployment group create --resource-group contoso-webapp-dev-rg --template-file main.bicep --parameters @parameters/dev.parameters.json
+   az deployment sub create --location "East US" --template-file main.bicep --parameters @parameters/dev.parameters.json --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
    # Staging environment  
-   az deployment group create --resource-group contoso-webapp-staging-rg --template-file main.bicep --parameters @parameters/staging.parameters.json
+   az deployment sub create --location "East US" --template-file main.bicep --parameters @parameters/staging.parameters.json --name "bicep-infrastructure-staging-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
    # Production environment (with what-if preview)
-   az deployment group create --resource-group contoso-webapp-prod-rg --template-file main.bicep --parameters @parameters/prod.parameters.json --confirm-with-what-if
+   az deployment sub what-if --location "East US" --template-file main.bicep --parameters @parameters/prod.parameters.json
+   az deployment sub create --location "East US" --template-file main.bicep --parameters @parameters/prod.parameters.json --name "bicep-infrastructure-prod-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
    ```
 
-6. **Verify deployment**:
+5. **Verify deployment**:
    ```powershell
-   # Check resource deployment status
-   az deployment group show --resource-group contoso-webapp-dev-rg --name main
+   # Check subscription-level deployment status
+   az deployment sub show --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
 
-   # List deployed resources
+   # List deployed resource groups (created by the template)
+   az group list --query "[?tags.ManagedBy=='Bicep']" --output table
+
+   # List deployed resources in created resource groups
    az resource list --resource-group contoso-webapp-dev-rg --output table
    ```
 
 ## Architecture Overview
+
+### Deployment Architecture
+
+This infrastructure template uses **subscription-level deployment** (`targetScope = 'subscription'`) which provides several key advantages:
+
+#### Benefits of Subscription-Level Deployment
+- **Centralized Governance**: Single template manages all resources across multiple resource groups
+- **Cross-Resource Group Orchestration**: Enables complex dependencies and resource sharing between groups
+- **Subscription-Level Services**: Direct deployment of subscription-scoped services like Security Center and Azure Policy
+- **Resource Group Management**: Template creates and manages resource groups with consistent naming and tagging
+- **Simplified Operations**: Single deployment command manages the entire infrastructure stack
+- **Enhanced Security**: Subscription-level RBAC and policy assignments for comprehensive governance
+
+#### Resource Organization
+The template automatically creates and manages resource groups based on the environment and workload parameters:
+- **Main Resource Group**: `{resourcePrefix}-{workloadName}-{environment}-rg` - Contains all infrastructure resources
+- **Monitoring Resource Group**: `{resourcePrefix}-{workloadName}-{environment}-monitoring-rg` - Contains Log Analytics and monitoring resources (if separated)
+- **Security Resource Group**: `{resourcePrefix}-{workloadName}-{environment}-security-rg` - Contains Key Vault and security resources (if separated)
+
+#### Deployment Scope Hierarchy
+```
+Subscription (main.bicep - targetScope: 'subscription')
+├── Resource Groups (auto-created with consistent naming)
+├── Security Center (subscription-level)
+├── Azure Policy (subscription-level)
+└── Resource Group Deployments
+    ├── Networking Resources
+    ├── Security Resources  
+    ├── Compute Resources
+    ├── Data Resources
+    └── Monitoring Resources
+```
+
+### Infrastructure Architecture
 
 The infrastructure implements a secure multi-tier architecture with the following components:
 
@@ -1055,8 +1096,11 @@ This project is version controlled with Git. The repository includes:
 - [ ] Bicep extension installed (`az bicep install`)
 - [ ] PowerShell 5.1+ or PowerShell Core 7+
 - [ ] Python 3.7+ and Checkov installed (`pip install checkov`)
-- [ ] Azure subscription with appropriate permissions (Contributor role)
-- [ ] Resource group created for deployment
+- [ ] Azure subscription with **subscription-level permissions**:
+  - [ ] **Contributor** or **Owner** role at subscription level (for resource deployment)
+  - [ ] **Security Admin** role (for Microsoft Defender for Cloud configuration)
+  - [ ] **Resource Policy Contributor** role (for Azure Policy assignments)
+- [ ] **Note**: Resource groups will be created automatically by the template
 
 ### Step-by-Step Deployment
 
@@ -1092,22 +1136,25 @@ This project is version controlled with Git. The repository includes:
    checkov -d . --framework bicep --config-file .checkov.yaml
    ```
 
-6. **Deploy Infrastructure**:
+6. **Deploy Infrastructure** (subscription-level):
    ```powershell
    # Development deployment
-   az deployment group create \
-     --resource-group contoso-webapp-dev-rg \
+   az deployment sub create \
+     --location "East US" \
      --template-file main.bicep \
      --parameters @parameters/dev.parameters.json \
-     --name "networking-deployment-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+     --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
    ```
 
 7. **Verify Deployment**:
    ```powershell
-   # Check deployment status
-   az deployment group list --resource-group contoso-webapp-dev-rg --output table
+   # Check subscription-level deployment status
+   az deployment sub list --output table
    
-   # Verify networking resources
+   # List resource groups created by the template
+   az group list --query "[?tags.ManagedBy=='Bicep']" --output table
+   
+   # Verify networking resources (replace RG name with actual created RG)
    az network vnet list --resource-group contoso-webapp-dev-rg --output table
    az network nsg list --resource-group contoso-webapp-dev-rg --output table
    
@@ -1140,8 +1187,16 @@ This project is version controlled with Git. The repository includes:
 
 ### Troubleshooting Common Issues
 
+#### Subscription-Level Deployment Issues
+- **Permission Errors**: Ensure you have **Contributor** or **Owner** role at the **subscription level** (not just resource group level)
+- **Security Center Deployment**: Requires **Security Admin** role for Microsoft Defender plan configuration
+- **Azure Policy Assignment**: Requires **Resource Policy Contributor** role at subscription level
+- **Location Parameter**: Always specify `--location` parameter for subscription deployments (required even though resources may be in different regions)
+- **Resource Group Creation**: Template creates resource groups automatically - do not pre-create them
+- **Deployment Naming**: Use unique deployment names to avoid conflicts: `bicep-infrastructure-{env}-$(Get-Date -Format 'yyyyMMdd-HHmmss')`
+
+#### General Issues
 - **Template Validation Errors**: Check parameter file format and required values
-- **Permission Errors**: Ensure you have Contributor role on the subscription/resource group
 - **Naming Conflicts**: Verify resource names are unique (especially Key Vault and Storage Account names)
 - **Network Address Conflicts**: Ensure VNet address spaces don't overlap with existing networks
 - **Test Script Issues**:
@@ -1194,6 +1249,7 @@ This project is version controlled with Git. The repository includes:
   - Confirm auto-provisioning settings are compatible with your VM configurations
   - Check that Defender plan pricing tiers are supported in your target region
   - **Output Reference Errors**: If you encounter errors referencing Security Center outputs in development environments, verify that the conditional logic is properly implemented. The module uses `if (enableDefenderPlans)` conditions to prevent output generation when Defender plans are disabled
+  - **Telemetry Deployment**: The module includes enhanced telemetry deployment with improved resource naming and location specification for better deployment reliability across regions
 
 ## Additional Documentation
 

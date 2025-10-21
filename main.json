@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "7060391349690658453"
+      "templateHash": "3935000420813188740"
     }
   },
   "definitions": {
@@ -3973,7 +3973,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "11699967902010610887"
+              "templateHash": "4440849279332446119"
             }
           },
           "definitions": {
@@ -4252,6 +4252,7 @@
               "type": "Microsoft.Resources/deployments",
               "apiVersion": "2022-09-01",
               "name": "[format('pid-47ed15a6-730a-4827-bcb4-0fd963ffbd82-{0}', uniqueString(deployment().name))]",
+              "location": "[deployment().location]",
               "properties": {
                 "mode": "Incremental",
                 "template": {

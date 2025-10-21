@@ -1,7 +1,7 @@
 // Main orchestration template for Azure Bicep Infrastructure
 // This template coordinates the deployment of all infrastructure modules
 
-targetScope = 'resourceGroup'
+targetScope = 'subscription'
 
 // Import shared modules
 import { EnvironmentConfig, TagConfiguration } from 'modules/shared/parameter-schemas.bicep'
@@ -15,7 +15,10 @@ param resourcePrefix string
 param environment string
 
 @description('The Azure region for deployment')
-param location string = resourceGroup().location
+param location string = 'East US'
+
+@description('The resource group name')
+param resourceGroupName string = '${resourcePrefix}-${workloadName}-${environment}-rg'
 
 @description('The workload or application name')
 param workloadName string
@@ -35,9 +38,17 @@ param tags TagConfiguration = {
 @description('Environment-specific configuration settings')
 param environmentConfig EnvironmentConfig
 
+// Create the resource group
+resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
+  name: resourceGroupName
+  location: location
+  tags: tags
+}
+
 // Deploy naming convention utilities
 module namingConventions 'modules/shared/naming-conventions.bicep' = {
   name: 'naming-conventions'
+  scope: resourceGroup
   params: {
     resourcePrefix: resourcePrefix
     environment: environment
@@ -48,6 +59,7 @@ module namingConventions 'modules/shared/naming-conventions.bicep' = {
 // Deploy common variables and constants
 module commonVariables 'modules/shared/common-variables.bicep' = {
   name: 'common-variables'
+  scope: resourceGroup
 }
 
 // ========================================
@@ -69,6 +81,7 @@ module ddosProtection 'modules/networking/ddos-protection.bicep' = if (environme
 // Deploy Network Security Groups
 module networkSecurityGroups 'modules/networking/network-security-groups.bicep' = {
   name: 'network-security-groups-deployment'
+  scope: resourceGroup
   params: {
     nsgNamePrefix: namingConventions.outputs.namingConvention.networkSecurityGroup
     tags: tags
@@ -86,6 +99,7 @@ module networkSecurityGroups 'modules/networking/network-security-groups.bicep' 
 // Deploy Virtual Network with subnets
 module virtualNetwork 'modules/networking/virtual-network.bicep' = {
   name: 'virtual-network-deployment'
+  scope: resourceGroup
   params: {
     virtualNetworkName: namingConventions.outputs.namingConvention.virtualNetwork
     addressSpace: [environmentConfig.networkAddressSpace]
@@ -107,6 +121,7 @@ module virtualNetwork 'modules/networking/virtual-network.bicep' = {
 // Deploy Virtual Network Manager
 module virtualNetworkManager 'modules/networking/vnet-manager.bicep' = {
   name: 'virtual-network-manager-deployment'
+  scope: resourceGroup
   params: {
     virtualNetworkManagerName: namingConventions.outputs.namingConvention.virtualNetworkManager
     vnmDescription: 'Virtual Network Manager for ${workloadName} ${environment} environment'
@@ -216,6 +231,7 @@ module virtualNetworkManager 'modules/networking/vnet-manager.bicep' = {
 // Deploy Managed Identities
 module managedIdentities 'modules/security/managed-identity.bicep' = {
   name: 'managed-identities-deployment'
+  scope: resourceGroup
   params: {
     managedIdentityBaseName: '${resourcePrefix}-${workloadName}-${environment}'
     userAssignedIdentities: [
@@ -256,6 +272,7 @@ module managedIdentities 'modules/security/managed-identity.bicep' = {
 // Deploy Key Vault
 module keyVault 'modules/security/key-vault.bicep' = {
   name: 'key-vault-deployment'
+  scope: resourceGroup
   params: {
     keyVaultName: namingConventions.outputs.namingConvention.keyVault
     keyVaultConfig: {
@@ -425,6 +442,7 @@ module securityCenter 'modules/security/security-center.bicep' = {
 // Deploy Public IP for Application Gateway
 module applicationGatewayPublicIp 'modules/networking/public-ip.bicep' = {
   name: 'application-gateway-public-ip-deployment'
+  scope: resourceGroup
   params: {
     publicIpName: replace(namingConventions.outputs.namingConvention.publicIp, '{purpose}', 'agw')
     sku: 'Standard'
