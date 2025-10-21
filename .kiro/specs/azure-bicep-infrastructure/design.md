@@ -154,7 +154,8 @@ bicep-infrastructure/
 
 #### Private Endpoints Interface
 - **Service Coverage**: Support for SQL Database, Storage Account (Blob, File, Queue, Table), and Key Vault
-- **DNS Integration**: Automatic private DNS zone creation and virtual network linking
+- **DNS Integration**: Automatic private DNS zone creation and virtual network linking with cloud-compatible naming
+- **Multi-Cloud Compatibility**: Dynamic DNS suffix resolution using Azure `environment()` function for deployment across Azure Commercial, Government, and China clouds
 - **Network Isolation**: Complete elimination of public internet access to data services
 - **Custom Configuration**: Support for existing DNS zones and custom DNS server configurations
 

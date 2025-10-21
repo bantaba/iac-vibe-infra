@@ -38,6 +38,7 @@ bicep-infrastructure/
 
 - **Modular Architecture**: Reusable Bicep modules for networking, security, compute, and data components
 - **Multi-Environment Support**: Separate configurations for dev, staging, and production environments
+- **Multi-Cloud Compatibility**: Dynamic DNS resolution and cloud-compatible configurations for Azure Commercial, Government, and China clouds
 - **Security-First Design**: Defense-in-depth security with WAF, NSGs, private endpoints, and DDoS protection
 - **Automated Security Scanning**: Integrated Checkov scanning for continuous security validation and compliance
 - **High Availability**: Multi-zone deployment with load balancing and automated failover
@@ -73,16 +74,19 @@ bicep-infrastructure/
    checkov -d . --framework bicep --config-file .checkov.yaml
    ```
 
-4. **Test compute modules** (optional):
+4. **Test modules** (optional):
    ```powershell
    # Test all compute modules
    .\scripts\test-compute-modules.ps1
    
-   # Test specific module with verbose output
+   # Test specific compute module with verbose output
    .\scripts\test-compute-modules.ps1 -TestScope ApplicationGateway -VerboseOutput
    
-   # Test for specific environment
-   .\scripts\test-compute-modules.ps1 -Environment staging -VerboseOutput
+   # Test private endpoints module
+   .\scripts\test-private-endpoints.ps1 -Environment dev -VerboseOutput
+   
+   # Test private endpoints with validation only (no resource group required)
+   .\scripts\test-private-endpoints.ps1 -ValidateOnly -VerboseOutput
    ```
 
 5. **Deploy infrastructure**:
@@ -117,6 +121,37 @@ The infrastructure implements a secure multi-tier architecture with the followin
 - **Public IP Addresses**: Standard SKU public IPs with zone redundancy for Application Gateway and other public-facing resources
 - **DDoS Protection**: Enhanced protection for public-facing resources (staging and production)
 - **Service Endpoints**: Secure connectivity to Azure services (Key Vault, Storage, SQL)
+
+### Multi-Cloud Compatibility
+
+The infrastructure templates are designed for deployment across different Azure cloud environments:
+
+#### Supported Azure Clouds
+- **Azure Commercial**: Standard Azure public cloud (azure.com)
+- **Azure Government**: US Government cloud (azure.us) 
+- **Azure China**: China-specific cloud (azure.cn)
+
+#### Dynamic Configuration Features
+- **DNS Suffix Resolution**: Automatic detection and use of cloud-specific DNS suffixes using Azure `environment()` function
+- **Service Endpoint Adaptation**: Dynamic service endpoint configuration based on target cloud environment
+- **Private DNS Zone Naming**: Cloud-compatible private DNS zone creation for private endpoints
+
+#### Implementation Details
+The templates use Azure's built-in `environment()` function to dynamically resolve cloud-specific configurations:
+
+```bicep
+// Example: Cloud-compatible private DNS zone naming
+var privateDnsZoneNames = {
+  sqlServer: 'privatelink${environment().suffixes.sqlServerHostname}'
+  storageBlob: 'privatelink.blob.${environment().suffixes.storage}'
+  keyVault: 'privatelink${environment().suffixes.keyvaultDns}'
+}
+```
+
+This approach ensures:
+- **Portability**: Templates work across different Azure clouds without modification
+- **Maintainability**: Single template set for all cloud environments
+- **Reliability**: Automatic adaptation to cloud-specific service endpoints and DNS suffixes
 
 ### Environment Configuration
 
@@ -425,6 +460,10 @@ module storageAccount 'modules/data/storage-account.bicep' = {
 
 ## Testing
 
+### Module Testing Overview
+
+The project includes comprehensive unit tests for infrastructure modules to validate configuration, functionality, and cloud compatibility:
+
 ### Compute Module Testing
 
 The project includes comprehensive unit tests for compute modules to validate configuration and functionality:
@@ -491,6 +530,63 @@ The test script is designed to integrate with CI/CD pipelines:
 - Returns exit code 0 for success, 1 for failure
 - Supports automated testing in build pipelines
 - Provides structured output for parsing by automation tools
+
+### Private Endpoints Module Testing
+
+The project includes comprehensive testing for the private endpoints module to validate secure connectivity and cloud compatibility:
+
+#### Test Script Usage
+
+```powershell
+# Test private endpoints module with syntax and configuration validation
+.\scripts\test-private-endpoints.ps1
+
+# Test with verbose output for detailed information
+.\scripts\test-private-endpoints.ps1 -VerboseOutput
+
+# Test for specific environment
+.\scripts\test-private-endpoints.ps1 -Environment staging -VerboseOutput
+
+# Validation-only mode (no resource group required)
+.\scripts\test-private-endpoints.ps1 -ValidateOnly -VerboseOutput
+```
+
+#### Test Coverage
+
+The private endpoints test script validates the following aspects:
+
+**Module Syntax Validation:**
+- Bicep template syntax validation using `az bicep build`
+- Parameter schema validation and type checking
+- Template compilation and ARM template generation
+
+**Service Type Support:**
+- SQL Server private endpoint configuration
+- Storage Account private endpoints (Blob, File, Queue, Table)
+- Key Vault private endpoint support
+- Additional Azure services (Cosmos DB, Service Bus, Event Hub, etc.)
+- Cloud-compatible DNS zone naming validation
+
+**Configuration Validation:**
+- Private endpoint parameter validation
+- DNS integration and virtual network linking
+- Network security and isolation testing
+- Multi-cloud compatibility verification
+
+**Cloud Compatibility Features:**
+- Dynamic DNS suffix resolution using Azure `environment()` function
+- Support for Azure Commercial, Government, and China clouds
+- Automatic adaptation to different Azure environments
+- Validation of cloud-specific DNS zone naming patterns
+
+#### Test Results
+
+The test script provides comprehensive output including:
+- ✓ Passed tests with service type and configuration details
+- ✗ Failed tests with detailed error messages and troubleshooting guidance
+- Test summary with total, passed, and failed counts
+- Cloud compatibility validation results
+- Detailed configuration information when using `-VerboseOutput` parameter
 
 ## Deployed Infrastructure Components
 
@@ -571,7 +667,8 @@ The main template deploys the following infrastructure components:
 
 #### Private Endpoints (Conditional)
 - **Secure Connectivity**: Private endpoints for SQL Database, Storage Account, and Key Vault
-- **DNS Integration**: Automatic private DNS zone creation and virtual network linking
+- **DNS Integration**: Automatic private DNS zone creation and virtual network linking with cloud-compatible naming
+- **Multi-Cloud Support**: Dynamic DNS suffix resolution using Azure `environment()` function for Commercial, Government, and China clouds
 - **Service Coverage**: Support for all Azure data services (SQL, Blob, File, Queue, Table, Key Vault)
 - **Network Isolation**: Complete elimination of public internet access to data services
 
@@ -719,6 +816,12 @@ This project is version controlled with Git. The repository includes:
   - Check that private DNS zones are properly linked to virtual networks
   - Ensure service endpoints are disabled on subnets using private endpoints
   - Validate that applications are configured to use private endpoint FQDNs
+  - Confirm DNS zone names match the target Azure cloud environment (Commercial/Government/China)
+- **Multi-Cloud Deployment Issues**:
+  - Verify target Azure cloud environment is correctly detected by `environment()` function
+  - Check that DNS suffixes are appropriate for the target cloud (e.g., .windows.net vs .usgovcloudapi.net)
+  - Ensure service endpoints and private DNS zones use cloud-specific naming conventions
+  - Validate that all Azure services are available in the target cloud region
 
 ## Contributing
 

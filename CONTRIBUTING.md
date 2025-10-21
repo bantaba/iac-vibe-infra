@@ -323,14 +323,24 @@ When testing the Private Endpoints module:
    ```powershell
    # Test with minimal configuration
    az deployment group validate --resource-group test-rg --template-file modules/data/private-endpoints.bicep --parameters privateEndpointNamePrefix=test-pe subnetId='/subscriptions/.../subnets/test' virtualNetworkId='/subscriptions/.../vnets/test' privateEndpointConfigs='[]' tags='{Environment:"test"}'
+   
+   # Use the dedicated test script for comprehensive validation
+   .\scripts\test-private-endpoints.ps1 -ValidateOnly -VerboseOutput
    ```
 
 2. **DNS Integration Testing**:
-   - Verify private DNS zone creation for each service type
+   - Verify private DNS zone creation for each service type with cloud-compatible naming
    - Test virtual network linking functionality
    - Validate DNS resolution for private endpoints
+   - Confirm cloud-specific DNS suffix usage (Commercial/Government/China)
 
-3. **Connectivity Testing**:
+3. **Multi-Cloud Compatibility Testing**:
+   - Test DNS zone naming with `environment()` function across different Azure clouds
+   - Verify automatic adaptation to cloud-specific service endpoints
+   - Validate private DNS zone creation for target cloud environment
+   - Test template portability across Azure Commercial, Government, and China clouds
+
+4. **Connectivity Testing**:
    - Test private endpoint creation for SQL Database
    - Verify storage account private endpoint connectivity
    - Test Key Vault private endpoint functionality

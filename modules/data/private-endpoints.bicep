@@ -1,6 +1,38 @@
 // Private Endpoints module
 // This module creates private endpoint configurations for SQL Database and Storage
 // with DNS integration and network connectivity
+//
+// Features:
+// - Supports multiple Azure services (SQL Database, Storage Account, Key Vault, etc.)
+// - Automatic private DNS zone creation and virtual network linking
+// - Support for existing private DNS zones
+// - Custom DNS server configuration
+// - Comprehensive outputs for integration with other modules
+//
+// Usage Example:
+// module privateEndpoints 'modules/data/private-endpoints.bicep' = {
+//   name: 'private-endpoints-deployment'
+//   params: {
+//     privateEndpointNamePrefix: 'contoso-webapp-prod'
+//     subnetId: '/subscriptions/.../subnets/data-tier'
+//     virtualNetworkId: '/subscriptions/.../virtualNetworks/vnet'
+//     privateEndpointConfigs: [
+//       {
+//         name: 'sql-server'
+//         privateLinkServiceId: sqlServer.outputs.sqlServerId
+//         groupId: 'sqlServer'
+//       }
+//       {
+//         name: 'storage-blob'
+//         privateLinkServiceId: storageAccount.outputs.storageAccountId
+//         groupId: 'storageBlob'
+//       }
+//     ]
+//     enablePrivateDnsZones: true
+//     tags: tags
+//     location: location
+//   }
+// }
 
 targetScope = 'resourceGroup'
 
@@ -26,7 +58,11 @@ param virtualNetworkId string
 
 // Private endpoint configurations
 @description('Private endpoint configurations')
-param privateEndpointConfigs array = []
+param privateEndpointConfigs {
+  name: string
+  privateLinkServiceId: string
+  groupId: 'sqlServer' | 'storageBlob' | 'storageFile' | 'storageQueue' | 'storageTable' | 'storageWeb' | 'storageDfs' | 'keyVault' | 'cosmosDb' | 'serviceBus' | 'eventHub' | 'redis' | 'cognitiveServices' | 'search' | 'monitor' | 'oms' | 'ods' | 'agentsvc'
+}[] = []
 
 // DNS configuration parameters
 @description('Enable private DNS zone creation and linking')
@@ -38,16 +74,19 @@ param existingPrivateDnsZoneIds object = {}
 @description('Custom DNS servers for private DNS zones')
 param customDnsServers array = []
 
-// Variables for DNS zone names
+@description('Enable custom DNS configuration for private endpoints')
+param enableCustomDnsConfiguration bool = false
+
+// Variables for DNS zone names using environment() function for cloud compatibility
 var privateDnsZoneNames = {
-  sqlServer: 'privatelink.database.windows.net'
-  storageBlob: 'privatelink.blob.core.windows.net'
-  storageFile: 'privatelink.file.core.windows.net'
-  storageQueue: 'privatelink.queue.core.windows.net'
-  storageTable: 'privatelink.table.core.windows.net'
-  storageWeb: 'privatelink.web.core.windows.net'
-  storageDfs: 'privatelink.dfs.core.windows.net'
-  keyVault: 'privatelink.vaultcore.azure.net'
+  sqlServer: 'privatelink${environment().suffixes.sqlServerHostname}'
+  storageBlob: 'privatelink.blob.${environment().suffixes.storage}'
+  storageFile: 'privatelink.file.${environment().suffixes.storage}'
+  storageQueue: 'privatelink.queue.${environment().suffixes.storage}'
+  storageTable: 'privatelink.table.${environment().suffixes.storage}'
+  storageWeb: 'privatelink.web.${environment().suffixes.storage}'
+  storageDfs: 'privatelink.dfs.${environment().suffixes.storage}'
+  keyVault: 'privatelink${environment().suffixes.keyvaultDns}'
   cosmosDb: 'privatelink.documents.azure.com'
   serviceBus: 'privatelink.servicebus.windows.net'
   eventHub: 'privatelink.servicebus.windows.net'
@@ -104,6 +143,12 @@ resource privateEndpoints 'Microsoft.Network/privateEndpoints@2023-05-01' = [for
       }
     ]
     customNetworkInterfaceName: '${privateEndpointNamePrefix}-${config.name}-nic'
+    customDnsConfigs: enableCustomDnsConfiguration && length(customDnsServers) > 0 ? [
+      {
+        fqdn: privateDnsZoneNames[config.groupId]
+        ipAddresses: customDnsServers
+      }
+    ] : []
     ipConfigurations: []
   }
 }]
@@ -146,7 +191,39 @@ output privateEndpointConfigs array = [for (config, index) in privateEndpointCon
   privateIpAddress: length(privateEndpoints[index].properties.customDnsConfigs) > 0 ? privateEndpoints[index].properties.customDnsConfigs[0].ipAddresses[0] : ''
   fqdn: length(privateEndpoints[index].properties.customDnsConfigs) > 0 ? privateEndpoints[index].properties.customDnsConfigs[0].fqdn : ''
   dnsZoneId: enablePrivateDnsZones ? (contains(existingPrivateDnsZoneIds, config.groupId) ? existingPrivateDnsZoneIds[config.groupId] : privateDnsZones[index].id) : ''
+  dnsZoneName: privateDnsZoneNames[config.groupId]
+  connectionState: 'Approved'
 }]
 
 @description('Private DNS zone names')
 output privateDnsZoneNames object = privateDnsZoneNames
+
+@description('Private endpoint network interface details')
+output networkInterfaceDetails array = [for (config, index) in privateEndpointConfigs: {
+  name: config.name
+  networkInterfaceId: privateEndpoints[index].properties.networkInterfaces[0].id
+  privateIpAddress: ''
+  subnetId: subnetId
+}]
+
+// Variable for DNS zone virtual network links
+var dnsZoneVnetLinksArray = [for (config, index) in privateEndpointConfigs: {
+  name: config.name
+  groupId: config.groupId
+  dnsZoneName: privateDnsZoneNames[config.groupId]
+  vnetLinkId: enablePrivateDnsZones ? privateDnsZoneVnetLinks[index].id : ''
+  registrationEnabled: false
+}]
+
+@description('Private DNS zone virtual network links')
+output dnsZoneVnetLinks array = enablePrivateDnsZones ? dnsZoneVnetLinksArray : []
+
+@description('Summary of private endpoint deployment')
+output deploymentSummary object = {
+  totalEndpoints: length(privateEndpointConfigs)
+  enabledPrivateDnsZones: enablePrivateDnsZones
+  customDnsConfiguration: enableCustomDnsConfiguration
+  subnetId: subnetId
+  virtualNetworkId: virtualNetworkId
+  supportedServicesCount: length(items(privateDnsZoneNames))
+}
