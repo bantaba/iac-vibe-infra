@@ -877,9 +877,7 @@ module applicationInsights 'modules/monitoring/application-insights.bicep' = {
     enablePublicNetworkAccessForQuery: !environmentConfig.enablePrivateEndpoints
     retentionInDays: environmentConfig.logRetentionDays
     dailyDataCapInGB: environmentConfig.skuTier == 'Basic' ? 1 : (environmentConfig.skuTier == 'Standard' ? 5 : 20)
-    enableDailyDataCapReset: true
     samplingPercentage: environment == 'dev' ? 50 : 100
-    enableRequestSource: true
     availabilityTestUrls: [
       'https://${applicationGateway.outputs.publicIpAddress}/health'
     ]
@@ -947,7 +945,6 @@ module keyVaultDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
     enableAllMetrics: true
     logRetentionDays: environmentConfig.logRetentionDays
     metricRetentionDays: environmentConfig.logRetentionDays
-    tags: tags
   }
   dependsOn: [
     keyVault
@@ -967,7 +964,6 @@ module applicationGatewayDiagnostics 'modules/monitoring/diagnostic-settings.bic
     enableAllMetrics: true
     logRetentionDays: environmentConfig.logRetentionDays
     metricRetentionDays: environmentConfig.logRetentionDays
-    tags: tags
   }
   dependsOn: [
     applicationGateway
@@ -987,7 +983,6 @@ module loadBalancerDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = 
     enableAllMetrics: true
     logRetentionDays: environmentConfig.logRetentionDays
     metricRetentionDays: environmentConfig.logRetentionDays
-    tags: tags
   }
   dependsOn: [
     businessTierLoadBalancer
@@ -1008,7 +1003,6 @@ module networkSecurityGroupDiagnostics 'modules/monitoring/diagnostic-settings.b
     enableAllMetrics: true
     logRetentionDays: environmentConfig.logRetentionDays
     metricRetentionDays: environmentConfig.logRetentionDays
-    tags: tags
   }
   dependsOn: [
     networkSecurityGroups
@@ -1038,7 +1032,6 @@ module sqlServer 'modules/data/sql-server.bicep' = {
     enableAzureAdAuthentication: true
     azureAdAdministratorObjectId: managedIdentities.outputs.managedIdentityLookup.sqlAccess.principalId
     azureAdAdministratorLogin: 'SQL Administrators'
-    azureAdAdministratorType: 'Group'
     enableTransparentDataEncryption: true
     enableAdvancedDataSecurity: environment != 'dev'
     enableVulnerabilityAssessment: environment != 'dev'

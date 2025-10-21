@@ -47,10 +47,6 @@ param azureAdAdministratorObjectId string = ''
 @description('Azure AD administrator login name')
 param azureAdAdministratorLogin string = ''
 
-@description('Azure AD administrator type (User, Group, Application)')
-@allowed(['User', 'Group', 'Application'])
-param azureAdAdministratorType string = 'User'
-
 // Security configuration parameters
 @description('Enable Transparent Data Encryption')
 param enableTransparentDataEncryption bool = true

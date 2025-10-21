@@ -37,16 +37,10 @@ param retentionInDays int = 90
 @maxValue(1000)
 param dailyDataCapInGB int = 10
 
-@description('Enable daily data cap reset')
-param enableDailyDataCapReset bool = true
-
 @description('Sampling percentage for telemetry')
 @minValue(0)
 @maxValue(100)
 param samplingPercentage int = 100
-
-@description('Enable request source correlation')
-param enableRequestSource bool = true
 
 @description('URLs to monitor with availability tests')
 param availabilityTestUrls array = []

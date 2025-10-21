@@ -7,6 +7,18 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **SQL Server Module**: Simplified Azure AD administrator configuration by removing `azureAdAdministratorType` parameter
+  - Azure AD administrator type is now automatically set to 'ActiveDirectory' for all configurations
+  - Reduces configuration complexity while maintaining full Azure AD authentication functionality
+  - No impact on existing deployments as the parameter was not used in main template
+
+### Fixed
+- **Security Center Module**: Enhanced conditional output generation to prevent deployment errors when Defender plans are disabled
+  - Added `if (enableDefenderPlans)` condition to `defenderPlansConfig` output array
+  - Ensures proper resource referencing in development environments where Security Center is disabled
+  - Maintains template compatibility across all environments while optimizing costs
+
 ### Added
 - **Security Center Integration**: Microsoft Defender for Cloud deployment with subscription-level security monitoring
 - Comprehensive Defender plans for VMs, App Services, SQL, Storage, Key Vault, ARM, Containers, and Cloud Posture

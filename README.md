@@ -201,6 +201,8 @@ The Security Center (Microsoft Defender for Cloud) deployment is automatically c
 
 This conditional deployment is controlled by the `environment != 'dev'` condition in the main template, ensuring cost-effective development while maintaining security in higher environments.
 
+**Important**: The Security Center module includes conditional output generation that ensures proper resource referencing. When Defender plans are disabled (development environment), the module outputs return empty arrays and objects to prevent deployment errors while maintaining template compatibility across all environments.
+
 ## Module Usage Examples
 
 ### Managed Identity Module
@@ -361,6 +363,7 @@ module securityCenter 'modules/security/security-center.bicep' = {
 - **Auto-Provisioning**: Automatic deployment of security agents and monitoring tools
 - **Environment Optimization**: Conditional deployment based on environment (cost-optimized for development)
 - **Integration**: Seamless connection with Log Analytics workspace for centralized security data
+- **Conditional Outputs**: Module outputs are conditionally generated based on whether Defender plans are enabled, ensuring proper resource referencing and avoiding deployment errors in development environments
 
 ### Public IP Module
 
@@ -501,7 +504,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
 
 - **Database SKUs**: Support for Basic, Standard, Premium, and vCore-based options (GP, BC)
 - **Security Features**: 
-  - Azure AD authentication with group-based administration
+  - Azure AD authentication with group-based administration (automatically configured as 'ActiveDirectory' type)
   - Transparent Data Encryption (TDE) for data at rest
   - Advanced Data Security (Microsoft Defender for SQL)
   - Vulnerability Assessment with automated scanning
@@ -513,6 +516,8 @@ module sqlServer 'modules/data/sql-server.bicep' = {
   - Point-in-time restore capabilities
 - **Monitoring**: Comprehensive diagnostic settings for audit and performance logs
 - **Network Security**: Private network access with subnet restrictions and minimal TLS 1.2
+
+**Note**: The `azureAdAdministratorType` parameter has been removed from the SQL Server module as it was redundant. Azure AD administrators are automatically configured with the correct 'ActiveDirectory' type.
 
 ### Storage Account Module
 
@@ -1188,6 +1193,14 @@ This project is version controlled with Git. The repository includes:
   - Validate that Log Analytics workspace exists before Security Center deployment
   - Confirm auto-provisioning settings are compatible with your VM configurations
   - Check that Defender plan pricing tiers are supported in your target region
+  - **Output Reference Errors**: If you encounter errors referencing Security Center outputs in development environments, verify that the conditional logic is properly implemented. The module uses `if (enableDefenderPlans)` conditions to prevent output generation when Defender plans are disabled
+
+## Additional Documentation
+
+- [Security Center Integration Guide](SECURITY_CENTER_INTEGRATION.md) - Detailed guide for Microsoft Defender for Cloud configuration and troubleshooting
+- [Architecture Diagram](ARCHITECTURE_DIAGRAM.md) - Visual representation of the infrastructure architecture
+- [Private Endpoints Implementation](PRIVATE_ENDPOINTS_IMPLEMENTATION.md) - Guide for secure connectivity implementation
+- [Managed Identities Integration](MANAGED_IDENTITIES_INTEGRATION.md) - Service-to-service authentication configuration
 
 ## Contributing
 

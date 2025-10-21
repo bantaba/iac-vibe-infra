@@ -190,9 +190,9 @@ resource telemetryDeployment 'Microsoft.Resources/deployments@2022-09-01' = if (
 @description('Microsoft Defender for Cloud plan configurations')
 output defenderPlansConfig array = [for (plan, i) in defenderPlans: {
   name: plan.name
-  tier: defenderForCloudPlans[i].properties.pricingTier
-  subPlan: defenderForCloudPlans[i].properties.subPlan
-  resourceId: defenderForCloudPlans[i].id
+  tier: enableDefenderPlans ? defenderForCloudPlans[i].properties.pricingTier : ''
+  subPlan: enableDefenderPlans ? defenderForCloudPlans[i].properties.subPlan : ''
+  resourceId: enableDefenderPlans ? defenderForCloudPlans[i].id : ''
 }]
 
 @description('Security contacts configuration')

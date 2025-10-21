@@ -93,7 +93,6 @@ param overprovision bool = true
 
 // Variables for VM configuration
 var isWindows = (vmConfig.osType == 'Windows')
-var isLinux = (vmConfig.osType == 'Linux')
 
 var imageReference = isWindows ? {
   publisher: 'MicrosoftWindowsServer'

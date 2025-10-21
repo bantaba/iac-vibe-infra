@@ -4,8 +4,7 @@
 
 targetScope = 'resourceGroup'
 
-// Import shared parameter schemas
-import { TagConfiguration } from '../shared/parameter-schemas.bicep'
+
 
 // Parameters
 @description('The name of the diagnostic setting')
@@ -45,16 +44,7 @@ param enableAllMetrics bool = true
 @description('Specific log categories to enable (if enableAllLogs is false)')
 param logCategories array = []
 
-@description('Specific metric categories to enable (if enableAllMetrics is false)')
-param metricCategories array = []
 
-@description('Tags to apply to resources')
-param tags TagConfiguration = {
-  Environment: 'dev'
-  Workload: 'monitoring'
-  ManagedBy: 'Bicep'
-  CostCenter: 'IT'
-}
 
 // Variables
 var hasLogAnalytics = !empty(logAnalyticsWorkspaceId)
@@ -113,8 +103,7 @@ var resourceTypeParts = split(targetResourceId, '/')
 var resourceType = length(resourceTypeParts) > 7 ? '${resourceTypeParts[6]}/${resourceTypeParts[7]}' : 'Unknown'
 var defaultLogCategories = contains(commonLogCategories, resourceType) ? commonLogCategories[resourceType] : []
 
-// Determine which log categories to use
-var finalLogCategories = enableAllLogs ? [] : (empty(logCategories) ? defaultLogCategories : logCategories)
+
 
 // Diagnostic Settings
 resource diagnosticSetting 'Microsoft.Insights/diagnosticSettings@2021-05-01-preview' = if (hasDestination) {

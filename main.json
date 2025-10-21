@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "13167196104681309856"
+      "templateHash": "7060391349690658453"
     }
   },
   "definitions": {
@@ -3973,7 +3973,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1415956194567796712"
+              "templateHash": "11699967902010610887"
             }
           },
           "definitions": {
@@ -4272,9 +4272,9 @@
                 "count": "[length(parameters('defenderPlans'))]",
                 "input": {
                   "name": "[parameters('defenderPlans')[copyIndex()].name]",
-                  "tier": "[reference(format('defenderForCloudPlans[{0}]', copyIndex())).pricingTier]",
-                  "subPlan": "[reference(format('defenderForCloudPlans[{0}]', copyIndex())).subPlan]",
-                  "resourceId": "[subscriptionResourceId('Microsoft.Security/pricings', parameters('defenderPlans')[copyIndex()].name)]"
+                  "tier": "[if(parameters('enableDefenderPlans'), reference(format('defenderForCloudPlans[{0}]', copyIndex())).pricingTier, '')]",
+                  "subPlan": "[if(parameters('enableDefenderPlans'), reference(format('defenderForCloudPlans[{0}]', copyIndex())).subPlan, '')]",
+                  "resourceId": "[if(parameters('enableDefenderPlans'), subscriptionResourceId('Microsoft.Security/pricings', parameters('defenderPlans')[copyIndex()].name), '')]"
                 }
               }
             },
@@ -7231,7 +7231,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "12057853688279495848"
+              "templateHash": "14754008257656493111"
             }
           },
           "definitions": {
@@ -7586,7 +7586,6 @@
           },
           "variables": {
             "isWindows": "[equals(parameters('vmConfig').osType, 'Windows')]",
-            "isLinux": "[equals(parameters('vmConfig').osType, 'Linux')]",
             "imageReference": "[if(variables('isWindows'), createObject('publisher', 'MicrosoftWindowsServer', 'offer', 'WindowsServer', 'sku', '2022-datacenter-azure-edition', 'version', 'latest'), createObject('publisher', 'Canonical', 'offer', '0001-com-ubuntu-server-jammy', 'sku', '22_04-lts-gen2', 'version', 'latest'))]",
             "networkInterfaceConfigurations": [
               {
@@ -7879,7 +7878,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "12057853688279495848"
+              "templateHash": "14754008257656493111"
             }
           },
           "definitions": {
@@ -8234,7 +8233,6 @@
           },
           "variables": {
             "isWindows": "[equals(parameters('vmConfig').osType, 'Windows')]",
-            "isLinux": "[equals(parameters('vmConfig').osType, 'Linux')]",
             "imageReference": "[if(variables('isWindows'), createObject('publisher', 'MicrosoftWindowsServer', 'offer', 'WindowsServer', 'sku', '2022-datacenter-azure-edition', 'version', 'latest'), createObject('publisher', 'Canonical', 'offer', '0001-com-ubuntu-server-jammy', 'sku', '22_04-lts-gen2', 'version', 'latest'))]",
             "networkInterfaceConfigurations": [
               {
@@ -9427,13 +9425,7 @@
             "value": "[parameters('environmentConfig').logRetentionDays]"
           },
           "dailyDataCapInGB": "[if(equals(parameters('environmentConfig').skuTier, 'Basic'), createObject('value', 1), if(equals(parameters('environmentConfig').skuTier, 'Standard'), createObject('value', 5), createObject('value', 20)))]",
-          "enableDailyDataCapReset": {
-            "value": true
-          },
           "samplingPercentage": "[if(equals(parameters('environment'), 'dev'), createObject('value', 50), createObject('value', 100))]",
-          "enableRequestSource": {
-            "value": true
-          },
           "availabilityTestUrls": {
             "value": [
               "[format('https://{0}/health', reference('applicationGateway').outputs.publicIpAddress.value)]"
@@ -9473,7 +9465,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "15319757287087509576"
+              "templateHash": "15662354832407278316"
             }
           },
           "definitions": {
@@ -9596,13 +9588,6 @@
                 "description": "Daily data cap in GB"
               }
             },
-            "enableDailyDataCapReset": {
-              "type": "bool",
-              "defaultValue": true,
-              "metadata": {
-                "description": "Enable daily data cap reset"
-              }
-            },
             "samplingPercentage": {
               "type": "int",
               "defaultValue": 100,
@@ -9610,13 +9595,6 @@
               "maxValue": 100,
               "metadata": {
                 "description": "Sampling percentage for telemetry"
-              }
-            },
-            "enableRequestSource": {
-              "type": "bool",
-              "defaultValue": true,
-              "metadata": {
-                "description": "Enable request source correlation"
               }
             },
             "availabilityTestUrls": {
@@ -10891,77 +10869,16 @@
           },
           "metricRetentionDays": {
             "value": "[parameters('environmentConfig').logRetentionDays]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
           }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "2.0",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13117641415181030679"
-            }
-          },
-          "definitions": {
-            "TagConfiguration": {
-              "type": "object",
-              "properties": {
-                "Environment": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Environment tag"
-                  }
-                },
-                "Workload": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Workload tag"
-                  }
-                },
-                "ManagedBy": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Managed by tag"
-                  }
-                },
-                "CostCenter": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Cost center tag"
-                  }
-                },
-                "Owner": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Owner tag"
-                  }
-                },
-                "Project": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Project tag"
-                  }
-                },
-                "DeploymentDate": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Deployment date tag"
-                  }
-                }
-              },
-              "metadata": {
-                "__bicep_imported_from!": {
-                  "sourceTemplate": "../shared/parameter-schemas.bicep"
-                }
-              }
+              "templateHash": "15526568201000582608"
             }
           },
           "parameters": {
@@ -11043,25 +10960,6 @@
               "metadata": {
                 "description": "Specific log categories to enable (if enableAllLogs is false)"
               }
-            },
-            "metricCategories": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Specific metric categories to enable (if enableAllMetrics is false)"
-              }
-            },
-            "tags": {
-              "$ref": "#/definitions/TagConfiguration",
-              "defaultValue": {
-                "Environment": "dev",
-                "Workload": "monitoring",
-                "ManagedBy": "Bicep",
-                "CostCenter": "IT"
-              },
-              "metadata": {
-                "description": "Tags to apply to resources"
-              }
             }
           },
           "variables": {
@@ -11113,11 +11011,10 @@
             },
             "resourceTypeParts": "[split(parameters('targetResourceId'), '/')]",
             "resourceType": "[if(greater(length(variables('resourceTypeParts')), 7), format('{0}/{1}', variables('resourceTypeParts')[6], variables('resourceTypeParts')[7]), 'Unknown')]",
-            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]",
-            "finalLogCategories": "[if(parameters('enableAllLogs'), createArray(), if(empty(parameters('logCategories')), variables('defaultLogCategories'), parameters('logCategories')))]"
+            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]"
           },
-          "resources": {
-            "diagnosticSetting": {
+          "resources": [
+            {
               "condition": "[variables('hasDestination')]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
@@ -11131,7 +11028,7 @@
                 "metrics": "[if(parameters('enableAllMetrics'), createArray(createObject('category', 'AllMetrics', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('metricRetentionDays')), null()))), createArray())]"
               }
             }
-          },
+          ],
           "outputs": {
             "diagnosticSettingId": {
               "type": "string",
@@ -11196,77 +11093,16 @@
           },
           "metricRetentionDays": {
             "value": "[parameters('environmentConfig').logRetentionDays]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
           }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "2.0",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13117641415181030679"
-            }
-          },
-          "definitions": {
-            "TagConfiguration": {
-              "type": "object",
-              "properties": {
-                "Environment": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Environment tag"
-                  }
-                },
-                "Workload": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Workload tag"
-                  }
-                },
-                "ManagedBy": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Managed by tag"
-                  }
-                },
-                "CostCenter": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Cost center tag"
-                  }
-                },
-                "Owner": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Owner tag"
-                  }
-                },
-                "Project": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Project tag"
-                  }
-                },
-                "DeploymentDate": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Deployment date tag"
-                  }
-                }
-              },
-              "metadata": {
-                "__bicep_imported_from!": {
-                  "sourceTemplate": "../shared/parameter-schemas.bicep"
-                }
-              }
+              "templateHash": "15526568201000582608"
             }
           },
           "parameters": {
@@ -11348,25 +11184,6 @@
               "metadata": {
                 "description": "Specific log categories to enable (if enableAllLogs is false)"
               }
-            },
-            "metricCategories": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Specific metric categories to enable (if enableAllMetrics is false)"
-              }
-            },
-            "tags": {
-              "$ref": "#/definitions/TagConfiguration",
-              "defaultValue": {
-                "Environment": "dev",
-                "Workload": "monitoring",
-                "ManagedBy": "Bicep",
-                "CostCenter": "IT"
-              },
-              "metadata": {
-                "description": "Tags to apply to resources"
-              }
             }
           },
           "variables": {
@@ -11418,11 +11235,10 @@
             },
             "resourceTypeParts": "[split(parameters('targetResourceId'), '/')]",
             "resourceType": "[if(greater(length(variables('resourceTypeParts')), 7), format('{0}/{1}', variables('resourceTypeParts')[6], variables('resourceTypeParts')[7]), 'Unknown')]",
-            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]",
-            "finalLogCategories": "[if(parameters('enableAllLogs'), createArray(), if(empty(parameters('logCategories')), variables('defaultLogCategories'), parameters('logCategories')))]"
+            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]"
           },
-          "resources": {
-            "diagnosticSetting": {
+          "resources": [
+            {
               "condition": "[variables('hasDestination')]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
@@ -11436,7 +11252,7 @@
                 "metrics": "[if(parameters('enableAllMetrics'), createArray(createObject('category', 'AllMetrics', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('metricRetentionDays')), null()))), createArray())]"
               }
             }
-          },
+          ],
           "outputs": {
             "diagnosticSettingId": {
               "type": "string",
@@ -11503,77 +11319,16 @@
           },
           "metricRetentionDays": {
             "value": "[parameters('environmentConfig').logRetentionDays]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
           }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "2.0",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13117641415181030679"
-            }
-          },
-          "definitions": {
-            "TagConfiguration": {
-              "type": "object",
-              "properties": {
-                "Environment": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Environment tag"
-                  }
-                },
-                "Workload": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Workload tag"
-                  }
-                },
-                "ManagedBy": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Managed by tag"
-                  }
-                },
-                "CostCenter": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Cost center tag"
-                  }
-                },
-                "Owner": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Owner tag"
-                  }
-                },
-                "Project": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Project tag"
-                  }
-                },
-                "DeploymentDate": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Deployment date tag"
-                  }
-                }
-              },
-              "metadata": {
-                "__bicep_imported_from!": {
-                  "sourceTemplate": "../shared/parameter-schemas.bicep"
-                }
-              }
+              "templateHash": "15526568201000582608"
             }
           },
           "parameters": {
@@ -11655,25 +11410,6 @@
               "metadata": {
                 "description": "Specific log categories to enable (if enableAllLogs is false)"
               }
-            },
-            "metricCategories": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Specific metric categories to enable (if enableAllMetrics is false)"
-              }
-            },
-            "tags": {
-              "$ref": "#/definitions/TagConfiguration",
-              "defaultValue": {
-                "Environment": "dev",
-                "Workload": "monitoring",
-                "ManagedBy": "Bicep",
-                "CostCenter": "IT"
-              },
-              "metadata": {
-                "description": "Tags to apply to resources"
-              }
             }
           },
           "variables": {
@@ -11725,11 +11461,10 @@
             },
             "resourceTypeParts": "[split(parameters('targetResourceId'), '/')]",
             "resourceType": "[if(greater(length(variables('resourceTypeParts')), 7), format('{0}/{1}', variables('resourceTypeParts')[6], variables('resourceTypeParts')[7]), 'Unknown')]",
-            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]",
-            "finalLogCategories": "[if(parameters('enableAllLogs'), createArray(), if(empty(parameters('logCategories')), variables('defaultLogCategories'), parameters('logCategories')))]"
+            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]"
           },
-          "resources": {
-            "diagnosticSetting": {
+          "resources": [
+            {
               "condition": "[variables('hasDestination')]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
@@ -11743,7 +11478,7 @@
                 "metrics": "[if(parameters('enableAllMetrics'), createArray(createObject('category', 'AllMetrics', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('metricRetentionDays')), null()))), createArray())]"
               }
             }
-          },
+          ],
           "outputs": {
             "diagnosticSettingId": {
               "type": "string",
@@ -11813,77 +11548,16 @@
           },
           "metricRetentionDays": {
             "value": "[parameters('environmentConfig').logRetentionDays]"
-          },
-          "tags": {
-            "value": "[parameters('tags')]"
           }
         },
         "template": {
           "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
-          "languageVersion": "2.0",
           "contentVersion": "1.0.0.0",
           "metadata": {
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "13117641415181030679"
-            }
-          },
-          "definitions": {
-            "TagConfiguration": {
-              "type": "object",
-              "properties": {
-                "Environment": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Environment tag"
-                  }
-                },
-                "Workload": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Workload tag"
-                  }
-                },
-                "ManagedBy": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Managed by tag"
-                  }
-                },
-                "CostCenter": {
-                  "type": "string",
-                  "metadata": {
-                    "description": "Cost center tag"
-                  }
-                },
-                "Owner": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Owner tag"
-                  }
-                },
-                "Project": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Project tag"
-                  }
-                },
-                "DeploymentDate": {
-                  "type": "string",
-                  "nullable": true,
-                  "metadata": {
-                    "description": "Deployment date tag"
-                  }
-                }
-              },
-              "metadata": {
-                "__bicep_imported_from!": {
-                  "sourceTemplate": "../shared/parameter-schemas.bicep"
-                }
-              }
+              "templateHash": "15526568201000582608"
             }
           },
           "parameters": {
@@ -11965,25 +11639,6 @@
               "metadata": {
                 "description": "Specific log categories to enable (if enableAllLogs is false)"
               }
-            },
-            "metricCategories": {
-              "type": "array",
-              "defaultValue": [],
-              "metadata": {
-                "description": "Specific metric categories to enable (if enableAllMetrics is false)"
-              }
-            },
-            "tags": {
-              "$ref": "#/definitions/TagConfiguration",
-              "defaultValue": {
-                "Environment": "dev",
-                "Workload": "monitoring",
-                "ManagedBy": "Bicep",
-                "CostCenter": "IT"
-              },
-              "metadata": {
-                "description": "Tags to apply to resources"
-              }
             }
           },
           "variables": {
@@ -12035,11 +11690,10 @@
             },
             "resourceTypeParts": "[split(parameters('targetResourceId'), '/')]",
             "resourceType": "[if(greater(length(variables('resourceTypeParts')), 7), format('{0}/{1}', variables('resourceTypeParts')[6], variables('resourceTypeParts')[7]), 'Unknown')]",
-            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]",
-            "finalLogCategories": "[if(parameters('enableAllLogs'), createArray(), if(empty(parameters('logCategories')), variables('defaultLogCategories'), parameters('logCategories')))]"
+            "defaultLogCategories": "[if(contains(variables('commonLogCategories'), variables('resourceType')), variables('commonLogCategories')[variables('resourceType')], createArray())]"
           },
-          "resources": {
-            "diagnosticSetting": {
+          "resources": [
+            {
               "condition": "[variables('hasDestination')]",
               "type": "Microsoft.Insights/diagnosticSettings",
               "apiVersion": "2021-05-01-preview",
@@ -12053,7 +11707,7 @@
                 "metrics": "[if(parameters('enableAllMetrics'), createArray(createObject('category', 'AllMetrics', 'enabled', true(), 'retentionPolicy', if(variables('hasStorageAccount'), createObject('enabled', true(), 'days', parameters('metricRetentionDays')), null()))), createArray())]"
               }
             }
-          },
+          ],
           "outputs": {
             "diagnosticSettingId": {
               "type": "string",
@@ -12124,9 +11778,6 @@
           "azureAdAdministratorLogin": {
             "value": "SQL Administrators"
           },
-          "azureAdAdministratorType": {
-            "value": "Group"
-          },
           "enableTransparentDataEncryption": {
             "value": true
           },
@@ -12180,7 +11831,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "6760950586640022350"
+              "templateHash": "9996807611789975777"
             }
           },
           "definitions": {
@@ -12315,18 +11966,6 @@
               "defaultValue": "",
               "metadata": {
                 "description": "Azure AD administrator login name"
-              }
-            },
-            "azureAdAdministratorType": {
-              "type": "string",
-              "defaultValue": "User",
-              "allowedValues": [
-                "User",
-                "Group",
-                "Application"
-              ],
-              "metadata": {
-                "description": "Azure AD administrator type (User, Group, Application)"
               }
             },
             "enableTransparentDataEncryption": {
