@@ -156,9 +156,15 @@
   - Wire up data layer dependencies and outputs
   - _Requirements: 5.1, 5.2, 7.1, 7.2_
 
-- [ ]* 5.6 Write data layer unit tests
-  - Create tests for private endpoint connectivity
-  - Write tests for database security configuration validation
+- [x] 5.6 Write data layer unit tests
+  - ✅ Create comprehensive test script (`scripts/test-data-layer.ps1`) for data layer validation
+  - ✅ Implement SQL Server module testing with security and compliance validation
+  - ✅ Add Storage Account module testing with encryption and lifecycle management validation
+  - ✅ Include Private Endpoints module testing with DNS and connectivity validation
+  - ✅ Add integration testing for main template module dependencies
+  - ✅ Support environment-specific testing and verbose output modes
+  - ✅ Validate template syntax, Azure AD authentication, TDE, Advanced Data Security
+  - ✅ Test network security configurations, backup policies, and monitoring integration
   - _Requirements: 5.1, 5.2, 7.1, 7.2_
 
 - [ ] 6. Implement monitoring and logging modules
