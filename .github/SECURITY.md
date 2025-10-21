@@ -48,10 +48,26 @@ This project implements several security best practices:
 - **Azure AD Integration**: Single sign-on and conditional access policies
 
 ### Data Protection
-- **Encryption at Rest**: All storage and database services encrypted
-- **Encryption in Transit**: TLS 1.2+ for all communications
-- **Backup and Recovery**: Automated backups with point-in-time recovery
-- **Data Classification**: Sensitive data identification and protection
+- **Database Security**:
+  - Azure SQL Database with Transparent Data Encryption (TDE) for data at rest
+  - Advanced Data Security (Microsoft Defender for SQL) with threat detection
+  - Vulnerability Assessment with automated scanning and remediation guidance
+  - Azure AD authentication with group-based administration
+  - Network isolation with private endpoints and subnet-based firewall rules
+  - Long-term backup retention with geo-redundant storage for disaster recovery
+- **Storage Security**:
+  - Infrastructure encryption with optional customer-managed encryption keys (CMEK)
+  - Blob versioning and soft delete for comprehensive data protection
+  - Network isolation with private endpoints and access controls
+  - Lifecycle management for automated data tiering and secure retention
+  - Disabled public blob access and shared key access for enhanced security
+- **Encryption in Transit**: TLS 1.2+ enforced for all communications
+- **Backup and Recovery**: 
+  - Automated database backups with configurable retention (7-35 days)
+  - Long-term retention policies (weekly, monthly, yearly) for compliance
+  - Point-in-time restore capabilities for operational recovery
+  - Geo-redundant backup storage for disaster recovery scenarios
+- **Data Classification**: Sensitive data identification and protection with automated scanning
 
 ### Monitoring and Compliance
 - **Centralized Logging**: All security events logged to Log Analytics
@@ -78,10 +94,17 @@ This project includes automated security scanning:
 ## Security Configuration Guidelines
 
 ### Secrets Management
-- **Never commit secrets** to the repository
-- **Use Key Vault references** for all sensitive configuration
-- **Rotate secrets regularly** using automated processes
-- **Use managed identities** instead of service principals when possible
+- **Never commit secrets** to the repository (especially database passwords and connection strings)
+- **Use Key Vault references** for all sensitive configuration including:
+  - SQL Server administrator passwords
+  - Storage account access keys
+  - SSL certificates for Application Gateway
+  - Customer-managed encryption keys
+- **Rotate secrets regularly** using automated processes and Key Vault integration
+- **Use managed identities** instead of service principals for:
+  - SQL Database authentication (Azure AD integration)
+  - Storage Account access (RBAC with managed identities)
+  - Key Vault access for certificate and secret retrieval
 
 ### Network Security
 - **Implement defense in depth** with multiple security layers

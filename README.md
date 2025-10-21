@@ -21,6 +21,9 @@ bicep-infrastructure/
 │   ├── security/              # Security and identity modules
 │   ├── compute/               # Compute and load balancing modules
 │   ├── data/                  # Database and storage modules
+│   │   ├── sql-server.bicep   # Azure SQL Database with security features
+│   │   ├── storage-account.bicep # Storage accounts with private endpoints
+│   │   └── private-endpoints.bicep # Private endpoint configurations
 │   └── monitoring/            # Logging and monitoring modules
 ├── scripts/                   # Deployment and validation scripts
 │   ├── deploy.ps1             # Main deployment script
@@ -41,6 +44,8 @@ bicep-infrastructure/
 - **Centralized Network Management**: Azure Virtual Network Manager for unified network governance and security policies
 - **Comprehensive Networking**: Virtual networks with segmented subnets, NSGs, and service endpoints
 - **Environment-Specific Configuration**: Optimized settings for development, staging, and production workloads
+- **Secure Data Layer**: Azure SQL Database with private endpoints, encryption, and comprehensive security features
+- **Enterprise Storage**: Storage accounts with lifecycle management, private endpoints, and advanced security controls
 
 ## Getting Started
 
@@ -221,6 +226,156 @@ module keyVault 'modules/security/key-vault.bicep' = {
 - **RBAC Roles**: Built-in role assignments for administrators and service accounts
 - **Monitoring**: Optional diagnostic settings integration with Log Analytics
 
+### SQL Server Module
+
+The SQL Server module provides enterprise-grade database services with comprehensive security and monitoring:
+
+```bicep
+module sqlServer 'modules/data/sql-server.bicep' = {
+  name: 'sql-server-deployment'
+  params: {
+    sqlServerName: 'contoso-webapp-prod-sql'
+    sqlDatabaseName: 'webapp-database'
+    location: 'East US'
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    administratorLogin: 'sqladmin'
+    administratorLoginPassword: 'SecurePassword123!' // Should come from Key Vault
+    databaseSku: {
+      name: 'GP_Gen5_2'
+      tier: 'GeneralPurpose'
+      capacity: 2
+    }
+    maxSizeBytes: 1099511627776 // 1TB
+    enableAzureAdAuthentication: true
+    azureAdAdministratorObjectId: 'admin-group-object-id'
+    azureAdAdministratorLogin: 'SQL Administrators'
+    enableTransparentDataEncryption: true
+    enableAdvancedDataSecurity: true
+    enableVulnerabilityAssessment: true
+    enablePublicNetworkAccess: false
+    allowedSubnetIds: [
+      '/subscriptions/.../subnets/data-tier-subnet'
+      '/subscriptions/.../subnets/business-tier-subnet'
+    ]
+    minimalTlsVersion: '1.2'
+    backupRetentionDays: 35
+    enableGeoRedundantBackup: true
+    enableLongTermRetention: true
+    longTermRetentionBackup: {
+      weeklyRetention: 'P12W'
+      monthlyRetention: 'P12M'
+      yearlyRetention: 'P7Y'
+      weekOfYear: 1
+    }
+    enableDiagnosticSettings: true
+    logAnalyticsWorkspaceId: '/subscriptions/.../workspaces/law-workspace'
+  }
+}
+```
+
+#### SQL Server Configuration Options
+
+- **Database SKUs**: Support for Basic, Standard, Premium, and vCore-based options (GP, BC)
+- **Security Features**: 
+  - Azure AD authentication with group-based administration
+  - Transparent Data Encryption (TDE) for data at rest
+  - Advanced Data Security (Microsoft Defender for SQL)
+  - Vulnerability Assessment with automated scanning
+  - Network isolation with private endpoints and firewall rules
+- **Backup & Recovery**: 
+  - Configurable short-term retention (7-35 days)
+  - Long-term retention policies (weekly, monthly, yearly)
+  - Geo-redundant backup for disaster recovery
+  - Point-in-time restore capabilities
+- **Monitoring**: Comprehensive diagnostic settings for audit and performance logs
+- **Network Security**: Private network access with subnet restrictions and minimal TLS 1.2
+
+### Storage Account Module
+
+The Storage Account module provides secure, scalable storage with advanced lifecycle management:
+
+```bicep
+module storageAccount 'modules/data/storage-account.bicep' = {
+  name: 'storage-account-deployment'
+  params: {
+    storageAccountName: 'contosowebappprodsa'
+    location: 'East US'
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    storageAccountSku: 'Standard_ZRS'
+    storageAccountKind: 'StorageV2'
+    accessTier: 'Hot'
+    enablePublicNetworkAccess: false
+    allowedSubnetIds: [
+      '/subscriptions/.../subnets/web-tier-subnet'
+      '/subscriptions/.../subnets/business-tier-subnet'
+      '/subscriptions/.../subnets/data-tier-subnet'
+    ]
+    defaultNetworkAccessRule: 'Deny'
+    minimumTlsVersion: 'TLS1_2'
+    enableHttpsTrafficOnly: true
+    enableBlobPublicAccess: false
+    enableInfrastructureEncryption: true
+    enableBlobVersioning: true
+    enableBlobSoftDelete: true
+    blobSoftDeleteRetentionDays: 30
+    enableLifecycleManagement: true
+    lifecycleRules: [
+      {
+        name: 'production-lifecycle-rule'
+        enabled: true
+        type: 'Lifecycle'
+        definition: {
+          filters: {
+            blobTypes: ['blockBlob']
+          }
+          actions: {
+            baseBlob: {
+              tierToCool: { daysAfterModificationGreaterThan: 30 }
+              tierToArchive: { daysAfterModificationGreaterThan: 90 }
+              delete: { daysAfterModificationGreaterThan: 2555 } // 7 years
+            }
+          }
+        }
+      }
+    ]
+    blobContainers: [
+      { name: 'application-data', publicAccess: 'None' }
+      { name: 'application-logs', publicAccess: 'None' }
+      { name: 'database-backups', publicAccess: 'None' }
+      { name: 'vulnerability-assessment', publicAccess: 'None' }
+    ]
+    fileShares: [
+      {
+        name: 'shared-files'
+        shareQuota: 1024
+        enabledProtocols: 'SMB'
+        accessTier: 'TransactionOptimized'
+      }
+    ]
+  }
+}
+```
+
+#### Storage Account Configuration Options
+
+- **Performance Tiers**: Standard (LRS, GRS, ZRS, GZRS) and Premium (LRS, ZRS) options
+- **Security Features**:
+  - Network isolation with private endpoints and firewall rules
+  - Infrastructure encryption for enhanced security
+  - Blob versioning and soft delete for data protection
+  - Customer-managed encryption keys (CMEK) support
+- **Lifecycle Management**: Automated tiering and deletion policies for cost optimization
+- **Access Controls**: Disable public blob access and shared key access for enhanced security
+- **Monitoring**: Comprehensive diagnostic settings for all storage services (blob, file, queue, table)
+
 ## Security Features
 
 ### Network Security
@@ -247,14 +402,25 @@ module keyVault 'modules/security/key-vault.bicep' = {
 - **Managed Identities**: Service-to-service authentication without stored credentials
 
 ### Data Protection
-- **Encryption**: All data encrypted at rest and in transit
+- **Database Security**: 
+  - Azure SQL Database with Transparent Data Encryption (TDE)
+  - Advanced Data Security (Microsoft Defender for SQL)
+  - Vulnerability Assessment with automated scanning and reporting
+  - Azure AD authentication with group-based administration
+  - Network isolation with private endpoints and firewall rules
+  - Long-term backup retention with geo-redundant storage
+- **Storage Security**:
+  - Infrastructure encryption and customer-managed keys support
+  - Blob versioning and soft delete for data protection
+  - Network isolation with private endpoints and access controls
+  - Lifecycle management for automated data tiering and retention
 - **Key Vault Security**: 
   - Centralized secret and certificate management with RBAC authorization
   - Network access controls with subnet restrictions and IP allowlists
   - Soft delete protection with configurable retention periods
   - Purge protection for production environments to prevent accidental deletion
   - HSM-backed keys available with Premium SKU
-- **Access Controls**: RBAC and network-based access restrictions
+- **Access Controls**: RBAC and network-based access restrictions across all data services
 - **Audit Logging**: Comprehensive logging for security events and administrative operations
 
 ## Testing
@@ -328,7 +494,7 @@ The test script is designed to integrate with CI/CD pipelines:
 
 ## Deployed Infrastructure Components
 
-The main template currently deploys the following infrastructure components:
+The main template deploys the following infrastructure components:
 
 ### Virtual Network Manager
 - **Network Groups**: Environment-specific groupings (dev/staging/prod for web, business, data tiers)
@@ -374,6 +540,40 @@ The main template currently deploys the following infrastructure components:
   - Purge protection for production environments
   - Comprehensive audit logging and monitoring
 - **Integration Ready**: Diagnostic settings for Log Analytics workspace integration
+
+### Data Layer Infrastructure
+
+#### SQL Server and Database
+- **Enterprise Database**: Azure SQL Database with configurable SKUs (Basic to Business Critical)
+- **Security Features**:
+  - Azure AD authentication with group-based administration
+  - Transparent Data Encryption (TDE) for data at rest protection
+  - Advanced Data Security (Microsoft Defender for SQL) with threat detection
+  - Vulnerability Assessment with automated scanning and remediation guidance
+  - Network isolation with private endpoints and subnet-based firewall rules
+- **Backup & Recovery**:
+  - Configurable short-term retention (7-35 days) for point-in-time restore
+  - Long-term retention policies (weekly, monthly, yearly) for compliance
+  - Geo-redundant backup storage for disaster recovery
+  - Automated backup validation and testing
+- **Monitoring & Compliance**: Comprehensive diagnostic settings with audit logging
+
+#### Storage Account
+- **Scalable Storage**: Azure Storage Account with configurable performance tiers
+- **Security Controls**:
+  - Network isolation with private endpoints and firewall rules
+  - Infrastructure encryption with optional customer-managed keys
+  - Blob versioning and soft delete for data protection
+  - Disabled public blob access and shared key access for enhanced security
+- **Lifecycle Management**: Automated data tiering and retention policies for cost optimization
+- **Service Integration**: Pre-configured containers for application data, logs, backups, and security reports
+- **File Services**: SMB file shares for shared application data and configuration
+
+#### Private Endpoints (Conditional)
+- **Secure Connectivity**: Private endpoints for SQL Database, Storage Account, and Key Vault
+- **DNS Integration**: Automatic private DNS zone creation and virtual network linking
+- **Service Coverage**: Support for all Azure data services (SQL, Blob, File, Queue, Table, Key Vault)
+- **Network Isolation**: Complete elimination of public internet access to data services
 
 ## Git Repository
 
@@ -463,6 +663,15 @@ This project is version controlled with Git. The repository includes:
    az keyvault list --resource-group contoso-webapp-dev-rg --output table
    az keyvault show --name contoso-webapp-dev-kv --query "properties.{VaultUri:vaultUri,SoftDelete:enableSoftDelete,PurgeProtection:enablePurgeProtection}"
    
+   # Verify SQL Database deployment
+   az sql server list --resource-group contoso-webapp-dev-rg --output table
+   az sql db list --resource-group contoso-webapp-dev-rg --server contoso-webapp-dev-sql --output table
+   az sql server show --resource-group contoso-webapp-dev-rg --name contoso-webapp-dev-sql --query "{Name:name,FQDN:fullyQualifiedDomainName,AdminLogin:administratorLogin,PublicAccess:publicNetworkAccess}"
+   
+   # Verify Storage Account deployment
+   az storage account list --resource-group contoso-webapp-dev-rg --output table
+   az storage account show --resource-group contoso-webapp-dev-rg --name contosowebappdevsa --query "{Name:name,SKU:sku.name,Kind:kind,PublicAccess:publicNetworkAccess,HttpsOnly:supportsHttpsTrafficOnly}"
+   
    # Verify Application Gateway (when compute modules are deployed)
    az network application-gateway list --resource-group contoso-webapp-dev-rg --output table
    az network application-gateway show --resource-group contoso-webapp-dev-rg --name contoso-webapp-dev-agw --query "{Name:name,State:operationalState,PublicIP:frontendIPConfigurations[0].publicIPAddress.id}"
@@ -494,6 +703,22 @@ This project is version controlled with Git. The repository includes:
   - Verify SSL certificate is properly stored in Key Vault
   - Check that managed identity has access to Key Vault for certificate retrieval
   - Validate backend pool health probe configurations
+- **SQL Database Issues**:
+  - Verify administrator credentials are secure and meet complexity requirements
+  - Ensure Azure AD administrator object ID is valid and accessible
+  - Check firewall rules allow access from required subnets
+  - Validate that vulnerability assessment storage account is accessible
+  - Ensure TLS 1.2 is supported by client applications
+- **Storage Account Issues**:
+  - Verify storage account name is globally unique and follows naming conventions
+  - Check that network access rules allow required subnet access
+  - Ensure lifecycle management rules don't conflict with application requirements
+  - Validate that private endpoints are properly configured for network isolation
+- **Private Endpoint Issues**:
+  - Verify subnet has sufficient IP addresses for private endpoint allocation
+  - Check that private DNS zones are properly linked to virtual networks
+  - Ensure service endpoints are disabled on subnets using private endpoints
+  - Validate that applications are configured to use private endpoint FQDNs
 
 ## Contributing
 

@@ -618,6 +618,251 @@ module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
 }
 
 // ========================================
+// DATA LAYER MODULES
+// ========================================
+
+// Deploy SQL Server and Database
+module sqlServer 'modules/data/sql-server.bicep' = {
+  name: 'sql-server-deployment'
+  params: {
+    sqlServerName: namingConventions.outputs.namingConvention.sqlServer
+    sqlDatabaseName: replace(namingConventions.outputs.namingConvention.sqlDatabase, '{dbName}', workloadName)
+    administratorLogin: 'sqladmin'
+    administratorLoginPassword: 'P@ssw0rd123!' // This should come from Key Vault in production
+    databaseSku: {
+      name: environmentConfig.sqlDatabaseSku
+      tier: environmentConfig.sqlDatabaseSku
+      capacity: environmentConfig.skuTier == 'Basic' ? 5 : (environmentConfig.skuTier == 'Standard' ? 20 : 100)
+    }
+    maxSizeBytes: environmentConfig.skuTier == 'Basic' ? 2147483648 : (environmentConfig.skuTier == 'Standard' ? 268435456000 : 1099511627776) // 2GB, 250GB, 1TB
+    enableAzureAdAuthentication: true
+    azureAdAdministratorObjectId: '' // Should be provided via parameters
+    azureAdAdministratorLogin: 'SQL Administrators'
+    azureAdAdministratorType: 'Group'
+    enableTransparentDataEncryption: true
+    enableAdvancedDataSecurity: environment != 'dev'
+    enableVulnerabilityAssessment: environment != 'dev'
+    vulnerabilityAssessmentStorageEndpoint: environment != 'dev' ? storageAccount.outputs.storageAccountEndpoints.blob : ''
+    vulnerabilityAssessmentStorageAccessKey: environment != 'dev' ? storageAccount.outputs.storageAccountKey : ''
+    enablePublicNetworkAccess: !environmentConfig.enablePrivateEndpoints
+    allowedSubnetIds: environmentConfig.enablePrivateEndpoints ? [] : [
+      virtualNetwork.outputs.subnetIds.dataTier
+      virtualNetwork.outputs.subnetIds.businessTier
+      virtualNetwork.outputs.subnetIds.management
+    ]
+    allowedIpAddresses: []
+    minimalTlsVersion: '1.2'
+    backupRetentionDays: environment == 'prod' ? 35 : 7
+    enableGeoRedundantBackup: environment == 'prod'
+    enableLongTermRetention: environment == 'prod'
+    longTermRetentionBackup: environment == 'prod' ? {
+      weeklyRetention: 'P12W'
+      monthlyRetention: 'P12M'
+      yearlyRetention: 'P7Y'
+      weekOfYear: 1
+    } : {
+      weeklyRetention: 'PT0S'
+      monthlyRetention: 'PT0S'
+      yearlyRetention: 'PT0S'
+      weekOfYear: 1
+    }
+    enableDiagnosticSettings: true
+    logAnalyticsWorkspaceId: '' // Will be added when monitoring modules are integrated
+    diagnosticStorageAccountId: storageAccount.outputs.storageAccountId
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+    keyVault
+  ]
+}
+
+// Deploy Storage Account
+module storageAccount 'modules/data/storage-account.bicep' = {
+  name: 'storage-account-deployment'
+  params: {
+    storageAccountName: namingConventions.outputs.specializedNames.storageAccount
+    storageAccountSku: environmentConfig.storageAccountSku
+    storageAccountKind: 'StorageV2'
+    accessTier: 'Hot'
+    enableHierarchicalNamespace: false
+    enableLargeFileShares: false
+    enableSftp: false
+    enablePublicNetworkAccess: !environmentConfig.enablePrivateEndpoints
+    allowedSubnetIds: environmentConfig.enablePrivateEndpoints ? [] : [
+      virtualNetwork.outputs.subnetIds.dataTier
+      virtualNetwork.outputs.subnetIds.businessTier
+      virtualNetwork.outputs.subnetIds.webTier
+      virtualNetwork.outputs.subnetIds.management
+    ]
+    allowedIpAddresses: []
+    defaultNetworkAccessRule: environmentConfig.enablePrivateEndpoints ? 'Deny' : 'Allow'
+    networkRulesBypass: 'AzureServices'
+    minimumTlsVersion: 'TLS1_2'
+    enableHttpsTrafficOnly: true
+    enableBlobPublicAccess: false
+    enableSharedKeyAccess: true
+    enableInfrastructureEncryption: environment != 'dev'
+    customerManagedKey: {
+      enabled: false
+      keyVaultId: ''
+      keyName: ''
+      keyVersion: ''
+      userAssignedIdentityId: ''
+    }
+    enableBlobVersioning: environment != 'dev'
+    enableBlobChangeFeed: environment != 'dev'
+    enableBlobPointInTimeRestore: false
+    pointInTimeRestoreRetentionDays: 7
+    enableBlobSoftDelete: true
+    blobSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+    enableContainerSoftDelete: true
+    containerSoftDeleteRetentionDays: environment == 'prod' ? 30 : 7
+    enableLifecycleManagement: true
+    lifecycleRules: [
+      {
+        name: 'default-lifecycle-rule'
+        enabled: true
+        type: 'Lifecycle'
+        definition: {
+          filters: {
+            blobTypes: ['blockBlob']
+            prefixMatch: []
+          }
+          actions: {
+            baseBlob: {
+              tierToCool: {
+                daysAfterModificationGreaterThan: environment == 'prod' ? 30 : 90
+              }
+              tierToArchive: {
+                daysAfterModificationGreaterThan: environment == 'prod' ? 90 : 180
+              }
+              delete: {
+                daysAfterModificationGreaterThan: environment == 'prod' ? 2555 : 365 // 7 years for prod, 1 year for others
+              }
+            }
+            snapshot: {
+              delete: {
+                daysAfterCreationGreaterThan: environment == 'prod' ? 90 : 30
+              }
+            }
+            version: {
+              delete: {
+                daysAfterCreationGreaterThan: environment == 'prod' ? 90 : 30
+              }
+            }
+          }
+        }
+      }
+    ]
+    enableDiagnosticSettings: true
+    logAnalyticsWorkspaceId: '' // Will be added when monitoring modules are integrated
+    diagnosticStorageAccountId: '' // Self-reference not allowed, will use separate storage for diagnostics
+    blobContainers: [
+      {
+        name: 'application-data'
+        publicAccess: 'None'
+        metadata: {
+          purpose: 'Application data storage'
+          tier: 'data'
+        }
+      }
+      {
+        name: 'application-logs'
+        publicAccess: 'None'
+        metadata: {
+          purpose: 'Application log storage'
+          tier: 'logging'
+        }
+      }
+      {
+        name: 'database-backups'
+        publicAccess: 'None'
+        metadata: {
+          purpose: 'Database backup storage'
+          tier: 'backup'
+        }
+      }
+      {
+        name: 'vulnerability-assessment'
+        publicAccess: 'None'
+        metadata: {
+          purpose: 'SQL vulnerability assessment reports'
+          tier: 'security'
+        }
+      }
+    ]
+    fileShares: [
+      {
+        name: 'shared-files'
+        shareQuota: environment == 'prod' ? 1024 : 100
+        enabledProtocols: 'SMB'
+        accessTier: 'TransactionOptimized'
+      }
+    ]
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+  ]
+}
+
+// Deploy Private Endpoints (if enabled)
+module privateEndpoints 'modules/data/private-endpoints.bicep' = if (environmentConfig.enablePrivateEndpoints) {
+  name: 'private-endpoints-deployment'
+  params: {
+    privateEndpointNamePrefix: replace(namingConventions.outputs.namingConvention.privateEndpoint, '{serviceName}', '')
+    subnetId: virtualNetwork.outputs.subnetIds.dataTier
+    virtualNetworkId: virtualNetwork.outputs.virtualNetworkId
+    privateEndpointConfigs: [
+      {
+        name: 'sql-server'
+        privateLinkServiceId: sqlServer.outputs.sqlServerId
+        groupId: 'sqlServer'
+      }
+      {
+        name: 'storage-blob'
+        privateLinkServiceId: storageAccount.outputs.storageAccountId
+        groupId: 'storageBlob'
+      }
+      {
+        name: 'storage-file'
+        privateLinkServiceId: storageAccount.outputs.storageAccountId
+        groupId: 'storageFile'
+      }
+      {
+        name: 'storage-queue'
+        privateLinkServiceId: storageAccount.outputs.storageAccountId
+        groupId: 'storageQueue'
+      }
+      {
+        name: 'storage-table'
+        privateLinkServiceId: storageAccount.outputs.storageAccountId
+        groupId: 'storageTable'
+      }
+      {
+        name: 'key-vault'
+        privateLinkServiceId: keyVault.outputs.keyVaultId
+        groupId: 'keyVault'
+      }
+    ]
+    enablePrivateDnsZones: true
+    existingPrivateDnsZoneIds: {}
+    customDnsServers: []
+    tags: tags
+    location: location
+  }
+  dependsOn: [
+    virtualNetwork
+    sqlServer
+    storageAccount
+    keyVault
+  ]
+}
+
+// ========================================
 // OUTPUTS
 // ========================================
 
@@ -754,5 +999,41 @@ output compute object = {
       config: businessTierVmScaleSet.outputs.vmScaleSetConfig
       autoscaleSettingsId: businessTierVmScaleSet.outputs.autoscaleSettingsId
     }
+  }
+}
+
+// Data layer outputs
+output data object = {
+  sqlServer: {
+    id: sqlServer.outputs.sqlServerId
+    name: sqlServer.outputs.sqlServerName
+    fqdn: sqlServer.outputs.sqlServerFqdn
+    connectionStringTemplate: sqlServer.outputs.connectionStringTemplate
+    config: sqlServer.outputs.sqlServerConfig
+  }
+  sqlDatabase: {
+    id: sqlServer.outputs.sqlDatabaseId
+    name: sqlServer.outputs.sqlDatabaseName
+    config: sqlServer.outputs.sqlDatabaseConfig
+  }
+  storageAccount: {
+    id: storageAccount.outputs.storageAccountId
+    name: storageAccount.outputs.storageAccountName
+    endpoints: storageAccount.outputs.storageAccountEndpoints
+    connectionString: storageAccount.outputs.storageAccountConnectionString
+    blobContainers: storageAccount.outputs.blobContainerNames
+    fileShares: storageAccount.outputs.fileShareNames
+    config: storageAccount.outputs.storageAccountConfig
+  }
+  privateEndpoints: environmentConfig.enablePrivateEndpoints ? {
+    endpoints: privateEndpoints.outputs.privateEndpointIds
+    dnsZones: privateEndpoints.outputs.privateDnsZoneIds
+    configs: privateEndpoints.outputs.privateEndpointConfigs
+    dnsZoneNames: privateEndpoints.outputs.privateDnsZoneNames
+  } : {
+    endpoints: []
+    dnsZones: {}
+    configs: []
+    dnsZoneNames: {}
   }
 }

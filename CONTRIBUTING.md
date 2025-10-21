@@ -261,6 +261,81 @@ When testing the Key Vault module:
    - Verify diagnostic settings are configured
    - Test audit log generation
 
+### Testing SQL Server Module
+
+When testing the SQL Server module:
+
+1. **Parameter Validation**:
+   ```powershell
+   # Test with minimal configuration
+   az deployment group validate --resource-group test-rg --template-file modules/data/sql-server.bicep --parameters sqlServerName=testsql123 sqlDatabaseName=testdb administratorLogin=sqladmin administratorLoginPassword='SecurePass123!' tags='{Environment:"test"}'
+   ```
+
+2. **Security Configuration Testing**:
+   - Test Azure AD authentication with valid object IDs
+   - Verify Transparent Data Encryption enablement
+   - Test Advanced Data Security configuration
+   - Validate vulnerability assessment setup with storage account
+
+3. **Network Security Testing**:
+   - Test with private network access (public access disabled)
+   - Verify subnet-based firewall rules
+   - Test IP address allowlist functionality
+   - Validate TLS 1.2 enforcement
+
+4. **Backup and Recovery Testing**:
+   - Verify short-term retention policy configuration
+   - Test long-term retention policy setup
+   - Validate geo-redundant backup configuration
+   - Test point-in-time restore capabilities
+
+### Testing Storage Account Module
+
+When testing the Storage Account module:
+
+1. **Parameter Validation**:
+   ```powershell
+   # Test with minimal configuration
+   az deployment group validate --resource-group test-rg --template-file modules/data/storage-account.bicep --parameters storageAccountName=teststorage123 tags='{Environment:"test"}'
+   ```
+
+2. **Security Configuration Testing**:
+   - Test network access restrictions with subnet allowlists
+   - Verify infrastructure encryption enablement
+   - Test blob versioning and soft delete functionality
+   - Validate customer-managed key configuration (if enabled)
+
+3. **Lifecycle Management Testing**:
+   - Verify lifecycle policy creation and rules
+   - Test automated data tiering functionality
+   - Validate retention and deletion policies
+
+4. **Container and File Share Testing**:
+   - Verify blob container creation with proper access levels
+   - Test file share creation with appropriate quotas and protocols
+   - Validate metadata and configuration settings
+
+### Testing Private Endpoints Module
+
+When testing the Private Endpoints module:
+
+1. **Parameter Validation**:
+   ```powershell
+   # Test with minimal configuration
+   az deployment group validate --resource-group test-rg --template-file modules/data/private-endpoints.bicep --parameters privateEndpointNamePrefix=test-pe subnetId='/subscriptions/.../subnets/test' virtualNetworkId='/subscriptions/.../vnets/test' privateEndpointConfigs='[]' tags='{Environment:"test"}'
+   ```
+
+2. **DNS Integration Testing**:
+   - Verify private DNS zone creation for each service type
+   - Test virtual network linking functionality
+   - Validate DNS resolution for private endpoints
+
+3. **Connectivity Testing**:
+   - Test private endpoint creation for SQL Database
+   - Verify storage account private endpoint connectivity
+   - Test Key Vault private endpoint functionality
+   - Validate network isolation and security
+
 ## Security Considerations
 
 ### Sensitive Information

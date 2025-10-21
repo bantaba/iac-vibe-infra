@@ -55,8 +55,11 @@ Subnet Architecture (per environment):
 - ✅ Key Vault module with RBAC, network controls, and monitoring integration
 - ✅ Application Gateway module with WAF, SSL termination, and backend pool management
 - ✅ Load Balancer modules for internal traffic distribution
+- ✅ SQL Server module with comprehensive security, backup, and monitoring features
+- ✅ Storage Account module with lifecycle management, encryption, and private endpoint support
+- ✅ Private Endpoints module for secure data service connectivity
 - ⏳ Managed Identity and Security Center modules - Next phase
-- ⏳ Data modules (SQL Database, Storage Accounts) - Next phase
+- ⏳ Monitoring modules (Log Analytics, Application Insights) - Next phase
 
 ## Components and Interfaces
 
@@ -86,9 +89,9 @@ bicep-infrastructure/
 │   │   ├── virtual-machines.bicep # VM scale sets
 │   │   └── availability-sets.bicep # Availability configurations
 │   ├── data/
-│   │   ├── sql-server.bicep   # Azure SQL Database
-│   │   ├── storage-account.bicep # Storage accounts
-│   │   └── private-endpoints.bicep # Private endpoint configurations
+│   │   ├── sql-server.bicep   # Azure SQL Database with security features ✅
+│   │   ├── storage-account.bicep # Storage accounts with lifecycle management ✅
+│   │   └── private-endpoints.bicep # Private endpoint configurations ✅
 │   └── monitoring/
 │       ├── log-analytics.bicep # Log Analytics workspace
 │       ├── application-insights.bicep # Application monitoring
@@ -123,6 +126,37 @@ bicep-infrastructure/
 - **Backend Pools**: Virtual machines in business and data tiers
 - **Load Balancing Rules**: Distribution algorithms and session persistence
 - **Health Probes**: TCP and HTTP health checks
+
+#### SQL Server Interface
+- **Database Configuration**: Configurable SKUs from Basic to Business Critical with vCore options
+- **Security Features**:
+  - Azure AD authentication with group-based administration and tenant integration
+  - Transparent Data Encryption (TDE) for automatic data at rest protection
+  - Advanced Data Security (Microsoft Defender for SQL) with threat detection
+  - Vulnerability Assessment with automated scanning and remediation guidance
+- **Network Security**: Private endpoint support with subnet-based firewall rules and TLS 1.2 enforcement
+- **Backup & Recovery**: 
+  - Short-term retention (7-35 days) for point-in-time restore
+  - Long-term retention policies (weekly, monthly, yearly) for compliance requirements
+  - Geo-redundant backup storage for disaster recovery scenarios
+- **Monitoring Integration**: Comprehensive diagnostic settings for audit and performance logging
+
+#### Storage Account Interface
+- **Performance Tiers**: Standard (LRS, GRS, ZRS, GZRS) and Premium (LRS, ZRS) storage options
+- **Security Controls**:
+  - Network isolation with private endpoints and subnet-based firewall rules
+  - Infrastructure encryption with optional customer-managed encryption keys (CMEK)
+  - Blob versioning and soft delete for comprehensive data protection
+  - Disabled public blob access and shared key access for enhanced security posture
+- **Lifecycle Management**: Automated data tiering and retention policies for cost optimization
+- **Service Integration**: Pre-configured containers and file shares for application requirements
+- **Access Controls**: RBAC integration with managed identities for secure service-to-service access
+
+#### Private Endpoints Interface
+- **Service Coverage**: Support for SQL Database, Storage Account (Blob, File, Queue, Table), and Key Vault
+- **DNS Integration**: Automatic private DNS zone creation and virtual network linking
+- **Network Isolation**: Complete elimination of public internet access to data services
+- **Custom Configuration**: Support for existing DNS zones and custom DNS server configurations
 
 #### Key Vault Interface
 - **RBAC Authorization**: Built-in role assignments for secure access management
@@ -262,6 +296,90 @@ type KeyVaultRoleAssignment = {
   principalId: string
   roleDefinitionId: string
   principalType: 'User' | 'ServicePrincipal' | 'Group'
+}
+```
+
+### Data Layer Configuration Schema
+
+```bicep
+// SQL Server configuration
+type SqlServerConfig = {
+  sqlServerName: string
+  sqlDatabaseName: string
+  administratorLogin: string
+  databaseSku: {
+    name: string // Basic, Standard, Premium, GP_Gen5_2, BC_Gen5_4, etc.
+    tier: string
+    capacity: int
+  }
+  maxSizeBytes: int
+  enableAzureAdAuthentication: bool
+  azureAdAdministratorObjectId: string
+  azureAdAdministratorLogin: string
+  enableTransparentDataEncryption: bool
+  enableAdvancedDataSecurity: bool
+  enableVulnerabilityAssessment: bool
+  enablePublicNetworkAccess: bool
+  allowedSubnetIds: string[]
+  allowedIpAddresses: string[]
+  minimalTlsVersion: '1.0' | '1.1' | '1.2'
+  backupRetentionDays: int // 7-35 days
+  enableGeoRedundantBackup: bool
+  enableLongTermRetention: bool
+  longTermRetentionBackup: {
+    weeklyRetention: string
+    monthlyRetention: string
+    yearlyRetention: string
+    weekOfYear: int
+  }
+}
+
+// Storage Account configuration
+type StorageAccountConfig = {
+  storageAccountName: string
+  storageAccountSku: 'Standard_LRS' | 'Standard_GRS' | 'Standard_ZRS' | 'Standard_GZRS' | 'Premium_LRS' | 'Premium_ZRS'
+  storageAccountKind: 'Storage' | 'StorageV2' | 'BlobStorage' | 'FileStorage' | 'BlockBlobStorage'
+  accessTier: 'Hot' | 'Cool'
+  enablePublicNetworkAccess: bool
+  allowedSubnetIds: string[]
+  allowedIpAddresses: string[]
+  defaultNetworkAccessRule: 'Allow' | 'Deny'
+  minimumTlsVersion: 'TLS1_0' | 'TLS1_1' | 'TLS1_2'
+  enableHttpsTrafficOnly: bool
+  enableBlobPublicAccess: bool
+  enableInfrastructureEncryption: bool
+  customerManagedKey: {
+    enabled: bool
+    keyVaultId: string
+    keyName: string
+    keyVersion: string
+    userAssignedIdentityId: string
+  }
+  enableBlobVersioning: bool
+  enableBlobSoftDelete: bool
+  blobSoftDeleteRetentionDays: int
+  enableLifecycleManagement: bool
+  blobContainers: {
+    name: string
+    publicAccess: 'None' | 'Blob' | 'Container'
+    metadata: object
+  }[]
+  fileShares: {
+    name: string
+    shareQuota: int
+    enabledProtocols: 'SMB' | 'NFS'
+    accessTier: 'TransactionOptimized' | 'Hot' | 'Cool'
+  }[]
+}
+
+// Private Endpoint configuration
+type PrivateEndpointConfig = {
+  name: string
+  privateLinkServiceId: string
+  groupId: 'sqlServer' | 'storageBlob' | 'storageFile' | 'storageQueue' | 'storageTable' | 'keyVault'
+  subnetId: string
+  enablePrivateDnsZones: bool
+  customDnsServers: string[]
 }
 ```
 

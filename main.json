@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "16200161036008015919"
+      "templateHash": "233423861359809686"
     }
   },
   "definitions": {
@@ -91,11 +91,19 @@
         "sqlDatabaseSku": {
           "type": "string",
           "allowedValues": [
+            "BC_Gen5_2",
+            "BC_Gen5_4",
             "Basic",
-            "BusinessCritical",
-            "GeneralPurpose",
-            "Premium",
-            "Standard"
+            "GP_Gen5_2",
+            "GP_Gen5_4",
+            "P1",
+            "P2",
+            "P4",
+            "P6",
+            "S0",
+            "S1",
+            "S2",
+            "S3"
           ],
           "metadata": {
             "description": "SQL Database SKU"
@@ -7540,6 +7548,2105 @@
         "networkSecurityGroups",
         "virtualNetwork"
       ]
+    },
+    "sqlServer": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "sql-server-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "sqlServerName": {
+            "value": "[reference('namingConventions').outputs.namingConvention.value.sqlServer]"
+          },
+          "sqlDatabaseName": {
+            "value": "[replace(reference('namingConventions').outputs.namingConvention.value.sqlDatabase, '{dbName}', parameters('workloadName'))]"
+          },
+          "administratorLogin": {
+            "value": "sqladmin"
+          },
+          "administratorLoginPassword": {
+            "value": "P@ssw0rd123!"
+          },
+          "databaseSku": {
+            "value": {
+              "name": "[parameters('environmentConfig').sqlDatabaseSku]",
+              "tier": "[parameters('environmentConfig').sqlDatabaseSku]",
+              "capacity": "[if(equals(parameters('environmentConfig').skuTier, 'Basic'), 5, if(equals(parameters('environmentConfig').skuTier, 'Standard'), 20, 100))]"
+            }
+          },
+          "maxSizeBytes": "[if(equals(parameters('environmentConfig').skuTier, 'Basic'), createObject('value', json('2147483648')), if(equals(parameters('environmentConfig').skuTier, 'Standard'), createObject('value', json('268435456000')), createObject('value', json('1099511627776'))))]",
+          "enableAzureAdAuthentication": {
+            "value": true
+          },
+          "azureAdAdministratorObjectId": {
+            "value": ""
+          },
+          "azureAdAdministratorLogin": {
+            "value": "SQL Administrators"
+          },
+          "azureAdAdministratorType": {
+            "value": "Group"
+          },
+          "enableTransparentDataEncryption": {
+            "value": true
+          },
+          "enableAdvancedDataSecurity": {
+            "value": "[not(equals(parameters('environment'), 'dev'))]"
+          },
+          "enableVulnerabilityAssessment": {
+            "value": "[not(equals(parameters('environment'), 'dev'))]"
+          },
+          "vulnerabilityAssessmentStorageEndpoint": "[if(not(equals(parameters('environment'), 'dev')), createObject('value', reference('storageAccount').outputs.storageAccountEndpoints.value.blob), createObject('value', ''))]",
+          "vulnerabilityAssessmentStorageAccessKey": "[if(not(equals(parameters('environment'), 'dev')), createObject('value', reference('storageAccount').outputs.storageAccountKey.value), createObject('value', ''))]",
+          "enablePublicNetworkAccess": {
+            "value": "[not(parameters('environmentConfig').enablePrivateEndpoints)]"
+          },
+          "allowedSubnetIds": "[if(parameters('environmentConfig').enablePrivateEndpoints, createObject('value', createArray()), createObject('value', createArray(reference('virtualNetwork').outputs.subnetIds.value.dataTier, reference('virtualNetwork').outputs.subnetIds.value.businessTier, reference('virtualNetwork').outputs.subnetIds.value.management)))]",
+          "allowedIpAddresses": {
+            "value": []
+          },
+          "minimalTlsVersion": {
+            "value": "1.2"
+          },
+          "backupRetentionDays": "[if(equals(parameters('environment'), 'prod'), createObject('value', 35), createObject('value', 7))]",
+          "enableGeoRedundantBackup": {
+            "value": "[equals(parameters('environment'), 'prod')]"
+          },
+          "enableLongTermRetention": {
+            "value": "[equals(parameters('environment'), 'prod')]"
+          },
+          "longTermRetentionBackup": "[if(equals(parameters('environment'), 'prod'), createObject('value', createObject('weeklyRetention', 'P12W', 'monthlyRetention', 'P12M', 'yearlyRetention', 'P7Y', 'weekOfYear', 1)), createObject('value', createObject('weeklyRetention', 'PT0S', 'monthlyRetention', 'PT0S', 'yearlyRetention', 'PT0S', 'weekOfYear', 1)))]",
+          "enableDiagnosticSettings": {
+            "value": true
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": ""
+          },
+          "diagnosticStorageAccountId": {
+            "value": "[reference('storageAccount').outputs.storageAccountId.value]"
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "6760950586640022350"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "sqlServerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the SQL Server"
+              }
+            },
+            "sqlDatabaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the SQL Database"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region for deployment"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "administratorLogin": {
+              "type": "string",
+              "metadata": {
+                "description": "SQL Server administrator login name"
+              }
+            },
+            "administratorLoginPassword": {
+              "type": "securestring",
+              "metadata": {
+                "description": "SQL Server administrator password (should come from Key Vault)"
+              }
+            },
+            "databaseSku": {
+              "type": "object",
+              "defaultValue": {
+                "name": "Standard",
+                "tier": "Standard",
+                "capacity": 20
+              },
+              "metadata": {
+                "description": "SQL Database SKU configuration"
+              }
+            },
+            "maxSizeBytes": {
+              "type": "int",
+              "defaultValue": 268435456000,
+              "metadata": {
+                "description": "Maximum database size in bytes"
+              }
+            },
+            "enableAzureAdAuthentication": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable Azure AD authentication"
+              }
+            },
+            "azureAdAdministratorObjectId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Azure AD administrator object ID"
+              }
+            },
+            "azureAdAdministratorLogin": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Azure AD administrator login name"
+              }
+            },
+            "azureAdAdministratorType": {
+              "type": "string",
+              "defaultValue": "User",
+              "allowedValues": [
+                "User",
+                "Group",
+                "Application"
+              ],
+              "metadata": {
+                "description": "Azure AD administrator type (User, Group, Application)"
+              }
+            },
+            "enableTransparentDataEncryption": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable Transparent Data Encryption"
+              }
+            },
+            "enableAdvancedDataSecurity": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable Advanced Data Security"
+              }
+            },
+            "enableVulnerabilityAssessment": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable vulnerability assessment"
+              }
+            },
+            "vulnerabilityAssessmentStorageEndpoint": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Storage account endpoint for vulnerability assessment"
+              }
+            },
+            "vulnerabilityAssessmentStorageAccessKey": {
+              "type": "securestring",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Storage account access key for vulnerability assessment"
+              }
+            },
+            "enablePublicNetworkAccess": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable public network access"
+              }
+            },
+            "allowedSubnetIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Allowed subnet IDs for firewall rules"
+              }
+            },
+            "allowedIpAddresses": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Allowed IP addresses for firewall rules"
+              }
+            },
+            "minimalTlsVersion": {
+              "type": "string",
+              "defaultValue": "1.2",
+              "allowedValues": [
+                "1.0",
+                "1.1",
+                "1.2"
+              ],
+              "metadata": {
+                "description": "Minimum TLS version"
+              }
+            },
+            "backupRetentionDays": {
+              "type": "int",
+              "defaultValue": 7,
+              "minValue": 7,
+              "maxValue": 35,
+              "metadata": {
+                "description": "Backup retention period in days"
+              }
+            },
+            "enableGeoRedundantBackup": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable geo-redundant backup"
+              }
+            },
+            "enableLongTermRetention": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable long-term retention backup"
+              }
+            },
+            "longTermRetentionBackup": {
+              "type": "object",
+              "defaultValue": {
+                "weeklyRetention": "PT0S",
+                "monthlyRetention": "PT0S",
+                "yearlyRetention": "PT0S",
+                "weekOfYear": 1
+              },
+              "metadata": {
+                "description": "Long-term retention backup configuration"
+              }
+            },
+            "enableDiagnosticSettings": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable diagnostic settings"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace ID for diagnostic settings"
+              }
+            },
+            "diagnosticStorageAccountId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Storage account ID for diagnostic settings"
+              }
+            }
+          },
+          "variables": {
+            "sqlServerResourceName": "[parameters('sqlServerName')]",
+            "sqlDatabaseResourceName": "[parameters('sqlDatabaseName')]"
+          },
+          "resources": {
+            "sqlServer": {
+              "type": "Microsoft.Sql/servers",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[variables('sqlServerResourceName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "administratorLogin": "[parameters('administratorLogin')]",
+                "administratorLoginPassword": "[parameters('administratorLoginPassword')]",
+                "version": "12.0",
+                "minimalTlsVersion": "[parameters('minimalTlsVersion')]",
+                "publicNetworkAccess": "[if(parameters('enablePublicNetworkAccess'), 'Enabled', 'Disabled')]",
+                "restrictOutboundNetworkAccess": "Disabled"
+              },
+              "identity": "[if(parameters('enableAzureAdAuthentication'), createObject('type', 'SystemAssigned'), null())]"
+            },
+            "sqlServerAzureAdAdministrator": {
+              "condition": "[and(parameters('enableAzureAdAuthentication'), not(empty(parameters('azureAdAdministratorObjectId'))))]",
+              "type": "Microsoft.Sql/servers/administrators",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), 'ActiveDirectory')]",
+              "properties": {
+                "administratorType": "ActiveDirectory",
+                "login": "[parameters('azureAdAdministratorLogin')]",
+                "sid": "[parameters('azureAdAdministratorObjectId')]",
+                "tenantId": "[tenant().tenantId]"
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "sqlDatabase": {
+              "type": "Microsoft.Sql/servers/databases",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'))]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": "[parameters('databaseSku')]",
+              "properties": {
+                "maxSizeBytes": "[parameters('maxSizeBytes')]",
+                "collation": "SQL_Latin1_General_CP1_CI_AS",
+                "catalogCollation": "SQL_Latin1_General_CP1_CI_AS",
+                "zoneRedundant": "[or(equals(parameters('databaseSku').tier, 'Premium'), equals(parameters('databaseSku').tier, 'BusinessCritical'))]",
+                "readScale": "[if(or(equals(parameters('databaseSku').tier, 'Premium'), equals(parameters('databaseSku').tier, 'BusinessCritical')), 'Enabled', 'Disabled')]",
+                "requestedBackupStorageRedundancy": "[if(parameters('enableGeoRedundantBackup'), 'Geo', 'Local')]",
+                "isLedgerOn": false
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "transparentDataEncryption": {
+              "condition": "[parameters('enableTransparentDataEncryption')]",
+              "type": "Microsoft.Sql/servers/databases/transparentDataEncryption",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'), 'current')]",
+              "properties": {
+                "state": "Enabled"
+              },
+              "dependsOn": [
+                "sqlDatabase"
+              ]
+            },
+            "advancedDataSecurity": {
+              "condition": "[parameters('enableAdvancedDataSecurity')]",
+              "type": "Microsoft.Sql/servers/securityAlertPolicies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), 'default')]",
+              "properties": {
+                "state": "Enabled",
+                "emailAccountAdmins": true,
+                "emailAddresses": [],
+                "retentionDays": 30,
+                "storageEndpoint": "[if(not(empty(parameters('vulnerabilityAssessmentStorageEndpoint'))), parameters('vulnerabilityAssessmentStorageEndpoint'), null())]",
+                "storageAccountAccessKey": "[if(not(empty(parameters('vulnerabilityAssessmentStorageAccessKey'))), parameters('vulnerabilityAssessmentStorageAccessKey'), null())]"
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "vulnerabilityAssessment": {
+              "condition": "[and(parameters('enableVulnerabilityAssessment'), not(empty(parameters('vulnerabilityAssessmentStorageEndpoint'))))]",
+              "type": "Microsoft.Sql/servers/vulnerabilityAssessments",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), 'default')]",
+              "properties": {
+                "storageContainerPath": "[format('{0}vulnerability-assessment', parameters('vulnerabilityAssessmentStorageEndpoint'))]",
+                "storageAccountAccessKey": "[parameters('vulnerabilityAssessmentStorageAccessKey')]",
+                "recurringScans": {
+                  "isEnabled": true,
+                  "emailSubscriptionAdmins": true,
+                  "emails": []
+                }
+              },
+              "dependsOn": [
+                "advancedDataSecurity",
+                "sqlServer"
+              ]
+            },
+            "subnetFirewallRules": {
+              "copy": {
+                "name": "subnetFirewallRules",
+                "count": "[length(parameters('allowedSubnetIds'))]"
+              },
+              "type": "Microsoft.Sql/servers/virtualNetworkRules",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), format('subnet-rule-{0}', copyIndex()))]",
+              "properties": {
+                "virtualNetworkSubnetId": "[parameters('allowedSubnetIds')[copyIndex()]]",
+                "ignoreMissingVnetServiceEndpoint": false
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "ipFirewallRules": {
+              "copy": {
+                "name": "ipFirewallRules",
+                "count": "[length(parameters('allowedIpAddresses'))]"
+              },
+              "type": "Microsoft.Sql/servers/firewallRules",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), format('ip-rule-{0}', copyIndex()))]",
+              "properties": {
+                "startIpAddress": "[parameters('allowedIpAddresses')[copyIndex()]]",
+                "endIpAddress": "[parameters('allowedIpAddresses')[copyIndex()]]"
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "azureServicesFirewallRule": {
+              "condition": "[parameters('enablePublicNetworkAccess')]",
+              "type": "Microsoft.Sql/servers/firewallRules",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}', variables('sqlServerResourceName'), 'AllowAllWindowsAzureIps')]",
+              "properties": {
+                "startIpAddress": "0.0.0.0",
+                "endIpAddress": "0.0.0.0"
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "longTermRetentionPolicy": {
+              "condition": "[parameters('enableLongTermRetention')]",
+              "type": "Microsoft.Sql/servers/databases/backupLongTermRetentionPolicies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'), 'default')]",
+              "properties": {
+                "weeklyRetention": "[parameters('longTermRetentionBackup').weeklyRetention]",
+                "monthlyRetention": "[parameters('longTermRetentionBackup').monthlyRetention]",
+                "yearlyRetention": "[parameters('longTermRetentionBackup').yearlyRetention]",
+                "weekOfYear": "[parameters('longTermRetentionBackup').weekOfYear]"
+              },
+              "dependsOn": [
+                "sqlDatabase"
+              ]
+            },
+            "shortTermRetentionPolicy": {
+              "type": "Microsoft.Sql/servers/databases/backupShortTermRetentionPolicies",
+              "apiVersion": "2023-05-01-preview",
+              "name": "[format('{0}/{1}/{2}', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'), 'default')]",
+              "properties": {
+                "retentionDays": "[parameters('backupRetentionDays')]"
+              },
+              "dependsOn": [
+                "sqlDatabase"
+              ]
+            },
+            "sqlServerDiagnosticSettings": {
+              "condition": "[and(parameters('enableDiagnosticSettings'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Sql/servers/{0}', variables('sqlServerResourceName'))]",
+              "name": "[format('{0}-diagnostics', variables('sqlServerResourceName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "sqlServer"
+              ]
+            },
+            "sqlDatabaseDiagnosticSettings": {
+              "condition": "[and(parameters('enableDiagnosticSettings'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Sql/servers/{0}/databases/{1}', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'))]",
+              "name": "[format('{0}-diagnostics', variables('sqlDatabaseResourceName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "AllMetrics",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "sqlDatabase"
+              ]
+            }
+          },
+          "outputs": {
+            "sqlServerId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the SQL Server"
+              },
+              "value": "[resourceId('Microsoft.Sql/servers', variables('sqlServerResourceName'))]"
+            },
+            "sqlServerName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the SQL Server"
+              },
+              "value": "[variables('sqlServerResourceName')]"
+            },
+            "sqlServerFqdn": {
+              "type": "string",
+              "metadata": {
+                "description": "The fully qualified domain name of the SQL Server"
+              },
+              "value": "[reference('sqlServer').fullyQualifiedDomainName]"
+            },
+            "sqlDatabaseId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the SQL Database"
+              },
+              "value": "[resourceId('Microsoft.Sql/servers/databases', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'))]"
+            },
+            "sqlDatabaseName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the SQL Database"
+              },
+              "value": "[variables('sqlDatabaseResourceName')]"
+            },
+            "connectionStringTemplate": {
+              "type": "string",
+              "metadata": {
+                "description": "The connection string for the SQL Database (without password)"
+              },
+              "value": "[format('Server=tcp:{0},1433;Initial Catalog={1};Persist Security Info=False;User ID={2};MultipleActiveResultSets=False;Encrypt=True;TrustServerCertificate=False;Connection Timeout=30;', reference('sqlServer').fullyQualifiedDomainName, variables('sqlDatabaseResourceName'), parameters('administratorLogin'))]"
+            },
+            "sqlServerConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "SQL Server configuration details"
+              },
+              "value": {
+                "id": "[resourceId('Microsoft.Sql/servers', variables('sqlServerResourceName'))]",
+                "name": "[variables('sqlServerResourceName')]",
+                "fqdn": "[reference('sqlServer').fullyQualifiedDomainName]",
+                "version": "[reference('sqlServer').version]",
+                "administratorLogin": "[reference('sqlServer').administratorLogin]",
+                "minimalTlsVersion": "[reference('sqlServer').minimalTlsVersion]",
+                "publicNetworkAccess": "[reference('sqlServer').publicNetworkAccess]",
+                "azureAdOnlyAuthentication": "[parameters('enableAzureAdAuthentication')]",
+                "enabledFeatures": {
+                  "transparentDataEncryption": "[parameters('enableTransparentDataEncryption')]",
+                  "advancedDataSecurity": "[parameters('enableAdvancedDataSecurity')]",
+                  "vulnerabilityAssessment": "[parameters('enableVulnerabilityAssessment')]",
+                  "longTermRetention": "[parameters('enableLongTermRetention')]",
+                  "diagnosticSettings": "[parameters('enableDiagnosticSettings')]"
+                }
+              }
+            },
+            "sqlDatabaseConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "SQL Database configuration details"
+              },
+              "value": {
+                "id": "[resourceId('Microsoft.Sql/servers/databases', variables('sqlServerResourceName'), variables('sqlDatabaseResourceName'))]",
+                "name": "[variables('sqlDatabaseResourceName')]",
+                "sku": "[reference('sqlDatabase', '2023-05-01-preview', 'full').sku]",
+                "maxSizeBytes": "[reference('sqlDatabase').maxSizeBytes]",
+                "collation": "[reference('sqlDatabase').collation]",
+                "zoneRedundant": "[reference('sqlDatabase').zoneRedundant]",
+                "readScale": "[reference('sqlDatabase').readScale]",
+                "backupStorageRedundancy": "[reference('sqlDatabase').requestedBackupStorageRedundancy]",
+                "backupRetentionDays": "[parameters('backupRetentionDays')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "keyVault",
+        "namingConventions",
+        "storageAccount",
+        "virtualNetwork"
+      ]
+    },
+    "storageAccount": {
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "storage-account-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "storageAccountName": {
+            "value": "[reference('namingConventions').outputs.specializedNames.value.storageAccount]"
+          },
+          "storageAccountSku": {
+            "value": "[parameters('environmentConfig').storageAccountSku]"
+          },
+          "storageAccountKind": {
+            "value": "StorageV2"
+          },
+          "accessTier": {
+            "value": "Hot"
+          },
+          "enableHierarchicalNamespace": {
+            "value": false
+          },
+          "enableLargeFileShares": {
+            "value": false
+          },
+          "enableSftp": {
+            "value": false
+          },
+          "enablePublicNetworkAccess": {
+            "value": "[not(parameters('environmentConfig').enablePrivateEndpoints)]"
+          },
+          "allowedSubnetIds": "[if(parameters('environmentConfig').enablePrivateEndpoints, createObject('value', createArray()), createObject('value', createArray(reference('virtualNetwork').outputs.subnetIds.value.dataTier, reference('virtualNetwork').outputs.subnetIds.value.businessTier, reference('virtualNetwork').outputs.subnetIds.value.webTier, reference('virtualNetwork').outputs.subnetIds.value.management)))]",
+          "allowedIpAddresses": {
+            "value": []
+          },
+          "defaultNetworkAccessRule": "[if(parameters('environmentConfig').enablePrivateEndpoints, createObject('value', 'Deny'), createObject('value', 'Allow'))]",
+          "networkRulesBypass": {
+            "value": "AzureServices"
+          },
+          "minimumTlsVersion": {
+            "value": "TLS1_2"
+          },
+          "enableHttpsTrafficOnly": {
+            "value": true
+          },
+          "enableBlobPublicAccess": {
+            "value": false
+          },
+          "enableSharedKeyAccess": {
+            "value": true
+          },
+          "enableInfrastructureEncryption": {
+            "value": "[not(equals(parameters('environment'), 'dev'))]"
+          },
+          "customerManagedKey": {
+            "value": {
+              "enabled": false,
+              "keyVaultId": "",
+              "keyName": "",
+              "keyVersion": "",
+              "userAssignedIdentityId": ""
+            }
+          },
+          "enableBlobVersioning": {
+            "value": "[not(equals(parameters('environment'), 'dev'))]"
+          },
+          "enableBlobChangeFeed": {
+            "value": "[not(equals(parameters('environment'), 'dev'))]"
+          },
+          "enableBlobPointInTimeRestore": {
+            "value": false
+          },
+          "pointInTimeRestoreRetentionDays": {
+            "value": 7
+          },
+          "enableBlobSoftDelete": {
+            "value": true
+          },
+          "blobSoftDeleteRetentionDays": "[if(equals(parameters('environment'), 'prod'), createObject('value', 30), createObject('value', 7))]",
+          "enableContainerSoftDelete": {
+            "value": true
+          },
+          "containerSoftDeleteRetentionDays": "[if(equals(parameters('environment'), 'prod'), createObject('value', 30), createObject('value', 7))]",
+          "enableLifecycleManagement": {
+            "value": true
+          },
+          "lifecycleRules": {
+            "value": [
+              {
+                "name": "default-lifecycle-rule",
+                "enabled": true,
+                "type": "Lifecycle",
+                "definition": {
+                  "filters": {
+                    "blobTypes": [
+                      "blockBlob"
+                    ],
+                    "prefixMatch": []
+                  },
+                  "actions": {
+                    "baseBlob": {
+                      "tierToCool": {
+                        "daysAfterModificationGreaterThan": "[if(equals(parameters('environment'), 'prod'), 30, 90)]"
+                      },
+                      "tierToArchive": {
+                        "daysAfterModificationGreaterThan": "[if(equals(parameters('environment'), 'prod'), 90, 180)]"
+                      },
+                      "delete": {
+                        "daysAfterModificationGreaterThan": "[if(equals(parameters('environment'), 'prod'), 2555, 365)]"
+                      }
+                    },
+                    "snapshot": {
+                      "delete": {
+                        "daysAfterCreationGreaterThan": "[if(equals(parameters('environment'), 'prod'), 90, 30)]"
+                      }
+                    },
+                    "version": {
+                      "delete": {
+                        "daysAfterCreationGreaterThan": "[if(equals(parameters('environment'), 'prod'), 90, 30)]"
+                      }
+                    }
+                  }
+                }
+              }
+            ]
+          },
+          "enableDiagnosticSettings": {
+            "value": true
+          },
+          "logAnalyticsWorkspaceId": {
+            "value": ""
+          },
+          "diagnosticStorageAccountId": {
+            "value": ""
+          },
+          "blobContainers": {
+            "value": [
+              {
+                "name": "application-data",
+                "publicAccess": "None",
+                "metadata": {
+                  "purpose": "Application data storage",
+                  "tier": "data"
+                }
+              },
+              {
+                "name": "application-logs",
+                "publicAccess": "None",
+                "metadata": {
+                  "purpose": "Application log storage",
+                  "tier": "logging"
+                }
+              },
+              {
+                "name": "database-backups",
+                "publicAccess": "None",
+                "metadata": {
+                  "purpose": "Database backup storage",
+                  "tier": "backup"
+                }
+              },
+              {
+                "name": "vulnerability-assessment",
+                "publicAccess": "None",
+                "metadata": {
+                  "purpose": "SQL vulnerability assessment reports",
+                  "tier": "security"
+                }
+              }
+            ]
+          },
+          "fileShares": {
+            "value": [
+              {
+                "name": "shared-files",
+                "shareQuota": "[if(equals(parameters('environment'), 'prod'), 1024, 100)]",
+                "enabledProtocols": "SMB",
+                "accessTier": "TransactionOptimized"
+              }
+            ]
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "7179710638109364672"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage account"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region for deployment"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "storageAccountSku": {
+              "type": "string",
+              "defaultValue": "Standard_LRS",
+              "allowedValues": [
+                "Standard_LRS",
+                "Standard_GRS",
+                "Standard_ZRS",
+                "Standard_GZRS",
+                "Premium_LRS",
+                "Premium_ZRS"
+              ],
+              "metadata": {
+                "description": "Storage account SKU"
+              }
+            },
+            "storageAccountKind": {
+              "type": "string",
+              "defaultValue": "StorageV2",
+              "allowedValues": [
+                "Storage",
+                "StorageV2",
+                "BlobStorage",
+                "FileStorage",
+                "BlockBlobStorage"
+              ],
+              "metadata": {
+                "description": "Storage account kind"
+              }
+            },
+            "accessTier": {
+              "type": "string",
+              "defaultValue": "Hot",
+              "allowedValues": [
+                "Hot",
+                "Cool"
+              ],
+              "metadata": {
+                "description": "Storage account access tier"
+              }
+            },
+            "enableHierarchicalNamespace": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable hierarchical namespace (Data Lake Gen2)"
+              }
+            },
+            "enableLargeFileShares": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable large file shares"
+              }
+            },
+            "enableSftp": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable SFTP"
+              }
+            },
+            "enablePublicNetworkAccess": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable public network access"
+              }
+            },
+            "allowedSubnetIds": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Allowed subnet IDs for network rules"
+              }
+            },
+            "allowedIpAddresses": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Allowed IP addresses for network rules"
+              }
+            },
+            "defaultNetworkAccessRule": {
+              "type": "string",
+              "defaultValue": "Deny",
+              "allowedValues": [
+                "Allow",
+                "Deny"
+              ],
+              "metadata": {
+                "description": "Default network access rule"
+              }
+            },
+            "networkRulesBypass": {
+              "type": "string",
+              "defaultValue": "AzureServices",
+              "allowedValues": [
+                "None",
+                "AzureServices",
+                "Logging",
+                "Metrics"
+              ],
+              "metadata": {
+                "description": "Bypass network rules for Azure services"
+              }
+            },
+            "minimumTlsVersion": {
+              "type": "string",
+              "defaultValue": "TLS1_2",
+              "allowedValues": [
+                "TLS1_0",
+                "TLS1_1",
+                "TLS1_2"
+              ],
+              "metadata": {
+                "description": "Minimum TLS version"
+              }
+            },
+            "enableHttpsTrafficOnly": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable HTTPS traffic only"
+              }
+            },
+            "enableBlobPublicAccess": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable blob public access"
+              }
+            },
+            "enableSharedKeyAccess": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable shared key access"
+              }
+            },
+            "enableInfrastructureEncryption": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable infrastructure encryption"
+              }
+            },
+            "customerManagedKey": {
+              "type": "object",
+              "defaultValue": {
+                "enabled": false,
+                "keyVaultId": "",
+                "keyName": "",
+                "keyVersion": "",
+                "userAssignedIdentityId": ""
+              },
+              "metadata": {
+                "description": "Customer-managed key configuration"
+              }
+            },
+            "enableBlobVersioning": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable blob versioning"
+              }
+            },
+            "enableBlobChangeFeed": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable blob change feed"
+              }
+            },
+            "enableBlobPointInTimeRestore": {
+              "type": "bool",
+              "defaultValue": false,
+              "metadata": {
+                "description": "Enable blob point-in-time restore"
+              }
+            },
+            "pointInTimeRestoreRetentionDays": {
+              "type": "int",
+              "defaultValue": 7,
+              "minValue": 1,
+              "maxValue": 365,
+              "metadata": {
+                "description": "Point-in-time restore retention days"
+              }
+            },
+            "enableBlobSoftDelete": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable blob soft delete"
+              }
+            },
+            "blobSoftDeleteRetentionDays": {
+              "type": "int",
+              "defaultValue": 7,
+              "minValue": 1,
+              "maxValue": 365,
+              "metadata": {
+                "description": "Blob soft delete retention days"
+              }
+            },
+            "enableContainerSoftDelete": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable container soft delete"
+              }
+            },
+            "containerSoftDeleteRetentionDays": {
+              "type": "int",
+              "defaultValue": 7,
+              "minValue": 1,
+              "maxValue": 365,
+              "metadata": {
+                "description": "Container soft delete retention days"
+              }
+            },
+            "enableLifecycleManagement": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable lifecycle management"
+              }
+            },
+            "lifecycleRules": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "default-lifecycle-rule",
+                  "enabled": true,
+                  "type": "Lifecycle",
+                  "definition": {
+                    "filters": {
+                      "blobTypes": [
+                        "blockBlob"
+                      ],
+                      "prefixMatch": []
+                    },
+                    "actions": {
+                      "baseBlob": {
+                        "tierToCool": {
+                          "daysAfterModificationGreaterThan": 30
+                        },
+                        "tierToArchive": {
+                          "daysAfterModificationGreaterThan": 90
+                        },
+                        "delete": {
+                          "daysAfterModificationGreaterThan": 365
+                        }
+                      },
+                      "snapshot": {
+                        "delete": {
+                          "daysAfterCreationGreaterThan": 30
+                        }
+                      },
+                      "version": {
+                        "delete": {
+                          "daysAfterCreationGreaterThan": 30
+                        }
+                      }
+                    }
+                  }
+                }
+              ],
+              "metadata": {
+                "description": "Lifecycle management rules"
+              }
+            },
+            "enableDiagnosticSettings": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable diagnostic settings"
+              }
+            },
+            "logAnalyticsWorkspaceId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Log Analytics workspace ID for diagnostic settings"
+              }
+            },
+            "diagnosticStorageAccountId": {
+              "type": "string",
+              "defaultValue": "",
+              "metadata": {
+                "description": "Storage account ID for diagnostic settings"
+              }
+            },
+            "blobContainers": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "data",
+                  "publicAccess": "None",
+                  "metadata": {}
+                },
+                {
+                  "name": "logs",
+                  "publicAccess": "None",
+                  "metadata": {}
+                },
+                {
+                  "name": "backups",
+                  "publicAccess": "None",
+                  "metadata": {}
+                }
+              ],
+              "metadata": {
+                "description": "Blob containers to create"
+              }
+            },
+            "fileShares": {
+              "type": "array",
+              "defaultValue": [
+                {
+                  "name": "shared",
+                  "shareQuota": 100,
+                  "enabledProtocols": "SMB",
+                  "accessTier": "TransactionOptimized"
+                }
+              ],
+              "metadata": {
+                "description": "File shares to create"
+              }
+            }
+          },
+          "variables": {
+            "storageAccountResourceName": "[parameters('storageAccountName')]"
+          },
+          "resources": {
+            "storageAccount": {
+              "type": "Microsoft.Storage/storageAccounts",
+              "apiVersion": "2023-01-01",
+              "name": "[variables('storageAccountResourceName')]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "sku": {
+                "name": "[parameters('storageAccountSku')]"
+              },
+              "kind": "[parameters('storageAccountKind')]",
+              "identity": "[if(parameters('customerManagedKey').enabled, createObject('type', 'UserAssigned', 'userAssignedIdentities', createObject(format('{0}', parameters('customerManagedKey').userAssignedIdentityId), createObject())), createObject('type', 'SystemAssigned'))]",
+              "properties": {
+                "accessTier": "[parameters('accessTier')]",
+                "allowBlobPublicAccess": "[parameters('enableBlobPublicAccess')]",
+                "allowSharedKeyAccess": "[parameters('enableSharedKeyAccess')]",
+                "allowCrossTenantReplication": false,
+                "defaultToOAuthAuthentication": true,
+                "dnsEndpointType": "Standard",
+                "isHnsEnabled": "[parameters('enableHierarchicalNamespace')]",
+                "isLocalUserEnabled": "[parameters('enableSftp')]",
+                "isNfsV3Enabled": false,
+                "isSftpEnabled": "[parameters('enableSftp')]",
+                "largeFileSharesState": "[if(parameters('enableLargeFileShares'), 'Enabled', 'Disabled')]",
+                "minimumTlsVersion": "[parameters('minimumTlsVersion')]",
+                "publicNetworkAccess": "[if(parameters('enablePublicNetworkAccess'), 'Enabled', 'Disabled')]",
+                "supportsHttpsTrafficOnly": "[parameters('enableHttpsTrafficOnly')]",
+                "networkAcls": {
+                  "copy": [
+                    {
+                      "name": "ipRules",
+                      "count": "[length(parameters('allowedIpAddresses'))]",
+                      "input": {
+                        "value": "[parameters('allowedIpAddresses')[copyIndex('ipRules')]]",
+                        "action": "Allow"
+                      }
+                    },
+                    {
+                      "name": "virtualNetworkRules",
+                      "count": "[length(parameters('allowedSubnetIds'))]",
+                      "input": {
+                        "id": "[parameters('allowedSubnetIds')[copyIndex('virtualNetworkRules')]]",
+                        "action": "Allow",
+                        "state": "Succeeded"
+                      }
+                    }
+                  ],
+                  "bypass": "[parameters('networkRulesBypass')]",
+                  "defaultAction": "[parameters('defaultNetworkAccessRule')]"
+                },
+                "encryption": {
+                  "requireInfrastructureEncryption": "[parameters('enableInfrastructureEncryption')]",
+                  "services": {
+                    "blob": {
+                      "enabled": true,
+                      "keyType": "[if(parameters('customerManagedKey').enabled, 'Account', 'Service')]"
+                    },
+                    "file": {
+                      "enabled": true,
+                      "keyType": "[if(parameters('customerManagedKey').enabled, 'Account', 'Service')]"
+                    },
+                    "table": {
+                      "enabled": true,
+                      "keyType": "Service"
+                    },
+                    "queue": {
+                      "enabled": true,
+                      "keyType": "Service"
+                    }
+                  },
+                  "keySource": "[if(parameters('customerManagedKey').enabled, 'Microsoft.Keyvault', 'Microsoft.Storage')]",
+                  "keyvaultproperties": "[if(parameters('customerManagedKey').enabled, createObject('keyname', parameters('customerManagedKey').keyName, 'keyversion', parameters('customerManagedKey').keyVersion, 'keyvaulturi', format('https://{0}.{1}/', split(parameters('customerManagedKey').keyVaultId, '/')[8], environment().suffixes.keyvaultDns)), null())]"
+                }
+              }
+            },
+            "blobService": {
+              "type": "Microsoft.Storage/storageAccounts/blobServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', variables('storageAccountResourceName'), 'default')]",
+              "properties": {
+                "changeFeed": {
+                  "enabled": "[parameters('enableBlobChangeFeed')]",
+                  "retentionInDays": "[if(parameters('enableBlobChangeFeed'), 7, null())]"
+                },
+                "restorePolicy": "[if(parameters('enableBlobPointInTimeRestore'), createObject('enabled', true(), 'days', parameters('pointInTimeRestoreRetentionDays')), createObject('enabled', false()))]",
+                "deleteRetentionPolicy": {
+                  "enabled": "[parameters('enableBlobSoftDelete')]",
+                  "days": "[if(parameters('enableBlobSoftDelete'), parameters('blobSoftDeleteRetentionDays'), null())]"
+                },
+                "containerDeleteRetentionPolicy": {
+                  "enabled": "[parameters('enableContainerSoftDelete')]",
+                  "days": "[if(parameters('enableContainerSoftDelete'), parameters('containerSoftDeleteRetentionDays'), null())]"
+                },
+                "isVersioningEnabled": "[parameters('enableBlobVersioning')]"
+              },
+              "dependsOn": [
+                "storageAccount"
+              ]
+            },
+            "blobContainersResource": {
+              "copy": {
+                "name": "blobContainersResource",
+                "count": "[length(parameters('blobContainers'))]"
+              },
+              "type": "Microsoft.Storage/storageAccounts/blobServices/containers",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', variables('storageAccountResourceName'), 'default', parameters('blobContainers')[copyIndex()].name)]",
+              "properties": {
+                "publicAccess": "[parameters('blobContainers')[copyIndex()].publicAccess]",
+                "metadata": "[parameters('blobContainers')[copyIndex()].metadata]"
+              },
+              "dependsOn": [
+                "blobService"
+              ]
+            },
+            "fileService": {
+              "condition": "[greater(length(parameters('fileShares')), 0)]",
+              "type": "Microsoft.Storage/storageAccounts/fileServices",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', variables('storageAccountResourceName'), 'default')]",
+              "properties": {
+                "shareDeleteRetentionPolicy": {
+                  "enabled": true,
+                  "days": 7
+                }
+              },
+              "dependsOn": [
+                "storageAccount"
+              ]
+            },
+            "fileSharesResource": {
+              "copy": {
+                "name": "fileSharesResource",
+                "count": "[length(parameters('fileShares'))]"
+              },
+              "condition": "[greater(length(parameters('fileShares')), 0)]",
+              "type": "Microsoft.Storage/storageAccounts/fileServices/shares",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}/{2}', variables('storageAccountResourceName'), 'default', parameters('fileShares')[copyIndex()].name)]",
+              "properties": {
+                "shareQuota": "[parameters('fileShares')[copyIndex()].shareQuota]",
+                "enabledProtocols": "[parameters('fileShares')[copyIndex()].enabledProtocols]",
+                "accessTier": "[parameters('fileShares')[copyIndex()].accessTier]"
+              },
+              "dependsOn": [
+                "fileService"
+              ]
+            },
+            "managementPolicy": {
+              "condition": "[parameters('enableLifecycleManagement')]",
+              "type": "Microsoft.Storage/storageAccounts/managementPolicies",
+              "apiVersion": "2023-01-01",
+              "name": "[format('{0}/{1}', variables('storageAccountResourceName'), 'default')]",
+              "properties": {
+                "policy": {
+                  "rules": "[parameters('lifecycleRules')]"
+                }
+              },
+              "dependsOn": [
+                "storageAccount"
+              ]
+            },
+            "storageAccountDiagnosticSettings": {
+              "condition": "[and(parameters('enableDiagnosticSettings'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}', variables('storageAccountResourceName'))]",
+              "name": "[format('{0}-diagnostics', variables('storageAccountResourceName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "category": "Capacity",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "storageAccount"
+              ]
+            },
+            "blobServiceDiagnosticSettings": {
+              "condition": "[and(parameters('enableDiagnosticSettings'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}/blobServices/{1}', variables('storageAccountResourceName'), 'default')]",
+              "name": "[format('{0}-blob-diagnostics', variables('storageAccountResourceName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "category": "Capacity",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "blobService"
+              ]
+            },
+            "fileServiceDiagnosticSettings": {
+              "condition": "[and(and(parameters('enableDiagnosticSettings'), not(empty(parameters('logAnalyticsWorkspaceId')))), greater(length(parameters('fileShares')), 0))]",
+              "type": "Microsoft.Insights/diagnosticSettings",
+              "apiVersion": "2021-05-01-preview",
+              "scope": "[format('Microsoft.Storage/storageAccounts/{0}/fileServices/{1}', variables('storageAccountResourceName'), 'default')]",
+              "name": "[format('{0}-file-diagnostics', variables('storageAccountResourceName'))]",
+              "properties": {
+                "workspaceId": "[parameters('logAnalyticsWorkspaceId')]",
+                "storageAccountId": "[if(not(empty(parameters('diagnosticStorageAccountId'))), parameters('diagnosticStorageAccountId'), null())]",
+                "logs": [
+                  {
+                    "categoryGroup": "audit",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "categoryGroup": "allLogs",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ],
+                "metrics": [
+                  {
+                    "category": "Transaction",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  },
+                  {
+                    "category": "Capacity",
+                    "enabled": true,
+                    "retentionPolicy": {
+                      "enabled": false,
+                      "days": 0
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "fileService"
+              ]
+            }
+          },
+          "outputs": {
+            "storageAccountId": {
+              "type": "string",
+              "metadata": {
+                "description": "The resource ID of the storage account"
+              },
+              "value": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountResourceName'))]"
+            },
+            "storageAccountName": {
+              "type": "string",
+              "metadata": {
+                "description": "The name of the storage account"
+              },
+              "value": "[variables('storageAccountResourceName')]"
+            },
+            "storageAccountEndpoints": {
+              "type": "object",
+              "metadata": {
+                "description": "The primary endpoints of the storage account"
+              },
+              "value": "[reference('storageAccount').primaryEndpoints]"
+            },
+            "storageAccountKey": {
+              "type": "string",
+              "metadata": {
+                "description": "The primary access key of the storage account"
+              },
+              "value": "[listKeys('storageAccount', '2023-01-01').keys[0].value]"
+            },
+            "storageAccountConnectionString": {
+              "type": "string",
+              "metadata": {
+                "description": "The connection string for the storage account"
+              },
+              "value": "[format('DefaultEndpointsProtocol=https;AccountName={0};AccountKey={1};EndpointSuffix={2}', variables('storageAccountResourceName'), listKeys('storageAccount', '2023-01-01').keys[0].value, environment().suffixes.storage)]"
+            },
+            "blobContainerNames": {
+              "type": "array",
+              "metadata": {
+                "description": "The blob container names"
+              },
+              "copy": {
+                "count": "[length(parameters('blobContainers'))]",
+                "input": "[parameters('blobContainers')[copyIndex()].name]"
+              }
+            },
+            "fileShareNames": {
+              "type": "array",
+              "metadata": {
+                "description": "The file share names"
+              },
+              "copy": {
+                "count": "[length(parameters('fileShares'))]",
+                "input": "[parameters('fileShares')[copyIndex()].name]"
+              }
+            },
+            "storageAccountConfig": {
+              "type": "object",
+              "metadata": {
+                "description": "Storage account configuration details"
+              },
+              "value": {
+                "id": "[resourceId('Microsoft.Storage/storageAccounts', variables('storageAccountResourceName'))]",
+                "name": "[variables('storageAccountResourceName')]",
+                "sku": "[reference('storageAccount', '2023-01-01', 'full').sku]",
+                "kind": "[reference('storageAccount', '2023-01-01', 'full').kind]",
+                "accessTier": "[reference('storageAccount').accessTier]",
+                "endpoints": "[reference('storageAccount').primaryEndpoints]",
+                "networkAccess": "[reference('storageAccount').publicNetworkAccess]",
+                "httpsOnly": "[reference('storageAccount').supportsHttpsTrafficOnly]",
+                "minimumTlsVersion": "[reference('storageAccount').minimumTlsVersion]",
+                "enabledFeatures": {
+                  "hierarchicalNamespace": "[reference('storageAccount').isHnsEnabled]",
+                  "blobPublicAccess": "[reference('storageAccount').allowBlobPublicAccess]",
+                  "sharedKeyAccess": "[reference('storageAccount').allowSharedKeyAccess]",
+                  "infrastructureEncryption": "[parameters('enableInfrastructureEncryption')]",
+                  "blobVersioning": "[parameters('enableBlobVersioning')]",
+                  "blobChangeFeed": "[parameters('enableBlobChangeFeed')]",
+                  "blobSoftDelete": "[parameters('enableBlobSoftDelete')]",
+                  "containerSoftDelete": "[parameters('enableContainerSoftDelete')]",
+                  "lifecycleManagement": "[parameters('enableLifecycleManagement')]",
+                  "diagnosticSettings": "[parameters('enableDiagnosticSettings')]"
+                },
+                "containers": "[parameters('blobContainers')]",
+                "fileShares": "[parameters('fileShares')]"
+              }
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "namingConventions",
+        "virtualNetwork"
+      ]
+    },
+    "privateEndpoints": {
+      "condition": "[parameters('environmentConfig').enablePrivateEndpoints]",
+      "type": "Microsoft.Resources/deployments",
+      "apiVersion": "2025-04-01",
+      "name": "private-endpoints-deployment",
+      "properties": {
+        "expressionEvaluationOptions": {
+          "scope": "inner"
+        },
+        "mode": "Incremental",
+        "parameters": {
+          "privateEndpointNamePrefix": {
+            "value": "[replace(reference('namingConventions').outputs.namingConvention.value.privateEndpoint, '{serviceName}', '')]"
+          },
+          "subnetId": {
+            "value": "[reference('virtualNetwork').outputs.subnetIds.value.dataTier]"
+          },
+          "virtualNetworkId": {
+            "value": "[reference('virtualNetwork').outputs.virtualNetworkId.value]"
+          },
+          "privateEndpointConfigs": {
+            "value": [
+              {
+                "name": "sql-server",
+                "privateLinkServiceId": "[reference('sqlServer').outputs.sqlServerId.value]",
+                "groupId": "sqlServer"
+              },
+              {
+                "name": "storage-blob",
+                "privateLinkServiceId": "[reference('storageAccount').outputs.storageAccountId.value]",
+                "groupId": "storageBlob"
+              },
+              {
+                "name": "storage-file",
+                "privateLinkServiceId": "[reference('storageAccount').outputs.storageAccountId.value]",
+                "groupId": "storageFile"
+              },
+              {
+                "name": "storage-queue",
+                "privateLinkServiceId": "[reference('storageAccount').outputs.storageAccountId.value]",
+                "groupId": "storageQueue"
+              },
+              {
+                "name": "storage-table",
+                "privateLinkServiceId": "[reference('storageAccount').outputs.storageAccountId.value]",
+                "groupId": "storageTable"
+              },
+              {
+                "name": "key-vault",
+                "privateLinkServiceId": "[reference('keyVault').outputs.keyVaultId.value]",
+                "groupId": "keyVault"
+              }
+            ]
+          },
+          "enablePrivateDnsZones": {
+            "value": true
+          },
+          "existingPrivateDnsZoneIds": {
+            "value": {}
+          },
+          "customDnsServers": {
+            "value": []
+          },
+          "tags": {
+            "value": "[parameters('tags')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        },
+        "template": {
+          "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+          "languageVersion": "2.0",
+          "contentVersion": "1.0.0.0",
+          "metadata": {
+            "_generator": {
+              "name": "bicep",
+              "version": "0.38.33.27573",
+              "templateHash": "1565733943090668544"
+            }
+          },
+          "definitions": {
+            "TagConfiguration": {
+              "type": "object",
+              "properties": {
+                "Environment": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Environment tag"
+                  }
+                },
+                "Workload": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Workload tag"
+                  }
+                },
+                "ManagedBy": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Managed by tag"
+                  }
+                },
+                "CostCenter": {
+                  "type": "string",
+                  "metadata": {
+                    "description": "Cost center tag"
+                  }
+                },
+                "Owner": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Owner tag"
+                  }
+                },
+                "Project": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Project tag"
+                  }
+                },
+                "DeploymentDate": {
+                  "type": "string",
+                  "nullable": true,
+                  "metadata": {
+                    "description": "Deployment date tag"
+                  }
+                }
+              },
+              "metadata": {
+                "__bicep_imported_from!": {
+                  "sourceTemplate": "../shared/parameter-schemas.bicep"
+                }
+              }
+            }
+          },
+          "parameters": {
+            "privateEndpointNamePrefix": {
+              "type": "string",
+              "metadata": {
+                "description": "The name prefix for private endpoints"
+              }
+            },
+            "location": {
+              "type": "string",
+              "defaultValue": "[resourceGroup().location]",
+              "metadata": {
+                "description": "The Azure region for deployment"
+              }
+            },
+            "tags": {
+              "$ref": "#/definitions/TagConfiguration",
+              "metadata": {
+                "description": "Tags to apply to all resources"
+              }
+            },
+            "subnetId": {
+              "type": "string",
+              "metadata": {
+                "description": "Subnet ID where private endpoints will be created"
+              }
+            },
+            "virtualNetworkId": {
+              "type": "string",
+              "metadata": {
+                "description": "Virtual Network ID for DNS zone linking"
+              }
+            },
+            "privateEndpointConfigs": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Private endpoint configurations"
+              }
+            },
+            "enablePrivateDnsZones": {
+              "type": "bool",
+              "defaultValue": true,
+              "metadata": {
+                "description": "Enable private DNS zone creation and linking"
+              }
+            },
+            "existingPrivateDnsZoneIds": {
+              "type": "object",
+              "defaultValue": {},
+              "metadata": {
+                "description": "Existing private DNS zone resource IDs (if not creating new ones)"
+              }
+            },
+            "customDnsServers": {
+              "type": "array",
+              "defaultValue": [],
+              "metadata": {
+                "description": "Custom DNS servers for private DNS zones"
+              }
+            }
+          },
+          "variables": {
+            "privateDnsZoneNames": {
+              "sqlServer": "privatelink.database.windows.net",
+              "storageBlob": "privatelink.blob.core.windows.net",
+              "storageFile": "privatelink.file.core.windows.net",
+              "storageQueue": "privatelink.queue.core.windows.net",
+              "storageTable": "privatelink.table.core.windows.net",
+              "storageWeb": "privatelink.web.core.windows.net",
+              "storageDfs": "privatelink.dfs.core.windows.net",
+              "keyVault": "privatelink.vaultcore.azure.net",
+              "cosmosDb": "privatelink.documents.azure.com",
+              "serviceBus": "privatelink.servicebus.windows.net",
+              "eventHub": "privatelink.servicebus.windows.net",
+              "redis": "privatelink.redis.cache.windows.net",
+              "cognitiveServices": "privatelink.cognitiveservices.azure.com",
+              "search": "privatelink.search.windows.net",
+              "monitor": "privatelink.monitor.azure.com",
+              "oms": "privatelink.oms.opinsights.azure.com",
+              "ods": "privatelink.ods.opinsights.azure.com",
+              "agentsvc": "privatelink.agentsvc.azure-automation.net"
+            }
+          },
+          "resources": {
+            "privateDnsZones": {
+              "copy": {
+                "name": "privateDnsZones",
+                "count": "[length(parameters('privateEndpointConfigs'))]"
+              },
+              "condition": "[and(parameters('enablePrivateDnsZones'), not(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId)))]",
+              "type": "Microsoft.Network/privateDnsZones",
+              "apiVersion": "2020-06-01",
+              "name": "[variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId]]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {}
+            },
+            "privateDnsZoneVnetLinks": {
+              "copy": {
+                "name": "privateDnsZoneVnetLinks",
+                "count": "[length(parameters('privateEndpointConfigs'))]"
+              },
+              "condition": "[and(parameters('enablePrivateDnsZones'), not(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId)))]",
+              "type": "Microsoft.Network/privateDnsZones/virtualNetworkLinks",
+              "apiVersion": "2020-06-01",
+              "name": "[format('{0}/{1}', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId], format('{0}-vnet-link', parameters('privateEndpointConfigs')[copyIndex()].groupId))]",
+              "location": "global",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "registrationEnabled": false,
+                "virtualNetwork": {
+                  "id": "[parameters('virtualNetworkId')]"
+                }
+              },
+              "dependsOn": [
+                "[format('privateDnsZones[{0}]', copyIndex())]"
+              ]
+            },
+            "privateEndpoints": {
+              "copy": {
+                "name": "privateEndpoints",
+                "count": "[length(parameters('privateEndpointConfigs'))]"
+              },
+              "type": "Microsoft.Network/privateEndpoints",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}-{1}', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name)]",
+              "location": "[parameters('location')]",
+              "tags": "[parameters('tags')]",
+              "properties": {
+                "subnet": {
+                  "id": "[parameters('subnetId')]"
+                },
+                "privateLinkServiceConnections": [
+                  {
+                    "name": "[format('{0}-connection', parameters('privateEndpointConfigs')[copyIndex()].name)]",
+                    "properties": {
+                      "privateLinkServiceId": "[parameters('privateEndpointConfigs')[copyIndex()].privateLinkServiceId]",
+                      "groupIds": [
+                        "[parameters('privateEndpointConfigs')[copyIndex()].groupId]"
+                      ],
+                      "requestMessage": "[format('Private endpoint connection for {0}', parameters('privateEndpointConfigs')[copyIndex()].name)]"
+                    }
+                  }
+                ],
+                "customNetworkInterfaceName": "[format('{0}-{1}-nic', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name)]",
+                "ipConfigurations": []
+              }
+            },
+            "privateDnsZoneGroups": {
+              "copy": {
+                "name": "privateDnsZoneGroups",
+                "count": "[length(parameters('privateEndpointConfigs'))]"
+              },
+              "condition": "[parameters('enablePrivateDnsZones')]",
+              "type": "Microsoft.Network/privateEndpoints/privateDnsZoneGroups",
+              "apiVersion": "2023-05-01",
+              "name": "[format('{0}/{1}', format('{0}-{1}', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name), 'default')]",
+              "properties": {
+                "privateDnsZoneConfigs": [
+                  {
+                    "name": "[parameters('privateEndpointConfigs')[copyIndex()].groupId]",
+                    "properties": {
+                      "privateDnsZoneId": "[if(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId), parameters('existingPrivateDnsZoneIds')[parameters('privateEndpointConfigs')[copyIndex()].groupId], resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId]))]"
+                    }
+                  }
+                ]
+              },
+              "dependsOn": [
+                "[format('privateDnsZones[{0}]', copyIndex())]",
+                "[format('privateEndpoints[{0}]', copyIndex())]"
+              ]
+            }
+          },
+          "outputs": {
+            "privateEndpointIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Private endpoint resource IDs"
+              },
+              "copy": {
+                "count": "[length(parameters('privateEndpointConfigs'))]",
+                "input": {
+                  "name": "[parameters('privateEndpointConfigs')[copyIndex()].name]",
+                  "id": "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-{1}', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name))]",
+                  "networkInterfaceId": "[reference(format('privateEndpoints[{0}]', copyIndex())).networkInterfaces[0].id]",
+                  "customDnsConfigs": "[reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs]"
+                }
+              }
+            },
+            "privateDnsZoneIds": {
+              "type": "array",
+              "metadata": {
+                "description": "Private DNS zone resource IDs"
+              },
+              "copy": {
+                "count": "[length(parameters('privateEndpointConfigs'))]",
+                "input": "[if(parameters('enablePrivateDnsZones'), if(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId), parameters('existingPrivateDnsZoneIds')[parameters('privateEndpointConfigs')[copyIndex()].groupId], resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId])), '')]"
+              }
+            },
+            "privateEndpointConfigs": {
+              "type": "array",
+              "metadata": {
+                "description": "Private endpoint configuration details"
+              },
+              "copy": {
+                "count": "[length(parameters('privateEndpointConfigs'))]",
+                "input": {
+                  "name": "[parameters('privateEndpointConfigs')[copyIndex()].name]",
+                  "id": "[resourceId('Microsoft.Network/privateEndpoints', format('{0}-{1}', parameters('privateEndpointNamePrefix'), parameters('privateEndpointConfigs')[copyIndex()].name))]",
+                  "groupId": "[parameters('privateEndpointConfigs')[copyIndex()].groupId]",
+                  "privateLinkServiceId": "[parameters('privateEndpointConfigs')[copyIndex()].privateLinkServiceId]",
+                  "networkInterfaceId": "[reference(format('privateEndpoints[{0}]', copyIndex())).networkInterfaces[0].id]",
+                  "privateIpAddress": "[if(greater(length(reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs), 0), reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs[0].ipAddresses[0], '')]",
+                  "fqdn": "[if(greater(length(reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs), 0), reference(format('privateEndpoints[{0}]', copyIndex())).customDnsConfigs[0].fqdn, '')]",
+                  "dnsZoneId": "[if(parameters('enablePrivateDnsZones'), if(contains(parameters('existingPrivateDnsZoneIds'), parameters('privateEndpointConfigs')[copyIndex()].groupId), parameters('existingPrivateDnsZoneIds')[parameters('privateEndpointConfigs')[copyIndex()].groupId], resourceId('Microsoft.Network/privateDnsZones', variables('privateDnsZoneNames')[parameters('privateEndpointConfigs')[copyIndex()].groupId])), '')]"
+                }
+              }
+            },
+            "privateDnsZoneNames": {
+              "type": "object",
+              "metadata": {
+                "description": "Private DNS zone names"
+              },
+              "value": "[variables('privateDnsZoneNames')]"
+            }
+          }
+        }
+      },
+      "dependsOn": [
+        "keyVault",
+        "namingConventions",
+        "sqlServer",
+        "storageAccount",
+        "virtualNetwork"
+      ]
     }
   },
   "outputs": {
@@ -7675,6 +9782,33 @@
             "autoscaleSettingsId": "[reference('businessTierVmScaleSet').outputs.autoscaleSettingsId.value]"
           }
         }
+      }
+    },
+    "data": {
+      "type": "object",
+      "value": {
+        "sqlServer": {
+          "id": "[reference('sqlServer').outputs.sqlServerId.value]",
+          "name": "[reference('sqlServer').outputs.sqlServerName.value]",
+          "fqdn": "[reference('sqlServer').outputs.sqlServerFqdn.value]",
+          "connectionStringTemplate": "[reference('sqlServer').outputs.connectionStringTemplate.value]",
+          "config": "[reference('sqlServer').outputs.sqlServerConfig.value]"
+        },
+        "sqlDatabase": {
+          "id": "[reference('sqlServer').outputs.sqlDatabaseId.value]",
+          "name": "[reference('sqlServer').outputs.sqlDatabaseName.value]",
+          "config": "[reference('sqlServer').outputs.sqlDatabaseConfig.value]"
+        },
+        "storageAccount": {
+          "id": "[reference('storageAccount').outputs.storageAccountId.value]",
+          "name": "[reference('storageAccount').outputs.storageAccountName.value]",
+          "endpoints": "[reference('storageAccount').outputs.storageAccountEndpoints.value]",
+          "connectionString": "[reference('storageAccount').outputs.storageAccountConnectionString.value]",
+          "blobContainers": "[reference('storageAccount').outputs.blobContainerNames.value]",
+          "fileShares": "[reference('storageAccount').outputs.fileShareNames.value]",
+          "config": "[reference('storageAccount').outputs.storageAccountConfig.value]"
+        },
+        "privateEndpoints": "[if(parameters('environmentConfig').enablePrivateEndpoints, createObject('endpoints', reference('privateEndpoints').outputs.privateEndpointIds.value, 'dnsZones', reference('privateEndpoints').outputs.privateDnsZoneIds.value, 'configs', reference('privateEndpoints').outputs.privateEndpointConfigs.value, 'dnsZoneNames', reference('privateEndpoints').outputs.privateDnsZoneNames.value), createObject('endpoints', createArray(), 'dnsZones', createObject(), 'configs', createArray(), 'dnsZoneNames', createObject()))]"
       }
     }
   }

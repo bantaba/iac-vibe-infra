@@ -17,7 +17,7 @@ type EnvironmentConfig = {
   enableDdosProtection: bool
   
   @description('SQL Database SKU')
-  sqlDatabaseSku: 'Basic' | 'Standard' | 'Premium' | 'GeneralPurpose' | 'BusinessCritical'
+  sqlDatabaseSku: 'Basic' | 'S0' | 'S1' | 'S2' | 'S3' | 'P1' | 'P2' | 'P4' | 'P6' | 'GP_Gen5_2' | 'GP_Gen5_4' | 'BC_Gen5_2' | 'BC_Gen5_4'
   
   @description('Storage Account SKU')
   storageAccountSku: 'Standard_LRS' | 'Standard_GRS' | 'Standard_ZRS' | 'Premium_LRS' | 'Premium_ZRS'
