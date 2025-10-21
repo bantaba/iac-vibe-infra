@@ -52,11 +52,11 @@
   - ✅ Configure identity assignments for Azure services in main deployment
   - _Requirements: 2.5, 5.4_
 
-- [-] 3.3 Create security monitoring module
+- [x] 3.3 Create security monitoring module
 
   - ✅ Implement Azure Security Center configuration module
-  - ❌ Integrate Security Center module into main.bicep template
-  - ❌ Configure security alerts and recommendations in main deployment
+  - ✅ Integrate Security Center module into main.bicep template
+  - ✅ Configure security alerts and recommendations in main deployment
   - _Requirements: 6.3, 6.4_
 
 - [x] 4. Implement compute and load balancing modules
@@ -353,11 +353,13 @@
   - ✅ Update Application Gateway configuration to use managed identity for Key Vault access
   - _Requirements: 2.5, 5.4_
 
-- [ ] 11.2 Integrate Security Center module into main template
-  - Add Security Center deployment to main.bicep with subscription scope
-  - Configure security policies and recommendations for the resource group
-  - Enable Microsoft Defender for Cloud services (SQL, Storage, Key Vault)
-  - Wire up Security Center integration with Log Analytics workspace
+- [x] 11.2 Integrate Security Center module into main template
+  - ✅ Add Security Center deployment to main.bicep with subscription scope
+  - ✅ Configure security policies and recommendations with comprehensive Defender plans
+  - ✅ Enable Microsoft Defender for Cloud services (VMs, App Services, SQL, Storage, Key Vault, ARM, Containers, Cloud Posture)
+  - ✅ Wire up Security Center integration with Log Analytics workspace
+  - ✅ Configure security contacts and auto-provisioning settings for enhanced monitoring
+  - ✅ Implement conditional deployment based on environment (disabled for dev, enabled for staging/prod)
   - _Requirements: 6.3, 6.4_
 
 - [x] 11.3 Enhance Application Gateway with managed identity integration

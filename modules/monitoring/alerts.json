@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "5391062900094577726"
+      "templateHash": "8967993647047571117"
     }
   },
   "definitions": {
@@ -611,6 +611,204 @@
       "dependsOn": [
         "actionGroup"
       ]
+    },
+    "securityCenterHighSeverityAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-center-high-severity', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security Center - High Severity Recommendations",
+        "description": "Alert when Security Center detects high severity security recommendations",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT15M",
+        "windowSize": "PT30M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityRecommendation | where RecommendationSeverity == \"High\" | summarize HighSeverityCount = count() by RecommendationName | where HighSeverityCount > 0",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "RecommendationName",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
+    },
+    "securityCenterThreatDetectionAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-center-threat-detection', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security Center - Threat Detection Alerts",
+        "description": "Alert when Security Center detects potential security threats",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT5M",
+        "windowSize": "PT15M",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityAlert | where AlertSeverity in (\"High\", \"Medium\") | summarize ThreatCount = count() by AlertName, AlertSeverity | where ThreatCount > 0",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "AlertName",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                },
+                {
+                  "name": "AlertSeverity",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
+    },
+    "securityCenterComplianceAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-center-compliance', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security Center - Compliance Score Degradation",
+        "description": "Alert when Security Center compliance score drops below threshold",
+        "severity": 2,
+        "enabled": true,
+        "evaluationFrequency": "PT1H",
+        "windowSize": "PT2H",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityRecommendation | summarize CompliancePercentage = (todouble(countif(RecommendationState == \"Completed\")) / todouble(count())) * 100 | where CompliancePercentage < 80",
+              "timeAggregation": "Count",
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('actionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "actionGroup"
+      ]
+    },
+    "securityCenterVulnerabilityAlert": {
+      "condition": "[and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId'))))]",
+      "type": "Microsoft.Insights/scheduledQueryRules",
+      "apiVersion": "2023-03-15-preview",
+      "name": "[format('{0}-security-center-vulnerabilities', parameters('alertNamePrefix'))]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]",
+      "properties": {
+        "displayName": "Security Center - Critical Vulnerabilities Detected",
+        "description": "Alert when Security Center detects critical vulnerabilities",
+        "severity": 1,
+        "enabled": true,
+        "evaluationFrequency": "PT30M",
+        "windowSize": "PT1H",
+        "criteria": {
+          "allOf": [
+            {
+              "query": "SecurityRecommendation | where RecommendationName contains \"vulnerability\" and RecommendationSeverity == \"High\" | summarize CriticalVulnCount = count() by ResourceId | where CriticalVulnCount > 0",
+              "timeAggregation": "Count",
+              "dimensions": [
+                {
+                  "name": "ResourceId",
+                  "operator": "Include",
+                  "values": [
+                    "*"
+                  ]
+                }
+              ],
+              "operator": "GreaterThan",
+              "threshold": 0,
+              "failingPeriods": {
+                "numberOfEvaluationPeriods": 1,
+                "minFailingPeriodsToAlert": 1
+              }
+            }
+          ]
+        },
+        "actions": {
+          "actionGroups": [
+            "[resourceId('Microsoft.Insights/actionGroups', variables('criticalActionGroupName'))]"
+          ]
+        },
+        "scopes": [
+          "[parameters('logAnalyticsWorkspaceId')]"
+        ]
+      },
+      "dependsOn": [
+        "criticalActionGroup"
+      ]
     }
   },
   "outputs": {
@@ -641,7 +839,11 @@
         "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-performance-low-disk-space', parameters('alertNamePrefix'))), '')]",
         "[if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), resourceId('Microsoft.Insights/metricAlerts', format('{0}-availability-app-insights', parameters('alertNamePrefix'))), '')]",
         "[if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), resourceId('Microsoft.Insights/metricAlerts', format('{0}-availability-response-time', parameters('alertNamePrefix'))), '')]",
-        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-database-connection-failures', parameters('alertNamePrefix'))), '')]"
+        "[if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-database-connection-failures', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-high-severity', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-threat-detection', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-compliance', parameters('alertNamePrefix'))), '')]",
+        "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-vulnerabilities', parameters('alertNamePrefix'))), '')]"
       ]
     },
     "alertsConfig": {
@@ -655,7 +857,14 @@
         "securityAlertsEnabled": "[parameters('enableSecurityAlerts')]",
         "performanceAlertsEnabled": "[parameters('enablePerformanceAlerts')]",
         "availabilityAlertsEnabled": "[parameters('enableAvailabilityAlerts')]",
-        "alertRuleCount": "[length(filter(createArray(if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security1', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('monitoredResourceIds')))), 'perf1', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf3', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail1', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'db1', '')), lambda('item', not(empty(lambdaVariables('item'))))))]"
+        "securityCenterAlertsEnabled": "[parameters('enableSecurityAlerts')]",
+        "alertRuleCount": "[length(filter(createArray(if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security1', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'security2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('monitoredResourceIds')))), 'perf1', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'perf3', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail1', ''), if(and(parameters('enableAvailabilityAlerts'), not(empty(parameters('applicationInsightsId')))), 'avail2', ''), if(and(parameters('enablePerformanceAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'db1', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'sc1', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'sc2', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'sc3', ''), if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), 'sc4', '')), lambda('item', not(empty(lambdaVariables('item'))))))]",
+        "securityCenterAlerts": {
+          "highSeverityRecommendations": "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-high-severity', parameters('alertNamePrefix'))), '')]",
+          "threatDetection": "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-threat-detection', parameters('alertNamePrefix'))), '')]",
+          "complianceScore": "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-compliance', parameters('alertNamePrefix'))), '')]",
+          "vulnerabilities": "[if(and(parameters('enableSecurityAlerts'), not(empty(parameters('logAnalyticsWorkspaceId')))), resourceId('Microsoft.Insights/scheduledQueryRules', format('{0}-security-center-vulnerabilities', parameters('alertNamePrefix'))), '')]"
+        }
       }
     }
   }

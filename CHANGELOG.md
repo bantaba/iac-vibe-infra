@@ -8,6 +8,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Added
+- **Security Center Integration**: Microsoft Defender for Cloud deployment with subscription-level security monitoring
+- Comprehensive Defender plans for VMs, App Services, SQL, Storage, Key Vault, ARM, Containers, and Cloud Posture
+- Security contacts configuration with email and phone notifications for security alerts
+- Auto-provisioning settings for Log Analytics agents, Defender for Endpoint, vulnerability assessment, and guest configuration
+- Environment-specific Security Center deployment (disabled for dev, enabled for staging/prod)
+- Integration with Log Analytics workspace for centralized security telemetry
+- Security Center integration testing with `test-security-center-integration.ps1`
 - Comprehensive compute module unit testing framework with `test-compute-modules.ps1`
 - Test coverage for Application Gateway, Load Balancer, Virtual Machine, and Availability Set modules
 - Support for verbose output and environment-specific testing in test scripts
@@ -27,6 +34,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Added comprehensive outputs for networking resources (IDs, names, configurations)
 
 ### Security
+- **Enhanced Security Posture**: Subscription-level security monitoring with Microsoft Defender for Cloud
+- Advanced threat detection and vulnerability assessment across all Azure services
+- Real-time security alerts and incident response capabilities
+- Security posture management with continuous compliance assessment
 - Implemented defense-in-depth networking security architecture
 - Added Virtual Network Manager security admin rules blocking high-risk ports from internet
 - Configured private endpoint network policies for enhanced data service security

@@ -97,6 +97,12 @@ bicep-infrastructure/
    
    # Test private endpoints with validation only (no resource group required)
    .\scripts\test-private-endpoints.ps1 -ValidateOnly -VerboseOutput
+   
+   # Test Security Center integration
+   .\scripts\test-security-center-integration.ps1 -Environment dev -VerboseOutput
+   
+   # Test security compliance and configuration
+   .\scripts\test-security-compliance.ps1 -TestScope SecurityBaseline -VerboseOutput
    ```
 
 5. **Deploy infrastructure**:
@@ -181,9 +187,19 @@ Each environment has specific configurations optimized for its purpose:
 
 - **Production**: 
   - High availability (Premium SKUs, 3 instances across zones)
-  - Maximum security (WAF_v2, DDoS protection, private endpoints)
+  - Maximum security (WAF_v2, DDoS protection, private endpoints, Security Center enabled)
   - Comprehensive monitoring (365-day log retention)
   - Network: 10.2.0.0/16 address space
+
+#### Security Center Environment Configuration
+
+The Security Center (Microsoft Defender for Cloud) deployment is automatically configured based on the environment:
+
+- **Development**: Security Center Defender plans are **disabled** to optimize costs during development
+- **Staging**: Security Center Defender plans are **enabled** with full threat protection for production-like testing
+- **Production**: Security Center Defender plans are **enabled** with comprehensive security monitoring and alerting
+
+This conditional deployment is controlled by the `environment != 'dev'` condition in the main template, ensuring cost-effective development while maintaining security in higher environments.
 
 ## Module Usage Examples
 
@@ -262,6 +278,89 @@ managedIdentityId: managedIdentities.outputs.managedIdentityLookup.applicationGa
 // Reference managed identity for SQL Server Azure AD authentication
 azureAdAdministratorObjectId: managedIdentities.outputs.managedIdentityLookup.sqlAccess.principalId
 ```
+
+### Security Center Module
+
+The Security Center module provides subscription-level security monitoring and threat protection through Microsoft Defender for Cloud:
+
+```bicep
+module securityCenter 'modules/security/security-center.bicep' = {
+  name: 'security-center-deployment'
+  scope: subscription()
+  params: {
+    subscriptionId: subscription().subscriptionId
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    enableDefenderPlans: true // Set to false for development environments
+    defenderPlans: [
+      {
+        name: 'VirtualMachines'
+        tier: 'Standard'
+        subPlan: 'P2' // Advanced threat detection for VMs
+      }
+      {
+        name: 'AppServices'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'SqlServers'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'StorageAccounts'
+        tier: 'Standard'
+        subPlan: 'DefenderForStorageV2' // Enhanced storage protection with malware scanning
+      }
+      {
+        name: 'KeyVaults'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'CloudPosture'
+        tier: 'Standard'
+        subPlan: null // Cloud Security Posture Management
+      }
+    ]
+    securityContacts: [
+      {
+        email: 'security@contoso.com'
+        phone: '+1-555-0123'
+        alertNotifications: 'On'
+        notificationsByRole: 'On'
+      }
+    ]
+    autoProvisioningSettings: {
+      logAnalytics: 'On'
+      microsoftDefenderForEndpoint: 'On'
+      vulnerabilityAssessment: 'On'
+      guestConfiguration: 'On'
+    }
+    logAnalyticsWorkspaceId: '/subscriptions/.../workspaces/law-workspace'
+    enableTelemetry: true
+  }
+}
+```
+
+#### Security Center Configuration Options
+
+- **Defender Plans**: Comprehensive protection across Azure services
+  - **Virtual Machines**: Advanced threat detection with P1/P2 plans
+  - **App Services**: Web application security monitoring
+  - **SQL Servers**: Database threat protection and vulnerability assessment
+  - **Storage Accounts**: Malware scanning and activity monitoring (DefenderForStorageV2)
+  - **Key Vaults**: Secret and certificate access monitoring
+  - **Containers**: Image scanning and runtime protection
+  - **Cloud Posture**: Security posture management and compliance monitoring
+- **Security Contacts**: Email and phone notifications for security incidents
+- **Auto-Provisioning**: Automatic deployment of security agents and monitoring tools
+- **Environment Optimization**: Conditional deployment based on environment (cost-optimized for development)
+- **Integration**: Seamless connection with Log Analytics workspace for centralized security data
 
 ### Public IP Module
 
@@ -512,6 +611,12 @@ module storageAccount 'modules/data/storage-account.bicep' = {
 - **Virtual Network Manager**: Centralized security admin rules blocking high-risk ports (RDP/SSH) from internet
 
 ### Service Security
+- **Microsoft Defender for Cloud**: Subscription-level security monitoring and threat protection
+  - Advanced threat detection for VMs, databases, storage, and applications
+  - Security posture management with continuous compliance assessment
+  - Vulnerability assessment with automated scanning and remediation guidance
+  - Real-time security alerts and incident response capabilities
+  - Integration with Log Analytics for centralized security telemetry
 - **Key Vault Integration**: Centralized secret management with RBAC and network restrictions
   - Soft delete and purge protection for production environments
   - Network access controls with subnet and IP restrictions
@@ -740,6 +845,58 @@ The test script provides comprehensive output including:
 - Cloud compatibility validation results
 - Detailed configuration information when using `-VerboseOutput` parameter
 
+### Security Center Integration Testing
+
+The project includes comprehensive testing for Security Center (Microsoft Defender for Cloud) integration to validate security monitoring and threat protection:
+
+#### Test Script Usage
+
+```powershell
+# Test Security Center module integration
+.\scripts\test-security-center-integration.ps1
+
+# Test with verbose output for detailed information
+.\scripts\test-security-center-integration.ps1 -VerboseOutput
+
+# Test for specific environment
+.\scripts\test-security-center-integration.ps1 -Environment staging -VerboseOutput
+```
+
+#### Test Coverage
+
+The Security Center integration test script validates the following aspects:
+
+**Security Center Module Tests:**
+- Template syntax validation using `az bicep build`
+- Main template integration with subscription scope deployment
+- Parameter file compatibility with Security Center requirements
+- Defender plans configuration validation
+
+**Configuration Validation:**
+- Microsoft Defender plans for all supported Azure services
+- Security contacts and notification settings
+- Auto-provisioning settings for security agents
+- Log Analytics workspace integration
+
+**Monitoring Integration:**
+- Security Center alerts integration with monitoring module
+- Security recommendation and alert query validation
+- Compliance monitoring and reporting configuration
+
+**Main Template Integration:**
+- Security Center module deployment validation
+- Subscription scope configuration verification
+- Output configuration for integration with other modules
+
+#### Test Results
+
+The Security Center test script provides:
+- ✓ Passed tests with detailed security configuration validation
+- ✗ Failed tests with specific error messages and remediation guidance
+- Test summary with comprehensive security posture assessment
+- Environment-specific security validation results
+- Integration validation with other security modules
+
 ## Deployed Infrastructure Components
 
 The main template deploys the following infrastructure components:
@@ -776,6 +933,15 @@ The main template deploys the following infrastructure components:
 
 ### Security Infrastructure
 
+#### Microsoft Defender for Cloud (Security Center)
+- **Subscription-Level Protection**: Comprehensive security monitoring across all Azure resources
+- **Threat Detection**: Advanced threat protection for VMs, databases, storage, and applications
+- **Security Posture Management**: Continuous assessment of security configurations and compliance
+- **Vulnerability Assessment**: Automated scanning and remediation guidance for security vulnerabilities
+- **Security Alerts**: Real-time notifications for security incidents and suspicious activities
+- **Integration**: Seamless connection with Log Analytics workspace for centralized security data
+- **Environment Optimization**: Cost-optimized deployment (disabled in development, enabled in staging/production)
+
 #### Managed Identities
 - **User-Assigned Identities**: Five specialized managed identities for different service roles
   - Application Services: General application service authentication
@@ -801,6 +967,29 @@ The main template deploys the following infrastructure components:
   - Purge protection for production environments
   - Comprehensive audit logging and monitoring
 - **Integration Ready**: Diagnostic settings for Log Analytics workspace integration
+
+#### Security Center (Microsoft Defender for Cloud)
+- **Comprehensive Security Posture**: Subscription-level security monitoring and threat protection
+- **Microsoft Defender Plans**: Enhanced protection for multiple Azure services
+  - Virtual Machines (P2 plan with advanced threat detection)
+  - App Services (web application security monitoring)
+  - SQL Servers and SQL Server VMs (database threat protection)
+  - Storage Accounts (DefenderForStorageV2 with malware scanning)
+  - Key Vaults (secret and certificate monitoring)
+  - Azure Resource Manager (control plane protection)
+  - Open Source Relational Databases (PostgreSQL, MySQL protection)
+  - Containers (container image and runtime security)
+  - Cloud Security Posture Management (CSPM for compliance)
+- **Security Contacts**: Configurable email and phone notifications for security alerts
+- **Auto-Provisioning**: Automatic deployment of security agents and extensions
+  - Log Analytics agent for centralized logging
+  - Microsoft Defender for Endpoint integration
+  - Vulnerability Assessment for VMs and containers
+  - Guest Configuration for compliance monitoring
+- **Environment-Specific Deployment**: 
+  - Development: Basic security monitoring (Defender plans disabled for cost optimization)
+  - Staging/Production: Full Defender plan activation with comprehensive threat protection
+- **Integration**: Seamless connection with Log Analytics workspace for centralized security telemetry
 
 ### Data Layer Infrastructure
 
@@ -937,6 +1126,11 @@ This project is version controlled with Git. The repository includes:
    # Verify Application Gateway (when compute modules are deployed)
    az network application-gateway list --resource-group contoso-webapp-dev-rg --output table
    az network application-gateway show --resource-group contoso-webapp-dev-rg --name contoso-webapp-dev-agw --query "{Name:name,State:operationalState,PublicIP:frontendIPConfigurations[0].publicIPAddress.id}"
+   
+   # Verify Security Center deployment (subscription-level)
+   az security pricing list --output table
+   az security contact list --output table
+   az security auto-provisioning-setting list --output table
    ```
 
 ### Troubleshooting Common Issues
@@ -987,6 +1181,13 @@ This project is version controlled with Git. The repository includes:
   - Check that DNS suffixes are appropriate for the target cloud (e.g., .windows.net vs .usgovcloudapi.net)
   - Ensure service endpoints and private DNS zones use cloud-specific naming conventions
   - Validate that all Azure services are available in the target cloud region
+- **Security Center Issues**:
+  - Verify you have Security Admin or Contributor permissions at the subscription level
+  - Check that Microsoft Defender plans are available in your Azure subscription type
+  - Ensure security contact email addresses are valid and accessible
+  - Validate that Log Analytics workspace exists before Security Center deployment
+  - Confirm auto-provisioning settings are compatible with your VM configurations
+  - Check that Defender plan pricing tiers are supported in your target region
 
 ## Contributing
 

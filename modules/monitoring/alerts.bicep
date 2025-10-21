@@ -430,6 +430,177 @@ resource databaseConnectionAlert 'Microsoft.Insights/scheduledQueryRules@2023-03
   }
 }
 
+// Security Center-specific alerts
+resource securityCenterHighSeverityAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (enableSecurityAlerts && !empty(logAnalyticsWorkspaceId)) {
+  name: '${alertNamePrefix}-security-center-high-severity'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Security Center - High Severity Recommendations'
+    description: 'Alert when Security Center detects high severity security recommendations'
+    severity: 1
+    enabled: true
+    evaluationFrequency: 'PT15M'
+    windowSize: 'PT30M'
+    criteria: {
+      allOf: [
+        {
+          query: 'SecurityRecommendation | where RecommendationSeverity == "High" | summarize HighSeverityCount = count() by RecommendationName | where HighSeverityCount > 0'
+          timeAggregation: 'Count'
+          dimensions: [
+            {
+              name: 'RecommendationName'
+              operator: 'Include'
+              values: ['*']
+            }
+          ]
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        criticalActionGroup.id
+      ]
+    }
+    scopes: [
+      logAnalyticsWorkspaceId
+    ]
+  }
+}
+
+resource securityCenterThreatDetectionAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (enableSecurityAlerts && !empty(logAnalyticsWorkspaceId)) {
+  name: '${alertNamePrefix}-security-center-threat-detection'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Security Center - Threat Detection Alerts'
+    description: 'Alert when Security Center detects potential security threats'
+    severity: 1
+    enabled: true
+    evaluationFrequency: 'PT5M'
+    windowSize: 'PT15M'
+    criteria: {
+      allOf: [
+        {
+          query: 'SecurityAlert | where AlertSeverity in ("High", "Medium") | summarize ThreatCount = count() by AlertName, AlertSeverity | where ThreatCount > 0'
+          timeAggregation: 'Count'
+          dimensions: [
+            {
+              name: 'AlertName'
+              operator: 'Include'
+              values: ['*']
+            }
+            {
+              name: 'AlertSeverity'
+              operator: 'Include'
+              values: ['*']
+            }
+          ]
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        criticalActionGroup.id
+      ]
+    }
+    scopes: [
+      logAnalyticsWorkspaceId
+    ]
+  }
+}
+
+resource securityCenterComplianceAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (enableSecurityAlerts && !empty(logAnalyticsWorkspaceId)) {
+  name: '${alertNamePrefix}-security-center-compliance'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Security Center - Compliance Score Degradation'
+    description: 'Alert when Security Center compliance score drops below threshold'
+    severity: 2
+    enabled: true
+    evaluationFrequency: 'PT1H'
+    windowSize: 'PT2H'
+    criteria: {
+      allOf: [
+        {
+          query: 'SecurityRecommendation | summarize CompliancePercentage = (todouble(countif(RecommendationState == "Completed")) / todouble(count())) * 100 | where CompliancePercentage < 80'
+          timeAggregation: 'Count'
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        actionGroup.id
+      ]
+    }
+    scopes: [
+      logAnalyticsWorkspaceId
+    ]
+  }
+}
+
+resource securityCenterVulnerabilityAlert 'Microsoft.Insights/scheduledQueryRules@2023-03-15-preview' = if (enableSecurityAlerts && !empty(logAnalyticsWorkspaceId)) {
+  name: '${alertNamePrefix}-security-center-vulnerabilities'
+  location: location
+  tags: tags
+  properties: {
+    displayName: 'Security Center - Critical Vulnerabilities Detected'
+    description: 'Alert when Security Center detects critical vulnerabilities'
+    severity: 1
+    enabled: true
+    evaluationFrequency: 'PT30M'
+    windowSize: 'PT1H'
+    criteria: {
+      allOf: [
+        {
+          query: 'SecurityRecommendation | where RecommendationName contains "vulnerability" and RecommendationSeverity == "High" | summarize CriticalVulnCount = count() by ResourceId | where CriticalVulnCount > 0'
+          timeAggregation: 'Count'
+          dimensions: [
+            {
+              name: 'ResourceId'
+              operator: 'Include'
+              values: ['*']
+            }
+          ]
+          operator: 'GreaterThan'
+          threshold: 0
+          failingPeriods: {
+            numberOfEvaluationPeriods: 1
+            minFailingPeriodsToAlert: 1
+          }
+        }
+      ]
+    }
+    actions: {
+      actionGroups: [
+        criticalActionGroup.id
+      ]
+    }
+    scopes: [
+      logAnalyticsWorkspaceId
+    ]
+  }
+}
+
 // Outputs
 @description('The resource ID of the general action group')
 output actionGroupId string = actionGroup.id
@@ -447,6 +618,10 @@ output alertRuleIds array = [
   enableAvailabilityAlerts && !empty(applicationInsightsId) ? availabilityApplicationInsightsAlert.id : ''
   enableAvailabilityAlerts && !empty(applicationInsightsId) ? availabilityResponseTimeAlert.id : ''
   enablePerformanceAlerts && !empty(logAnalyticsWorkspaceId) ? databaseConnectionAlert.id : ''
+  enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterHighSeverityAlert.id : ''
+  enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterThreatDetectionAlert.id : ''
+  enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterComplianceAlert.id : ''
+  enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterVulnerabilityAlert.id : ''
 ]
 
 @description('The monitoring alerts configuration')
@@ -456,6 +631,7 @@ output alertsConfig object = {
   securityAlertsEnabled: enableSecurityAlerts
   performanceAlertsEnabled: enablePerformanceAlerts
   availabilityAlertsEnabled: enableAvailabilityAlerts
+  securityCenterAlertsEnabled: enableSecurityAlerts
   alertRuleCount: length(filter([
     enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'security1' : ''
     enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'security2' : ''
@@ -465,5 +641,15 @@ output alertsConfig object = {
     enableAvailabilityAlerts && !empty(applicationInsightsId) ? 'avail1' : ''
     enableAvailabilityAlerts && !empty(applicationInsightsId) ? 'avail2' : ''
     enablePerformanceAlerts && !empty(logAnalyticsWorkspaceId) ? 'db1' : ''
+    enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'sc1' : ''
+    enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'sc2' : ''
+    enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'sc3' : ''
+    enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? 'sc4' : ''
   ], item => !empty(item)))
+  securityCenterAlerts: {
+    highSeverityRecommendations: enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterHighSeverityAlert.id : ''
+    threatDetection: enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterThreatDetectionAlert.id : ''
+    complianceScore: enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterComplianceAlert.id : ''
+    vulnerabilities: enableSecurityAlerts && !empty(logAnalyticsWorkspaceId) ? securityCenterVulnerabilityAlert.id : ''
+  }
 }

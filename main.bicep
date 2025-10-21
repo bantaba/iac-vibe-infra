@@ -292,6 +292,88 @@ module keyVault 'modules/security/key-vault.bicep' = {
   ]
 }
 
+// Deploy Security Center (Microsoft Defender for Cloud)
+module securityCenter 'modules/security/security-center.bicep' = {
+  name: 'security-center-deployment'
+  scope: subscription()
+  params: {
+    subscriptionId: subscription().subscriptionId
+    tags: tags
+    enableDefenderPlans: environment != 'dev'
+    defenderPlans: [
+      {
+        name: 'VirtualMachines'
+        tier: 'Standard'
+        subPlan: 'P2'
+      }
+      {
+        name: 'AppServices'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'SqlServers'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'SqlServerVirtualMachines'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'StorageAccounts'
+        tier: 'Standard'
+        subPlan: 'DefenderForStorageV2'
+      }
+      {
+        name: 'KeyVaults'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'Arm'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'OpenSourceRelationalDatabases'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'Containers'
+        tier: 'Standard'
+        subPlan: null
+      }
+      {
+        name: 'CloudPosture'
+        tier: 'Standard'
+        subPlan: null
+      }
+    ]
+    securityContacts: [
+      {
+        email: 'security@contoso.com'
+        phone: '+1-555-0123'
+        alertNotifications: 'On'
+        notificationsByRole: 'On'
+      }
+    ]
+    autoProvisioningSettings: {
+      logAnalytics: 'On'
+      microsoftDefenderForEndpoint: 'On'
+      vulnerabilityAssessment: 'On'
+      guestConfiguration: 'On'
+    }
+    logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
+    enableTelemetry: true
+  }
+  dependsOn: [
+    logAnalyticsWorkspace
+  ]
+}
+
 // Deploy Azure Policy compliance (temporarily disabled due to scope issues)
 // module azurePolicy 'modules/security/azure-policy.bicep' = {
 //   name: 'azure-policy-deployment'
@@ -1300,6 +1382,23 @@ output security object = {
     name: keyVault.outputs.keyVaultName
     uri: keyVault.outputs.keyVaultUri
     config: keyVault.outputs.keyVaultConfig
+  }
+  securityCenter: environment != 'dev' ? {
+    defenderPlansConfig: securityCenter.outputs.defenderPlansConfig
+    securityContactsConfig: securityCenter.outputs.securityContactsConfig
+    autoProvisioningConfig: securityCenter.outputs.autoProvisioningConfig
+    workspaceSettingsConfig: securityCenter.outputs.workspaceSettingsConfig
+    securityPolicyAssignment: securityCenter.outputs.securityPolicyAssignment
+    customSecurityAssessment: securityCenter.outputs.customSecurityAssessment
+    securityCenterConfig: securityCenter.outputs.securityCenterConfig
+  } : {
+    defenderPlansConfig: []
+    securityContactsConfig: []
+    autoProvisioningConfig: {}
+    workspaceSettingsConfig: {}
+    securityPolicyAssignment: {}
+    customSecurityAssessment: {}
+    securityCenterConfig: {}
   }
   // azurePolicy: {
   //   policyDefinitionIds: azurePolicy.outputs.policyDefinitionIds
