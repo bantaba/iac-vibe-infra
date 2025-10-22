@@ -140,7 +140,7 @@ try {
     # List deployed resources in the main resource group (if outputs are available)
     if ($outputs -and $outputs.resourcePrefix -and $outputs.workloadName -and $outputs.environment) {
         $rgName = "$($outputs.resourcePrefix.value)-$($outputs.workloadName.value)-$($outputs.environment.value)-rg"
-        Write-Host "Deployed resources in $rgName:" -ForegroundColor Cyan
+        Write-Host "Deployed resources in ${rgName}:" -ForegroundColor Cyan
         az resource list --resource-group $rgName --output table
     }
     

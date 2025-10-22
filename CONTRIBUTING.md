@@ -125,14 +125,16 @@ Before submitting changes, ensure:
 4. **Deployment Testing**:
    ```powershell
    # Development deployment with what-if preview
-   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -WhatIf
+   .\scripts\deploy.ps1 -Environment dev -Location "East US" -WhatIf
    
    # Full deployment
-   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg
+   .\scripts\deploy.ps1 -Environment dev -Location "East US"
    
    # Skip validation and security scan (for rapid iteration)
-   .\scripts\deploy.ps1 -Environment dev -ResourceGroupName contoso-webapp-dev-test-rg -SkipValidation -SkipSecurityScan
+   .\scripts\deploy.ps1 -Environment dev -Location "East US" -SkipValidation -SkipSecurityScan
    ```
+
+   **Note**: The deployment script uses subscription-level deployment and creates resource groups automatically. Resource group names are generated based on the naming convention: `{resourcePrefix}-{workloadName}-{environment}-rg`
 
 5. **Testing Best Practices**:
    - Test in a development environment first

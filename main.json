@@ -1,12 +1,12 @@
 {
-  "$schema": "https://schema.management.azure.com/schemas/2019-04-01/deploymentTemplate.json#",
+  "$schema": "https://schema.management.azure.com/schemas/2018-05-01/subscriptionDeploymentTemplate.json#",
   "languageVersion": "2.0",
   "contentVersion": "1.0.0.0",
   "metadata": {
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "3935000420813188740"
+      "templateHash": "3697547361506826866"
     }
   },
   "definitions": {
@@ -261,9 +261,16 @@
     },
     "location": {
       "type": "string",
-      "defaultValue": "[resourceGroup().location]",
+      "defaultValue": "East US",
       "metadata": {
         "description": "The Azure region for deployment"
+      }
+    },
+    "resourceGroupName": {
+      "type": "string",
+      "defaultValue": "[format('{0}-{1}-{2}-rg', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'))]",
+      "metadata": {
+        "description": "The resource group name"
       }
     },
     "workloadName": {
@@ -295,10 +302,18 @@
     }
   },
   "resources": {
+    "resourceGroup": {
+      "type": "Microsoft.Resources/resourceGroups",
+      "apiVersion": "2023-07-01",
+      "name": "[parameters('resourceGroupName')]",
+      "location": "[parameters('location')]",
+      "tags": "[parameters('tags')]"
+    },
     "namingConventions": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "naming-conventions",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -609,12 +624,16 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "resourceGroup"
+      ]
     },
     "commonVariables": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "common-variables",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -871,13 +890,17 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "resourceGroup"
+      ]
     },
     "ddosProtection": {
       "condition": "[parameters('environmentConfig').enableDdosProtection]",
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "ddos-protection-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -1099,13 +1122,15 @@
         }
       },
       "dependsOn": [
-        "namingConventions"
+        "namingConventions",
+        "resourceGroup"
       ]
     },
     "networkSecurityGroups": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "network-security-groups-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -1113,7 +1138,7 @@
         "mode": "Incremental",
         "parameters": {
           "nsgNamePrefix": {
-            "value": "[reference('namingConventions').outputs.namingConvention.value.networkSecurityGroup]"
+            "value": "[format('{0}-{1}-{2}', parameters('resourcePrefix'), parameters('workloadName'), parameters('environment'))]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -1853,13 +1878,14 @@
         }
       },
       "dependsOn": [
-        "namingConventions"
+        "resourceGroup"
       ]
     },
     "virtualNetwork": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "virtual-network-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -1899,7 +1925,7 @@
             "_generator": {
               "name": "bicep",
               "version": "0.38.33.27573",
-              "templateHash": "1998328201500427293"
+              "templateHash": "10619917772866519966"
             }
           },
           "definitions": {
@@ -2254,14 +2280,7 @@
                       ]
                     }
                   ],
-                  "delegations": [
-                    {
-                      "name": "Microsoft.AAD/DomainServices",
-                      "properties": {
-                        "serviceName": "Microsoft.AAD/DomainServices"
-                      }
-                    }
-                  ],
+                  "delegations": [],
                   "privateEndpointNetworkPolicies": "Disabled",
                   "privateLinkServiceNetworkPolicies": "Enabled"
                 }
@@ -2357,13 +2376,15 @@
       "dependsOn": [
         "ddosProtection",
         "namingConventions",
-        "networkSecurityGroups"
+        "networkSecurityGroups",
+        "resourceGroup"
       ]
     },
     "virtualNetworkManager": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "virtual-network-manager-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -2386,7 +2407,7 @@
             ]
           },
           "scopeId": {
-            "value": "[subscription().subscriptionId]"
+            "value": "[subscription().id]"
           },
           "tags": {
             "value": "[parameters('tags')]"
@@ -2946,6 +2967,7 @@
       },
       "dependsOn": [
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -2953,6 +2975,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "managed-identities-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -3335,12 +3358,16 @@
             }
           }
         }
-      }
+      },
+      "dependsOn": [
+        "resourceGroup"
+      ]
     },
     "keyVault": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "key-vault-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -3862,6 +3889,7 @@
       "dependsOn": [
         "managedIdentities",
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -3869,17 +3897,13 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "security-center-deployment",
-      "subscriptionId": "[subscription().subscriptionId]",
-      "location": "[resourceGroup().location]",
+      "location": "[deployment().location]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
         },
         "mode": "Incremental",
         "parameters": {
-          "subscriptionId": {
-            "value": "[subscription().subscriptionId]"
-          },
           "tags": {
             "value": "[parameters('tags')]"
           },
@@ -4360,6 +4384,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "application-gateway-public-ip-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -4602,7 +4627,8 @@
         }
       },
       "dependsOn": [
-        "namingConventions"
+        "namingConventions",
+        "resourceGroup"
       ]
     },
     "webTierAvailabilitySet": {
@@ -4610,6 +4636,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "web-tier-availability-set-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -4857,7 +4884,8 @@
         }
       },
       "dependsOn": [
-        "namingConventions"
+        "namingConventions",
+        "resourceGroup"
       ]
     },
     "businessTierAvailabilitySet": {
@@ -4865,6 +4893,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "business-tier-availability-set-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -5112,13 +5141,15 @@
         }
       },
       "dependsOn": [
-        "namingConventions"
+        "namingConventions",
+        "resourceGroup"
       ]
     },
     "businessTierLoadBalancer": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "business-tier-load-balancer-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -5773,6 +5804,7 @@
       },
       "dependsOn": [
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -5780,6 +5812,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "data-tier-load-balancer-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -6415,6 +6448,7 @@
       },
       "dependsOn": [
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -6422,6 +6456,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "application-gateway-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -7142,6 +7177,7 @@
         "keyVault",
         "managedIdentities",
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -7149,6 +7185,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "web-tier-vmss-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -7783,6 +7820,7 @@
         "applicationGateway",
         "namingConventions",
         "networkSecurityGroups",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -7790,6 +7828,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "business-tier-vmss-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -8430,6 +8469,7 @@
         "businessTierLoadBalancer",
         "namingConventions",
         "networkSecurityGroups",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -8437,6 +8477,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "log-analytics-workspace-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -9002,6 +9043,7 @@
       },
       "dependsOn": [
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -9009,6 +9051,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "managed-identity-diagnostics-update",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -9394,13 +9437,15 @@
       },
       "dependsOn": [
         "logAnalyticsWorkspace",
-        "managedIdentities"
+        "managedIdentities",
+        "resourceGroup"
       ]
     },
     "applicationInsights": {
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "application-insights-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -9899,13 +9944,16 @@
       "dependsOn": [
         "applicationGateway",
         "logAnalyticsWorkspace",
-        "namingConventions"
+        "namingConventions",
+        "resourceGroup"
       ]
     },
     "monitoringAlerts": {
+      "condition": false,
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "monitoring-alerts-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -10832,6 +10880,7 @@
         "applicationInsights",
         "businessTierVmScaleSet",
         "logAnalyticsWorkspace",
+        "resourceGroup",
         "sqlServer",
         "storageAccount",
         "webTierVmScaleSet"
@@ -10841,6 +10890,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "key-vault-diagnostics-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -11058,6 +11108,7 @@
       "dependsOn": [
         "keyVault",
         "logAnalyticsWorkspace",
+        "resourceGroup",
         "storageAccount"
       ]
     },
@@ -11065,6 +11116,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "application-gateway-diagnostics-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -11282,6 +11334,7 @@
       "dependsOn": [
         "applicationGateway",
         "logAnalyticsWorkspace",
+        "resourceGroup",
         "storageAccount"
       ]
     },
@@ -11293,6 +11346,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[format('{0}-tier-load-balancer-diagnostics-deployment', createArray('business', 'data')[copyIndex()])]",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -11509,6 +11563,7 @@
         "businessTierLoadBalancer",
         "dataTierLoadBalancer",
         "logAnalyticsWorkspace",
+        "resourceGroup",
         "storageAccount"
       ]
     },
@@ -11520,6 +11575,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "[format('{0}-tier-nsg-diagnostics-deployment', createArray('web', 'business', 'data', 'management')[copyIndex()])]",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -11737,6 +11793,7 @@
       "dependsOn": [
         "logAnalyticsWorkspace",
         "networkSecurityGroups",
+        "resourceGroup",
         "storageAccount"
       ]
     },
@@ -11744,6 +11801,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "sql-server-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -12445,6 +12503,7 @@
         "logAnalyticsWorkspace",
         "managedIdentities",
         "namingConventions",
+        "resourceGroup",
         "storageAccount",
         "virtualNetwork"
       ]
@@ -12453,6 +12512,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "storage-account-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -13452,6 +13512,7 @@
         "logAnalyticsWorkspace",
         "managedIdentities",
         "namingConventions",
+        "resourceGroup",
         "virtualNetwork"
       ]
     },
@@ -13460,6 +13521,7 @@
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "private-endpoints-deployment",
+      "resourceGroup": "[parameters('resourceGroupName')]",
       "properties": {
         "expressionEvaluationOptions": {
           "scope": "inner"
@@ -13917,6 +13979,7 @@
       "dependsOn": [
         "keyVault",
         "namingConventions",
+        "resourceGroup",
         "sqlServer",
         "storageAccount",
         "virtualNetwork"

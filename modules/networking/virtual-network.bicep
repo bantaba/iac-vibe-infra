@@ -203,14 +203,7 @@ var subnetConfigurations = [
           locations: ['*']
         }
       ]
-      delegations: [
-        {
-          name: 'Microsoft.AAD/DomainServices'
-          properties: {
-            serviceName: 'Microsoft.AAD/DomainServices'
-          }
-        }
-      ]
+      delegations: []
       privateEndpointNetworkPolicies: 'Disabled'
       privateLinkServiceNetworkPolicies: 'Enabled'
     }

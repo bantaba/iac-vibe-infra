@@ -2,6 +2,8 @@
 
 This project implements a secure, multi-tier application architecture using Azure Bicep templates with Virtual Network Manager for centralized network governance.
 
+> **Recent Update**: Virtual Network Manager configuration has been updated to use `subscription().id` instead of `subscription().subscriptionId` for proper Azure Resource Manager integration. See [VIRTUAL_NETWORK_MANAGER_UPDATE.md](VIRTUAL_NETWORK_MANAGER_UPDATE.md) for details.
+
 ## Project Structure
 
 ```
@@ -133,6 +135,44 @@ bicep-infrastructure/
    az resource list --resource-group contoso-webapp-dev-rg --output table
    ```
 
+## Naming Conventions and Resource Organization
+
+### Naming Strategy
+
+The infrastructure uses a **hybrid naming approach** that balances consistency with maintainability:
+
+#### Core Naming Pattern
+- **Standard Pattern**: `{resourcePrefix}-{workloadName}-{environment}-{resourceType}{suffix}`
+- **Example**: `contoso-webapp-prod-vnet` (Virtual Network)
+
+#### Naming Convention Module
+The project includes a comprehensive naming conventions module (`modules/shared/naming-conventions.bicep`) that provides:
+- **Standardized Templates**: Pre-defined naming patterns for all Azure resource types
+- **Length Validation**: Automatic validation against Azure resource naming limits
+- **Special Cases**: Handling for resources with unique naming requirements (Key Vault, Storage Account)
+- **Helper Functions**: Utility functions for generating consistent names
+
+#### Simplified Naming for Specific Modules
+Some modules use **direct string interpolation** for improved maintainability:
+- **Network Security Groups**: Uses `${resourcePrefix}-${workloadName}-${environment}` as base prefix
+- **Managed Identities**: Uses base prefix with purpose-specific suffixes
+- **Load Balancers**: Uses tier-specific naming with base prefix
+
+This approach **reduces template complexity** while maintaining naming consistency across the infrastructure.
+
+#### Resource Naming Examples
+
+| Resource Type | Naming Pattern | Example |
+|---------------|----------------|---------|
+| Resource Group | `{prefix}-{workload}-{env}-rg` | `contoso-webapp-prod-rg` |
+| Virtual Network | `{prefix}-{workload}-{env}-vnet` | `contoso-webapp-prod-vnet` |
+| NSG (Application Gateway) | `{prefix}-{workload}-{env}-agw-nsg` | `contoso-webapp-prod-agw-nsg` |
+| NSG (Web Tier) | `{prefix}-{workload}-{env}-web-nsg` | `contoso-webapp-prod-web-nsg` |
+| Key Vault | `{prefix}{workload}{env}kv` | `contosowebappprodkv` |
+| Storage Account | `{prefix}{workload}{env}sa` | `contosowebappprodsa` |
+| SQL Server | `{prefix}-{workload}-{env}-sql` | `contoso-webapp-prod-sql` |
+| Application Gateway | `{prefix}-{workload}-{env}-agw` | `contoso-webapp-prod-agw` |
+
 ## Architecture Overview
 
 ### Deployment Architecture
@@ -166,6 +206,27 @@ Subscription (main.bicep - targetScope: 'subscription')
     ├── Data Resources
     └── Monitoring Resources
 ```
+
+### Template Structure and Dependencies
+
+The main template (`main.bicep`) orchestrates the deployment using a **modular approach** with clear dependency management:
+
+#### Module Deployment Order
+1. **Naming Conventions**: Establishes consistent naming patterns (used selectively)
+2. **Network Security Groups**: Creates security rules with simplified naming approach
+3. **Virtual Network**: Deploys VNet and subnets with NSG associations
+4. **Virtual Network Manager**: Configures centralized network governance
+5. **Security Modules**: Managed identities, Key Vault, Security Center
+6. **Compute Modules**: Application Gateway, Load Balancers, VM Scale Sets
+7. **Data Modules**: SQL Database, Storage Account, Private Endpoints
+8. **Monitoring Modules**: Log Analytics, Application Insights, Alerts (conditionally deployed)
+
+#### Key Template Features
+- **Subscription-Level Scope**: Single template manages entire infrastructure stack
+- **Conditional Deployment**: Environment-specific resource deployment (e.g., DDoS protection, Security Center)
+- **Module Testing Support**: Monitoring alerts module can be conditionally disabled (`if (false)`) for testing and development purposes
+- **Simplified Dependencies**: Reduced complexity through direct parameter passing for NSGs
+- **Comprehensive Outputs**: Detailed outputs for integration and troubleshooting with conditional output handling
 
 ### Infrastructure Architecture
 
@@ -245,6 +306,160 @@ This conditional deployment is controlled by the `environment != 'dev'` conditio
 **Important**: The Security Center module includes conditional output generation that ensures proper resource referencing. When Defender plans are disabled (development environment), the module outputs return empty arrays and objects to prevent deployment errors while maintaining template compatibility across all environments.
 
 ## Module Usage Examples
+
+### Virtual Network Manager Module
+
+The Virtual Network Manager module provides centralized network governance and security policy management across virtual networks at the subscription level:
+
+```bicep
+module virtualNetworkManager 'modules/networking/vnet-manager.bicep' = {
+  name: 'virtual-network-manager-deployment'
+  scope: resourceGroup
+  params: {
+    virtualNetworkManagerName: 'contoso-webapp-prod-vnm'
+    vnmDescription: 'Virtual Network Manager for webapp prod environment'
+    scopeType: 'Subscription'
+    scopeAccesses: ['SecurityAdmin', 'Connectivity']
+    scopeId: subscription().id // Uses subscription().id for proper ARM integration
+    tags: tags
+    location: location
+    networkGroups: [
+      {
+        name: 'prod-web-tier'
+        description: 'Production web tier virtual networks'
+        memberType: 'VirtualNetwork'
+      }
+      {
+        name: 'prod-business-tier'
+        description: 'Production business tier virtual networks'
+        memberType: 'VirtualNetwork'
+      }
+      {
+        name: 'prod-data-tier'
+        description: 'Production data tier virtual networks'
+        memberType: 'VirtualNetwork'
+      }
+    ]
+    connectivityConfigurations: [
+      {
+        name: 'hub-spoke-connectivity'
+        description: 'Hub and spoke connectivity for production environment'
+        connectivityTopology: 'HubAndSpoke'
+        isGlobal: false
+        deleteExistingPeering: false
+        hubs: []
+        appliesToGroups: []
+      }
+    ]
+    securityAdminConfigurations: [
+      {
+        name: 'security-rules'
+        description: 'Security admin rules for production environment'
+        applyOnNetworkIntentPolicyBasedServices: ['None']
+        ruleCollections: [
+          {
+            name: 'deny-high-risk-ports'
+            description: 'Deny access to high-risk ports from internet'
+            appliesToGroups: []
+            rules: [
+              {
+                name: 'deny-rdp-from-internet'
+                description: 'Deny RDP access from internet'
+                access: 'Deny'
+                direction: 'Inbound'
+                priority: 100
+                protocol: 'Tcp'
+                sources: [{ addressPrefixType: 'IPPrefix', addressPrefix: 'Internet' }]
+                destinations: [{ addressPrefixType: 'IPPrefix', addressPrefix: '*' }]
+                sourcePortRanges: ['*']
+                destinationPortRanges: ['3389']
+              }
+              {
+                name: 'deny-ssh-from-internet'
+                description: 'Deny SSH access from internet'
+                access: 'Deny'
+                direction: 'Inbound'
+                priority: 110
+                protocol: 'Tcp'
+                sources: [{ addressPrefixType: 'IPPrefix', addressPrefix: 'Internet' }]
+                destinations: [{ addressPrefixType: 'IPPrefix', addressPrefix: '*' }]
+                sourcePortRanges: ['*']
+                destinationPortRanges: ['22']
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }
+}
+```
+
+#### Virtual Network Manager Configuration Options
+
+- **Scope Management**: 
+  - **Subscription Scope**: Uses `subscription().id` for proper Azure Resource Manager integration (corrected from `subscription().subscriptionId`)
+  - **Management Group Scope**: Alternative scope for enterprise-wide governance
+- **Network Groups**: Logical organization of virtual networks by environment and tier
+- **Connectivity Configurations**: Hub-and-spoke or mesh network topologies
+- **Security Admin Rules**: Centralized security policies that override local NSG rules
+- **Scope Access Types**: 
+  - **SecurityAdmin**: Manage security admin rules and configurations
+  - **Connectivity**: Manage network connectivity and peering configurations
+
+#### Key Benefits
+
+- **Centralized Governance**: Single point of control for network policies across multiple virtual networks
+- **Security Enforcement**: Override local NSG rules with centralized security admin rules
+- **Topology Management**: Automated hub-and-spoke or mesh connectivity configurations
+- **Environment Isolation**: Separate network groups for different environments and application tiers
+- **Compliance**: Consistent security policies enforced across all managed networks
+
+### Network Security Groups Module
+
+The Network Security Groups module creates comprehensive security rules following the principle of least privilege. The module uses a simplified naming approach for better maintainability:
+
+```bicep
+module networkSecurityGroups 'modules/networking/network-security-groups.bicep' = {
+  name: 'network-security-groups-deployment'
+  scope: resourceGroup
+  params: {
+    nsgNamePrefix: '${resourcePrefix}-${workloadName}-${environment}'
+    tags: tags
+    location: location
+    vnetAddressSpace: environmentConfig.networkAddressSpace
+    applicationGatewaySubnet: environmentConfig.subnets.applicationGateway
+    managementSubnet: environmentConfig.subnets.management
+    webTierSubnet: environmentConfig.subnets.webTier
+    businessTierSubnet: environmentConfig.subnets.businessTier
+    dataTierSubnet: environmentConfig.subnets.dataTier
+    activeDirectorySubnet: environmentConfig.subnets.activeDirectory
+  }
+}
+```
+
+#### NSG Naming Convention
+
+The NSG module uses a **simplified naming approach** that combines the base prefix with tier-specific suffixes:
+
+- **Base Prefix**: `${resourcePrefix}-${workloadName}-${environment}` (e.g., `contoso-webapp-prod`)
+- **Generated NSG Names**:
+  - Application Gateway: `contoso-webapp-prod-agw-nsg`
+  - Management: `contoso-webapp-prod-mgmt-nsg`
+  - Web Tier: `contoso-webapp-prod-web-nsg`
+  - Business Tier: `contoso-webapp-prod-biz-nsg`
+  - Data Tier: `contoso-webapp-prod-data-nsg`
+  - Active Directory: `contoso-webapp-prod-ad-nsg`
+
+This approach **simplifies the template dependencies** by removing the need to reference the naming conventions module output for NSG naming, while still maintaining consistent and descriptive resource names.
+
+#### NSG Configuration Options
+
+- **Tier-Specific Rules**: Each NSG contains security rules tailored to its application tier
+- **Least Privilege Access**: Rules follow security best practices with minimal required access
+- **Management Integration**: Controlled RDP/SSH access from management subnet to all tiers
+- **Service Endpoints**: Support for Azure service endpoints (Key Vault, Storage, SQL)
+- **Subnet Association**: Automatic association with corresponding virtual network subnets
 
 ### Managed Identity Module
 
@@ -948,9 +1163,11 @@ The Security Center test script provides:
 The main template deploys the following infrastructure components:
 
 ### Virtual Network Manager
+- **Subscription-Level Scope**: Centralized network governance using `subscription().id` for proper Azure Resource Manager integration
 - **Network Groups**: Environment-specific groupings (dev/staging/prod for web, business, data tiers)
 - **Connectivity Configurations**: Hub-and-spoke topology setup for each environment
 - **Security Admin Rules**: Centralized policies blocking RDP (3389) and SSH (22) from internet
+- **Scope Access**: Both SecurityAdmin and Connectivity access for comprehensive network management
 
 ### Virtual Network and Subnets
 - **Application Gateway Subnet**: Dedicated subnet for Application Gateway with Key Vault and Storage service endpoints
@@ -1072,6 +1289,32 @@ The main template deploys the following infrastructure components:
 - **Service Coverage**: Support for all Azure data services (SQL, Blob, File, Queue, Table, Key Vault)
 - **Network Isolation**: Complete elimination of public internet access to data services
 
+### Monitoring Infrastructure
+
+#### Log Analytics Workspace
+- **Centralized Logging**: Single workspace for all infrastructure and application logs
+- **Data Retention**: Configurable retention policies (30-730 days) based on environment
+- **Data Collection**: Comprehensive data collection rules for Azure resources
+- **Integration**: Seamless integration with all Azure services and Security Center
+- **Cost Optimization**: Environment-specific retention and data collection settings
+
+#### Application Insights
+- **Application Performance Monitoring**: Real-time application performance and availability monitoring
+- **Custom Metrics**: Application-specific metrics and telemetry collection
+- **Availability Testing**: Synthetic monitoring for application endpoints
+- **Integration**: Connected to Log Analytics workspace for unified analytics
+- **Alerting Ready**: Prepared for integration with monitoring alerts module
+
+#### Monitoring Alerts (Conditional)
+- **Conditional Deployment**: Currently disabled (`if (false)`) for testing and development flexibility
+- **Comprehensive Alerting**: When enabled, provides security, performance, and availability alerts
+- **Action Groups**: Email, SMS, and webhook notification channels
+- **Alert Rules**: Pre-configured rules for common monitoring scenarios
+- **Integration**: Designed to work with Log Analytics and Application Insights data
+- **Activation**: Can be enabled by changing the condition in main.bicep from `false` to `true` or environment-based logic
+
+> **Note**: The monitoring alerts module is temporarily disabled in the main template to allow for flexible testing and deployment scenarios. The module remains fully functional and can be activated by modifying the conditional deployment logic in `main.bicep`. The template outputs are designed to handle both enabled and disabled states gracefully.
+
 ## Git Repository
 
 This project is version controlled with Git. The repository includes:
@@ -1101,6 +1344,42 @@ This project is version controlled with Git. The repository includes:
   - [ ] **Security Admin** role (for Microsoft Defender for Cloud configuration)
   - [ ] **Resource Policy Contributor** role (for Azure Policy assignments)
 - [ ] **Note**: Resource groups will be created automatically by the template
+
+### PowerShell Deployment Script Features
+
+The `scripts/deploy.ps1` script provides automated deployment with the following features:
+
+#### Script Parameters
+- **`-Environment`** (Required): Target environment (`dev`, `staging`, `prod`)
+- **`-Location`** (Optional): Azure region for deployment (default: "East US")
+- **`-TemplateFile`** (Optional): Bicep template file path (default: "main.bicep")
+- **`-WhatIf`** (Optional): Run what-if analysis before deployment
+- **`-SkipValidation`** (Optional): Skip template validation step
+- **`-SkipSecurityScan`** (Optional): Skip Checkov security scanning
+
+#### Automated Features
+- **Authentication Validation**: Verifies Azure CLI login and subscription access
+- **Template Validation**: Runs `validate.ps1` script for comprehensive template checking
+- **Security Scanning**: Executes Checkov security analysis with configurable rules
+- **What-If Analysis**: Optional preview of deployment changes before execution
+- **Error Handling**: Comprehensive error reporting and deployment status checking
+- **Output Display**: Shows deployment outputs and created resource groups
+- **Resource Verification**: Lists deployed resources for validation
+
+#### Usage Examples
+```powershell
+# Basic development deployment
+.\scripts\deploy.ps1 -Environment dev
+
+# Production deployment with what-if preview
+.\scripts\deploy.ps1 -Environment prod -WhatIf
+
+# Staging deployment in different region
+.\scripts\deploy.ps1 -Environment staging -Location "West US 2"
+
+# Skip security scan for faster deployment
+.\scripts\deploy.ps1 -Environment dev -SkipSecurityScan
+```
 
 ### Step-by-Step Deployment
 
@@ -1137,6 +1416,23 @@ This project is version controlled with Git. The repository includes:
    ```
 
 6. **Deploy Infrastructure** (subscription-level):
+
+   **Option A: Using PowerShell Deployment Script (Recommended)**
+   ```powershell
+   # Development deployment with validation and security scanning
+   .\scripts\deploy.ps1 -Environment dev -Location "East US"
+
+   # Staging deployment with what-if preview
+   .\scripts\deploy.ps1 -Environment staging -Location "East US" -WhatIf
+
+   # Production deployment (skip security scan if needed)
+   .\scripts\deploy.ps1 -Environment prod -Location "East US" -SkipSecurityScan
+   
+   # Deploy with custom template file
+   .\scripts\deploy.ps1 -Environment dev -TemplateFile "main.bicep" -Location "East US"
+   ```
+
+   **Option B: Direct Azure CLI Commands**
    ```powershell
    # Development deployment
    az deployment sub create \
@@ -1144,6 +1440,24 @@ This project is version controlled with Git. The repository includes:
      --template-file main.bicep \
      --parameters @parameters/dev.parameters.json \
      --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+
+   # Staging environment  
+   az deployment sub create \
+     --location "East US" \
+     --template-file main.bicep \
+     --parameters @parameters/staging.parameters.json \
+     --name "bicep-infrastructure-staging-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
+
+   # Production environment (with what-if preview)
+   az deployment sub what-if \
+     --location "East US" \
+     --template-file main.bicep \
+     --parameters @parameters/prod.parameters.json
+   az deployment sub create \
+     --location "East US" \
+     --template-file main.bicep \
+     --parameters @parameters/prod.parameters.json \
+     --name "bicep-infrastructure-prod-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
    ```
 
 7. **Verify Deployment**:
@@ -1195,6 +1509,15 @@ This project is version controlled with Git. The repository includes:
 - **Resource Group Creation**: Template creates resource groups automatically - do not pre-create them
 - **Deployment Naming**: Use unique deployment names to avoid conflicts: `bicep-infrastructure-{env}-$(Get-Date -Format 'yyyyMMdd-HHmmss')`
 
+#### PowerShell Deployment Script Issues
+- **Script Execution Errors**: Ensure PowerShell execution policy allows script execution (`Set-ExecutionPolicy -ExecutionPolicy RemoteSigned -Scope CurrentUser`)
+- **Parameter Validation**: Verify environment parameter is one of: `dev`, `staging`, `prod`
+- **Azure CLI Authentication**: Script validates Azure CLI login - run `az login` if authentication fails
+- **Checkov Installation**: Security scanning requires Checkov - install with `pip install checkov`
+- **Template File Path**: Verify the template file exists at the specified path (default: `main.bicep`)
+- **Parameter File Missing**: Ensure parameter file exists for the specified environment in `parameters/` directory
+- **Deployment Name Conflicts**: Script generates unique deployment names automatically to avoid conflicts
+
 #### General Issues
 - **Template Validation Errors**: Check parameter file format and required values
 - **Naming Conflicts**: Verify resource names are unique (especially Key Vault and Storage Account names)
@@ -1236,6 +1559,12 @@ This project is version controlled with Git. The repository includes:
   - Ensure service endpoints are disabled on subnets using private endpoints
   - Validate that applications are configured to use private endpoint FQDNs
   - Confirm DNS zone names match the target Azure cloud environment (Commercial/Government/China)
+- **Monitoring Alerts Issues**:
+  - **Module Disabled**: Monitoring alerts module is conditionally disabled (`if (false)`) by default for testing flexibility
+  - **Enabling Alerts**: To enable monitoring alerts, change the condition in `main.bicep` from `if (false)` to `if (true)` or use environment-based logic
+  - **Output Handling**: Template outputs gracefully handle both enabled and disabled alert states with conditional expressions
+  - **Missing Alert Data**: If alerts are disabled, output values will be empty strings or empty arrays as designed
+  - **Testing Alerts**: Use the monitoring module test script (`.\scripts\test-monitoring-modules.ps1`) to validate alert configurations before enabling
 - **Multi-Cloud Deployment Issues**:
   - Verify target Azure cloud environment is correctly detected by `environment()` function
   - Check that DNS suffixes are appropriate for the target cloud (e.g., .windows.net vs .usgovcloudapi.net)
@@ -1250,6 +1579,19 @@ This project is version controlled with Git. The repository includes:
   - Check that Defender plan pricing tiers are supported in your target region
   - **Output Reference Errors**: If you encounter errors referencing Security Center outputs in development environments, verify that the conditional logic is properly implemented. The module uses `if (enableDefenderPlans)` conditions to prevent output generation when Defender plans are disabled
   - **Telemetry Deployment**: The module includes enhanced telemetry deployment with improved resource naming and location specification for better deployment reliability across regions
+
+## Recent Updates and Changes
+
+### Template Simplification (Latest)
+- **NSG Naming Simplification**: Network Security Groups module now uses direct string interpolation (`${resourcePrefix}-${workloadName}-${environment}`) instead of naming conventions module output for improved maintainability
+- **Reduced Dependencies**: This change eliminates unnecessary template dependencies while maintaining consistent naming
+- **Backward Compatibility**: Existing deployments are not affected; the change only impacts new deployments
+
+### Benefits of Recent Changes
+- **Improved Performance**: Faster template compilation and deployment
+- **Enhanced Readability**: Clearer parameter passing and reduced complexity
+- **Easier Maintenance**: Simplified debugging and troubleshooting
+- **Consistent Naming**: Maintains naming consistency across all NSG resources
 
 ## Additional Documentation
 

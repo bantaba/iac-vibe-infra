@@ -36,6 +36,13 @@
   - Add comprehensive networking outputs for resource IDs and configurations
   - _Requirements: 1.4, 1.5, 3.1, 3.2_
 
+- [x] 2.6 Simplify NSG naming convention implementation
+  - ✅ Replace naming conventions module reference with direct string interpolation for NSG prefix
+  - ✅ Simplify template dependencies while maintaining consistent naming patterns
+  - ✅ Update documentation to reflect simplified naming approach
+  - ✅ Maintain backward compatibility and naming consistency
+  - _Requirements: 1.1, 1.3, 2.1_
+
 - [x] 3. Implement security and identity modules
 
 - [x] 3.1 Create Key Vault module

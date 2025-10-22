@@ -59,11 +59,11 @@ az deployment group create --resource-group prod-rg --template-file main.bicep -
 
 ### Testing & Validation
 ```powershell
-# Run deployment validation script
-.\scripts\validate.ps1 -TemplateFile main.bicep -ParameterFile parameters\dev.parameters.json -ResourceGroupName dev-rg
+# Run deployment validation script (subscription-level)
+.\scripts\validate.ps1 -TemplateFile main.bicep -ParameterFile parameters\dev.parameters.json -Location "East US"
 
-# Execute full deployment script
-.\scripts\deploy.ps1 -Environment dev -ResourceGroupName dev-rg
+# Execute full deployment script (subscription-level)
+.\scripts\deploy.ps1 -Environment dev -Location "East US"
 ```
 
 ### Security Scanning with Checkov

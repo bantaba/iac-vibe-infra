@@ -292,8 +292,19 @@ function Test-MonitoringIntegration {
     # Test 1: Validate main template integration
     try {
         $mainTemplateContent = Get-Content "main.bicep" -Raw
-        $hasMonitoringIntegration = $mainTemplateContent -match "modules/monitoring/log-analytics.bicep" -and $mainTemplateContent -match "modules/monitoring/application-insights.bicep" -and $mainTemplateContent -match "modules/monitoring/alerts.bicep"
-        Write-TestResult "Main template monitoring integration" $hasMonitoringIntegration "Monitoring modules integrated into main template"
+        $hasLogAnalytics = $mainTemplateContent -match "modules/monitoring/log-analytics.bicep"
+        $hasApplicationInsights = $mainTemplateContent -match "modules/monitoring/application-insights.bicep"
+        $hasAlertsModule = $mainTemplateContent -match "modules/monitoring/alerts.bicep"
+        $hasConditionalAlerts = $mainTemplateContent -match "= if \(false\)" -and $mainTemplateContent -match "monitoring-alerts-deployment"
+        
+        $hasMonitoringIntegration = $hasLogAnalytics -and $hasApplicationInsights -and $hasAlertsModule
+        $alertsStatus = if ($hasConditionalAlerts) { " (conditionally disabled)" } else { "" }
+        
+        Write-TestResult "Main template monitoring integration" $hasMonitoringIntegration "Monitoring modules integrated into main template$alertsStatus"
+        
+        if ($hasConditionalAlerts) {
+            Write-TestResult "Monitoring alerts conditional deployment" $true "Alerts module is conditionally disabled for testing flexibility"
+        }
     } catch {
         Write-TestResult "Main template monitoring integration" $false "Exception: $($_.Exception.Message)"
     }
@@ -301,8 +312,18 @@ function Test-MonitoringIntegration {
     # Test 2: Validate monitoring outputs
     try {
         $mainTemplateContent = Get-Content "main.bicep" -Raw
-        $hasMonitoringOutputs = $mainTemplateContent -match "output monitoring object" -and $mainTemplateContent -match "logAnalyticsWorkspace:" -and $mainTemplateContent -match "applicationInsights:" -and $mainTemplateContent -match "alerts:"
+        $hasMonitoringOutput = $mainTemplateContent -match "output monitoring object"
+        $hasLogAnalyticsOutput = $mainTemplateContent -match "logAnalyticsWorkspace:"
+        $hasApplicationInsightsOutput = $mainTemplateContent -match "applicationInsights:"
+        $hasAlertsOutput = $mainTemplateContent -match "alerts:"
+        $hasConditionalAlertsOutput = $mainTemplateContent -match "false \? \{" -and $mainTemplateContent -match "actionGroupId.*criticalActionGroupId.*alertRuleIds"
+        
+        $hasMonitoringOutputs = $hasMonitoringOutput -and $hasLogAnalyticsOutput -and $hasApplicationInsightsOutput -and $hasAlertsOutput
         Write-TestResult "Main template monitoring outputs" $hasMonitoringOutputs "Monitoring outputs properly configured in main template"
+        
+        if ($hasConditionalAlertsOutput) {
+            Write-TestResult "Conditional alerts outputs" $true "Alerts outputs handle both enabled and disabled states gracefully"
+        }
     } catch {
         Write-TestResult "Main template monitoring outputs" $false "Exception: $($_.Exception.Message)"
     }

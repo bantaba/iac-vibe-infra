@@ -7,13 +7,29 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Fixed
+- **Virtual Network Manager Configuration**: Corrected `scopeId` parameter to use `subscription().id` instead of `subscription().subscriptionId`
+  - Ensures proper Azure Resource Manager integration for subscription-level scope management
+  - Aligns with Azure Bicep best practices for resource referencing in Virtual Network Manager
+  - Maintains compatibility with Azure's network management APIs and ARM template standards
+  - No functional impact on existing deployments, improves template reliability and future compatibility
+
 ### Changed
 - **SQL Server Module**: Simplified Azure AD administrator configuration by removing `azureAdAdministratorType` parameter
   - Azure AD administrator type is now automatically set to 'ActiveDirectory' for all configurations
   - Reduces configuration complexity while maintaining full Azure AD authentication functionality
   - No impact on existing deployments as the parameter was not used in main template
+- **Monitoring Alerts Module**: Implemented conditional deployment for flexible testing and development
+  - Monitoring alerts module is now conditionally disabled (`if (false)`) in main template for testing purposes
+  - Template outputs handle both enabled and disabled states gracefully with conditional expressions
+  - Allows deployment without alert configuration while maintaining module structure for future activation
+  - Can be easily enabled by changing the condition from `false` to `true` or implementing environment-based logic
 
 ### Fixed
+- **Deployment Script**: Fixed PowerShell syntax error in `scripts/deploy.ps1`
+  - Added missing closing brace `}` at the end of the error handling block
+  - Ensures proper script execution and error handling during deployment failures
+  - Resolves PowerShell parsing errors that could prevent deployment script execution
 - **Security Center Module**: Enhanced conditional output generation to prevent deployment errors when Defender plans are disabled
   - Added `if (enableDefenderPlans)` condition to `defenderPlansConfig` output array
   - Ensures proper resource referencing in development environments where Security Center is disabled

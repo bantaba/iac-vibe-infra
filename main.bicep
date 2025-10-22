@@ -69,6 +69,7 @@ module commonVariables 'modules/shared/common-variables.bicep' = {
 // Deploy DDoS Protection Plan (if enabled)
 module ddosProtection 'modules/networking/ddos-protection.bicep' = if (environmentConfig.enableDdosProtection) {
   name: 'ddos-protection-deployment'
+  scope: resourceGroup
   params: {
     ddosProtectionPlanName: namingConventions.outputs.namingConvention.ddosProtectionPlan
     tags: tags
@@ -83,7 +84,7 @@ module networkSecurityGroups 'modules/networking/network-security-groups.bicep' 
   name: 'network-security-groups-deployment'
   scope: resourceGroup
   params: {
-    nsgNamePrefix: namingConventions.outputs.namingConvention.networkSecurityGroup
+    nsgNamePrefix: '${resourcePrefix}-${workloadName}-${environment}'
     tags: tags
     location: location
     vnetAddressSpace: environmentConfig.networkAddressSpace
@@ -127,7 +128,7 @@ module virtualNetworkManager 'modules/networking/vnet-manager.bicep' = {
     vnmDescription: 'Virtual Network Manager for ${workloadName} ${environment} environment'
     scopeType: 'Subscription'
     scopeAccesses: ['SecurityAdmin', 'Connectivity']
-    scopeId: subscription().subscriptionId
+    scopeId: subscription().id
     tags: tags
     location: location
     networkGroups: [
@@ -314,7 +315,6 @@ module securityCenter 'modules/security/security-center.bicep' = {
   name: 'security-center-deployment'
   scope: subscription()
   params: {
-    subscriptionId: subscription().subscriptionId
     tags: tags
     enableDefenderPlans: environment != 'dev'
     defenderPlans: [
@@ -457,6 +457,7 @@ module applicationGatewayPublicIp 'modules/networking/public-ip.bicep' = {
 // Deploy Availability Sets (for environments not using scale sets)
 module webTierAvailabilitySet 'modules/compute/availability-sets.bicep' = if (!environmentConfig.enableHighAvailability) {
   name: 'web-tier-availability-set-deployment'
+  scope: resourceGroup
   params: {
     availabilitySetName: '${namingConventions.outputs.namingConvention.availabilitySet}-web'
     tier: 'web'
@@ -471,6 +472,7 @@ module webTierAvailabilitySet 'modules/compute/availability-sets.bicep' = if (!e
 
 module businessTierAvailabilitySet 'modules/compute/availability-sets.bicep' = if (!environmentConfig.enableHighAvailability) {
   name: 'business-tier-availability-set-deployment'
+  scope: resourceGroup
   params: {
     availabilitySetName: '${namingConventions.outputs.namingConvention.availabilitySet}-business'
     tier: 'business'
@@ -486,6 +488,7 @@ module businessTierAvailabilitySet 'modules/compute/availability-sets.bicep' = i
 // Deploy Internal Load Balancer for Business Tier
 module businessTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
   name: 'business-tier-load-balancer-deployment'
+  scope: resourceGroup
   params: {
     loadBalancerName: namingConventions.outputs.loadBalancerNames.business
     sku: environmentConfig.skuTier == 'Basic' ? 'Basic' : 'Standard'
@@ -549,6 +552,7 @@ module businessTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
 // Deploy Internal Load Balancer for Data Tier
 module dataTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
   name: 'data-tier-load-balancer-deployment'
+  scope: resourceGroup
   params: {
     loadBalancerName: namingConventions.outputs.loadBalancerNames.data
     sku: environmentConfig.skuTier == 'Basic' ? 'Basic' : 'Standard'
@@ -593,6 +597,7 @@ module dataTierLoadBalancer 'modules/compute/load-balancer.bicep' = {
 // Deploy Application Gateway
 module applicationGateway 'modules/compute/application-gateway.bicep' = {
   name: 'application-gateway-deployment'
+  scope: resourceGroup
   params: {
     applicationGatewayName: namingConventions.outputs.namingConvention.applicationGateway
     subnetId: virtualNetwork.outputs.subnetIds.applicationGateway
@@ -709,6 +714,7 @@ module applicationGateway 'modules/compute/application-gateway.bicep' = {
 // Deploy VM Scale Sets for Web Tier
 module webTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   name: 'web-tier-vmss-deployment'
+  scope: resourceGroup
   params: {
     vmScaleSetName: '${namingConventions.outputs.namingConvention.virtualMachineScaleSet}-web'
     subnetId: virtualNetwork.outputs.subnetIds.webTier
@@ -757,6 +763,7 @@ module webTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
 // Deploy VM Scale Sets for Business Tier
 module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
   name: 'business-tier-vmss-deployment'
+  scope: resourceGroup
   params: {
     vmScaleSetName: '${namingConventions.outputs.namingConvention.virtualMachineScaleSet}-business'
     subnetId: virtualNetwork.outputs.subnetIds.businessTier
@@ -815,6 +822,7 @@ module businessTierVmScaleSet 'modules/compute/virtual-machines.bicep' = {
 // Deploy Log Analytics Workspace
 module logAnalyticsWorkspace 'modules/monitoring/log-analytics.bicep' = {
   name: 'log-analytics-workspace-deployment'
+  scope: resourceGroup
   params: {
     workspaceName: namingConventions.outputs.namingConvention.logAnalyticsWorkspace
     workspaceSku: environmentConfig.skuTier == 'Basic' ? 'PerGB2018' : 'PerGB2018'
@@ -843,6 +851,7 @@ module logAnalyticsWorkspace 'modules/monitoring/log-analytics.bicep' = {
 // Update Managed Identity Diagnostics (after Log Analytics is available)
 module managedIdentityDiagnostics 'modules/security/managed-identity.bicep' = {
   name: 'managed-identity-diagnostics-update'
+  scope: resourceGroup
   params: {
     managedIdentityBaseName: '${resourcePrefix}-${workloadName}-${environment}'
     userAssignedIdentities: [
@@ -887,6 +896,7 @@ module managedIdentityDiagnostics 'modules/security/managed-identity.bicep' = {
 // Deploy Application Insights
 module applicationInsights 'modules/monitoring/application-insights.bicep' = {
   name: 'application-insights-deployment'
+  scope: resourceGroup
   params: {
     applicationInsightsName: namingConventions.outputs.namingConvention.applicationInsights
     applicationType: 'web'
@@ -920,6 +930,7 @@ module applicationInsights 'modules/monitoring/application-insights.bicep' = {
 // Deploy Monitoring Alerts
 module monitoringAlerts 'modules/monitoring/alerts.bicep' = {
   name: 'monitoring-alerts-deployment'
+  scope: resourceGroup
   params: {
     alertNamePrefix: '${resourcePrefix}-${workloadName}-${environment}'
     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
@@ -954,6 +965,7 @@ module monitoringAlerts 'modules/monitoring/alerts.bicep' = {
 // Deploy Diagnostic Settings for Key Resources
 module keyVaultDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
   name: 'key-vault-diagnostics-deployment'
+  scope: resourceGroup
   params: {
     diagnosticSettingName: '${keyVault.outputs.keyVaultName}-diagnostics'
     targetResourceId: keyVault.outputs.keyVaultId
@@ -973,6 +985,7 @@ module keyVaultDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
 
 module applicationGatewayDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = {
   name: 'application-gateway-diagnostics-deployment'
+  scope: resourceGroup
   params: {
     diagnosticSettingName: '${applicationGateway.outputs.applicationGatewayName}-diagnostics'
     targetResourceId: applicationGateway.outputs.applicationGatewayId
@@ -992,6 +1005,7 @@ module applicationGatewayDiagnostics 'modules/monitoring/diagnostic-settings.bic
 
 module loadBalancerDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = [for (lbName, i) in ['business', 'data']: {
   name: '${lbName}-tier-load-balancer-diagnostics-deployment'
+  scope: resourceGroup
   params: {
     diagnosticSettingName: '${lbName}-tier-load-balancer-diagnostics'
     targetResourceId: lbName == 'business' ? businessTierLoadBalancer.outputs.loadBalancerId : dataTierLoadBalancer.outputs.loadBalancerId
@@ -1012,6 +1026,7 @@ module loadBalancerDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = 
 
 module networkSecurityGroupDiagnostics 'modules/monitoring/diagnostic-settings.bicep' = [for (nsgName, i) in ['web', 'business', 'data', 'management']: {
   name: '${nsgName}-tier-nsg-diagnostics-deployment'
+  scope: resourceGroup
   params: {
     diagnosticSettingName: '${nsgName}-tier-nsg-diagnostics'
     targetResourceId: networkSecurityGroups.outputs.nsgIds['${nsgName}Tier']
@@ -1036,6 +1051,7 @@ module networkSecurityGroupDiagnostics 'modules/monitoring/diagnostic-settings.b
 // Deploy SQL Server and Database
 module sqlServer 'modules/data/sql-server.bicep' = {
   name: 'sql-server-deployment'
+  scope: resourceGroup
   params: {
     sqlServerName: namingConventions.outputs.namingConvention.sqlServer
     sqlDatabaseName: replace(namingConventions.outputs.namingConvention.sqlDatabase, '{dbName}', workloadName)
@@ -1094,6 +1110,7 @@ module sqlServer 'modules/data/sql-server.bicep' = {
 // Deploy Storage Account
 module storageAccount 'modules/data/storage-account.bicep' = {
   name: 'storage-account-deployment'
+  scope: resourceGroup
   params: {
     storageAccountName: namingConventions.outputs.specializedNames.storageAccount
     storageAccountSku: environmentConfig.storageAccountSku
@@ -1282,6 +1299,7 @@ module storageAccount 'modules/data/storage-account.bicep' = {
 // Deploy Private Endpoints (if enabled)
 module privateEndpoints 'modules/data/private-endpoints.bicep' = if (environmentConfig.enablePrivateEndpoints) {
   name: 'private-endpoints-deployment'
+  scope: resourceGroup
   params: {
     privateEndpointNamePrefix: replace(namingConventions.outputs.namingConvention.privateEndpoint, '{serviceName}', '')
     subnetId: virtualNetwork.outputs.subnetIds.dataTier
