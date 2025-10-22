@@ -234,6 +234,15 @@
   - Write tests for diagnostic settings and alert rules
   - _Requirements: 6.1, 6.2, 6.3_
 
+- [x] 6.7 Enable monitoring alerts module in production deployment
+
+  - ✅ Remove conditional deployment (`if (false)`) from monitoring alerts module
+  - ✅ Add alert configuration parameters to main.bicep template
+  - ✅ Update parameter files with example alert notification settings
+  - ✅ Configure email, SMS, and webhook notification channels for each environment
+  - ✅ Update documentation to reflect enabled monitoring alerts functionality
+  - _Requirements: 6.3_
+
 - [x] 7. Create main orchestration template
 
 - [x] 7.1 Implement main.bicep template

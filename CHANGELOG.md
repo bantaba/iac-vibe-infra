@@ -7,6 +7,14 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+### Changed
+- **Monitoring Alerts Module**: Enabled monitoring alerts module in production deployment
+  - Removed conditional deployment (`if (false)`) from monitoring alerts module in main.bicep
+  - Added alert configuration parameters (`alertEmailAddresses`, `alertSmsNumbers`, `alertWebhookUrls`) to main template
+  - Updated parameter files with example notification settings for each environment
+  - Configured comprehensive alerting for security, performance, and availability monitoring
+  - Enhanced documentation with monitoring alerts module usage examples and configuration options
+
 ### Fixed
 - **Virtual Network Manager Configuration**: Corrected `scopeId` parameter to use `subscription().id` instead of `subscription().subscriptionId`
   - Ensures proper Azure Resource Manager integration for subscription-level scope management

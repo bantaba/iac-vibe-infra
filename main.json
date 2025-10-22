@@ -6,7 +6,7 @@
     "_generator": {
       "name": "bicep",
       "version": "0.38.33.27573",
-      "templateHash": "3697547361506826866"
+      "templateHash": "6145032303798304527"
     }
   },
   "definitions": {
@@ -298,6 +298,27 @@
       "$ref": "#/definitions/EnvironmentConfig",
       "metadata": {
         "description": "Environment-specific configuration settings"
+      }
+    },
+    "alertEmailAddresses": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Email addresses for alert notifications"
+      }
+    },
+    "alertSmsNumbers": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "SMS phone numbers for alert notifications (format: +1234567890)"
+      }
+    },
+    "alertWebhookUrls": {
+      "type": "array",
+      "defaultValue": [],
+      "metadata": {
+        "description": "Webhook URLs for alert notifications"
       }
     }
   },
@@ -9949,7 +9970,6 @@
       ]
     },
     "monitoringAlerts": {
-      "condition": false,
       "type": "Microsoft.Resources/deployments",
       "apiVersion": "2025-04-01",
       "name": "monitoring-alerts-deployment",
@@ -9970,13 +9990,13 @@
             "value": "[reference('applicationInsights').outputs.applicationInsightsId.value]"
           },
           "alertEmailAddresses": {
-            "value": []
+            "value": "[parameters('alertEmailAddresses')]"
           },
           "alertSmsNumbers": {
-            "value": []
+            "value": "[parameters('alertSmsNumbers')]"
           },
           "alertWebhookUrls": {
-            "value": []
+            "value": "[parameters('alertWebhookUrls')]"
           },
           "enableSecurityAlerts": {
             "value": true

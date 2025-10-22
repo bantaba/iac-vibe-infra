@@ -38,6 +38,16 @@ param tags TagConfiguration = {
 @description('Environment-specific configuration settings')
 param environmentConfig EnvironmentConfig
 
+// Monitoring and alerting configuration
+@description('Email addresses for alert notifications')
+param alertEmailAddresses array = []
+
+@description('SMS phone numbers for alert notifications (format: +1234567890)')
+param alertSmsNumbers array = []
+
+@description('Webhook URLs for alert notifications')
+param alertWebhookUrls array = []
+
 // Create the resource group
 resource resourceGroup 'Microsoft.Resources/resourceGroups@2023-07-01' = {
   name: resourceGroupName
@@ -935,9 +945,9 @@ module monitoringAlerts 'modules/monitoring/alerts.bicep' = {
     alertNamePrefix: '${resourcePrefix}-${workloadName}-${environment}'
     logAnalyticsWorkspaceId: logAnalyticsWorkspace.outputs.workspaceId
     applicationInsightsId: applicationInsights.outputs.applicationInsightsId
-    alertEmailAddresses: [] // Should be provided via parameters
-    alertSmsNumbers: [] // Should be provided via parameters
-    alertWebhookUrls: [] // Should be provided via parameters
+    alertEmailAddresses: alertEmailAddresses
+    alertSmsNumbers: alertSmsNumbers
+    alertWebhookUrls: alertWebhookUrls
     enableSecurityAlerts: true
     enablePerformanceAlerts: true
     enableAvailabilityAlerts: true

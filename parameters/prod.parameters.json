@@ -48,6 +48,24 @@
           "activeDirectory": "10.2.6.0/24"
         }
       }
+    },
+    "alertEmailAddresses": {
+      "value": [
+        "devops-prod@contoso.com",
+        "security-team@contoso.com",
+        "operations-team@contoso.com"
+      ]
+    },
+    "alertSmsNumbers": {
+      "value": [
+        "+1-555-0123",
+        "+1-555-0456"
+      ]
+    },
+    "alertWebhookUrls": {
+      "value": [
+        "https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"
+      ]
     }
   }
 }

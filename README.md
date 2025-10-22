@@ -110,7 +110,22 @@ bicep-infrastructure/
    .\scripts\test-security-compliance.ps1 -TestScope SecurityBaseline -VerboseOutput
    ```
 
-4. **Deploy infrastructure** (subscription-level):
+4. **Configure alert notifications** (optional):
+   
+   Update the parameter files to include your notification preferences:
+   ```json
+   "alertEmailAddresses": {
+     "value": ["your-email@company.com", "security-team@company.com"]
+   },
+   "alertSmsNumbers": {
+     "value": ["+1-555-0123"]
+   },
+   "alertWebhookUrls": {
+     "value": ["https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK"]
+   }
+   ```
+
+5. **Deploy infrastructure** (subscription-level):
    ```powershell
    # Development environment
    az deployment sub create --location "East US" --template-file main.bicep --parameters @parameters/dev.parameters.json --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -123,7 +138,7 @@ bicep-infrastructure/
    az deployment sub create --location "East US" --template-file main.bicep --parameters @parameters/prod.parameters.json --name "bicep-infrastructure-prod-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
    ```
 
-5. **Verify deployment**:
+6. **Verify deployment**:
    ```powershell
    # Check subscription-level deployment status
    az deployment sub show --name "bicep-infrastructure-dev-$(Get-Date -Format 'yyyyMMdd-HHmmss')"
@@ -219,12 +234,12 @@ The main template (`main.bicep`) orchestrates the deployment using a **modular a
 5. **Security Modules**: Managed identities, Key Vault, Security Center
 6. **Compute Modules**: Application Gateway, Load Balancers, VM Scale Sets
 7. **Data Modules**: SQL Database, Storage Account, Private Endpoints
-8. **Monitoring Modules**: Log Analytics, Application Insights, Alerts (conditionally deployed)
+8. **Monitoring Modules**: Log Analytics, Application Insights, Alerts
 
 #### Key Template Features
 - **Subscription-Level Scope**: Single template manages entire infrastructure stack
 - **Conditional Deployment**: Environment-specific resource deployment (e.g., DDoS protection, Security Center)
-- **Module Testing Support**: Monitoring alerts module can be conditionally disabled (`if (false)`) for testing and development purposes
+- **Comprehensive Monitoring**: Full monitoring stack with alerts, diagnostics, and performance monitoring
 - **Simplified Dependencies**: Reduced complexity through direct parameter passing for NSGs
 - **Comprehensive Outputs**: Detailed outputs for integration and troubleshooting with conditional output handling
 
@@ -910,6 +925,76 @@ module storageAccount 'modules/data/storage-account.bicep' = {
 - **Access Controls**: RBAC and network-based access restrictions across all data services
 - **Audit Logging**: Comprehensive logging for security events and administrative operations
 
+### Monitoring Alerts Module
+
+The Monitoring Alerts module provides comprehensive alerting capabilities for security, performance, and availability monitoring:
+
+```bicep
+module monitoringAlerts 'modules/monitoring/alerts.bicep' = {
+  name: 'monitoring-alerts-deployment'
+  scope: resourceGroup
+  params: {
+    alertNamePrefix: 'contoso-webapp-prod'
+    logAnalyticsWorkspaceId: '/subscriptions/.../workspaces/law-workspace'
+    applicationInsightsId: '/subscriptions/.../components/app-insights'
+    alertEmailAddresses: [
+      'devops-prod@contoso.com'
+      'security-team@contoso.com'
+      'operations-team@contoso.com'
+    ]
+    alertSmsNumbers: [
+      '+1-555-0123'
+      '+1-555-0456'
+    ]
+    alertWebhookUrls: [
+      'https://hooks.slack.com/services/YOUR/SLACK/WEBHOOK'
+    ]
+    enableSecurityAlerts: true
+    enablePerformanceAlerts: true
+    enableAvailabilityAlerts: true
+    monitoredResourceIds: [
+      '/subscriptions/.../virtualMachineScaleSets/web-tier-vmss'
+      '/subscriptions/.../virtualMachineScaleSets/business-tier-vmss'
+      '/subscriptions/.../applicationGateways/contoso-webapp-prod-agw'
+      '/subscriptions/.../servers/contoso-webapp-prod-sql'
+      '/subscriptions/.../storageAccounts/contosowebappprodsa'
+    ]
+    tags: {
+      Environment: 'prod'
+      Workload: 'webapp'
+      ManagedBy: 'Bicep'
+    }
+    location: 'East US'
+  }
+}
+```
+
+#### Monitoring Alerts Configuration Options
+
+- **Alert Categories**:
+  - **Security Alerts**: Failed authentication attempts, suspicious activities, and security policy violations
+  - **Performance Alerts**: High CPU usage (>80%), memory consumption (>85%), and response time degradation
+  - **Availability Alerts**: Service outages, health probe failures, and connectivity issues
+- **Notification Channels**:
+  - **Email**: Multiple email addresses for different teams and escalation levels
+  - **SMS**: Phone numbers for critical alerts requiring immediate attention
+  - **Webhooks**: Integration with Slack, Teams, or custom notification systems
+- **Resource Monitoring**: Comprehensive monitoring across VM scale sets, Application Gateway, SQL Database, and Storage Account
+- **Action Groups**: Automatic creation of action groups for different alert severities and notification preferences
+- **Integration**: Seamless connection with Log Analytics workspace and Application Insights for data-driven alerting
+
+#### Alert Thresholds and Rules
+
+The module includes pre-configured alert rules for common monitoring scenarios:
+
+- **CPU Usage**: Alerts when CPU usage exceeds 80% for 5 minutes
+- **Memory Usage**: Alerts when memory consumption exceeds 85% for 5 minutes
+- **Disk Space**: Alerts when disk usage exceeds 90% for 10 minutes
+- **Response Time**: Alerts when application response time exceeds 5 seconds
+- **Failed Requests**: Alerts when HTTP 5xx error rate exceeds 5% for 5 minutes
+- **Database Connections**: Alerts when SQL connection failures exceed threshold
+- **Storage Availability**: Alerts for storage service outages or access failures
+
 ## Testing
 
 ### Module Testing Overview
@@ -1305,15 +1390,18 @@ The main template deploys the following infrastructure components:
 - **Integration**: Connected to Log Analytics workspace for unified analytics
 - **Alerting Ready**: Prepared for integration with monitoring alerts module
 
-#### Monitoring Alerts (Conditional)
-- **Conditional Deployment**: Currently disabled (`if (false)`) for testing and development flexibility
-- **Comprehensive Alerting**: When enabled, provides security, performance, and availability alerts
-- **Action Groups**: Email, SMS, and webhook notification channels
-- **Alert Rules**: Pre-configured rules for common monitoring scenarios
-- **Integration**: Designed to work with Log Analytics and Application Insights data
-- **Activation**: Can be enabled by changing the condition in main.bicep from `false` to `true` or environment-based logic
+#### Monitoring Alerts
+- **Comprehensive Alerting**: Provides security, performance, and availability alerts across all infrastructure components
+- **Action Groups**: Email, SMS, and webhook notification channels for incident response
+- **Alert Categories**:
+  - **Security Alerts**: Suspicious activities, failed authentication attempts, and security policy violations
+  - **Performance Alerts**: High CPU usage, memory consumption, and response time degradation
+  - **Availability Alerts**: Service outages, health probe failures, and connectivity issues
+- **Resource Monitoring**: Alerts for VM scale sets, Application Gateway, SQL Database, and Storage Account
+- **Integration**: Connected to Log Analytics workspace and Application Insights for unified monitoring
+- **Notification Channels**: Configurable email addresses, SMS numbers, and webhook URLs for alert delivery
 
-> **Note**: The monitoring alerts module is temporarily disabled in the main template to allow for flexible testing and deployment scenarios. The module remains fully functional and can be activated by modifying the conditional deployment logic in `main.bicep`. The template outputs are designed to handle both enabled and disabled states gracefully.
+> **Note**: The monitoring alerts module is now enabled by default. Configure notification channels through the parameter files to receive alerts for security incidents, performance issues, and availability problems.
 
 ## Git Repository
 
@@ -1559,12 +1647,12 @@ The `scripts/deploy.ps1` script provides automated deployment with the following
   - Ensure service endpoints are disabled on subnets using private endpoints
   - Validate that applications are configured to use private endpoint FQDNs
   - Confirm DNS zone names match the target Azure cloud environment (Commercial/Government/China)
-- **Monitoring Alerts Issues**:
-  - **Module Disabled**: Monitoring alerts module is conditionally disabled (`if (false)`) by default for testing flexibility
-  - **Enabling Alerts**: To enable monitoring alerts, change the condition in `main.bicep` from `if (false)` to `if (true)` or use environment-based logic
-  - **Output Handling**: Template outputs gracefully handle both enabled and disabled alert states with conditional expressions
-  - **Missing Alert Data**: If alerts are disabled, output values will be empty strings or empty arrays as designed
-  - **Testing Alerts**: Use the monitoring module test script (`.\scripts\test-monitoring-modules.ps1`) to validate alert configurations before enabling
+- **Monitoring Alerts Configuration**:
+  - **Alert Notifications**: Configure email addresses, SMS numbers, and webhook URLs in parameter files to receive alerts
+  - **Alert Thresholds**: Customize alert thresholds for CPU usage, memory consumption, and response times based on workload requirements
+  - **Action Groups**: Verify action group configuration for proper alert delivery and incident response
+  - **Missing Notifications**: If alerts are not being received, check action group configuration and notification channel settings
+  - **Testing Alerts**: Use the monitoring module test script (`.\scripts\test-monitoring-modules.ps1`) to validate alert configurations and notification delivery
 - **Multi-Cloud Deployment Issues**:
   - Verify target Azure cloud environment is correctly detected by `environment()` function
   - Check that DNS suffixes are appropriate for the target cloud (e.g., .windows.net vs .usgovcloudapi.net)

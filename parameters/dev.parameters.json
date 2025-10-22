@@ -48,6 +48,17 @@
           "activeDirectory": "10.0.6.0/24"
         }
       }
+    },
+    "alertEmailAddresses": {
+      "value": [
+        "devops-dev@contoso.com"
+      ]
+    },
+    "alertSmsNumbers": {
+      "value": []
+    },
+    "alertWebhookUrls": {
+      "value": []
     }
   }
 }

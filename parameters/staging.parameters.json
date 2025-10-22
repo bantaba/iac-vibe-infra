@@ -48,6 +48,20 @@
           "activeDirectory": "10.1.6.0/24"
         }
       }
+    },
+    "alertEmailAddresses": {
+      "value": [
+        "devops-staging@contoso.com",
+        "security-team@contoso.com"
+      ]
+    },
+    "alertSmsNumbers": {
+      "value": [
+        "+1-555-0123"
+      ]
+    },
+    "alertWebhookUrls": {
+      "value": []
     }
   }
 }
