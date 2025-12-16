@@ -1,4 +1,5 @@
 # Checkov configuration for Azure Bicep Infrastructure project
+# https://docs.prismacloud.io/en/enterprise-edition/policy-reference/azure-policies/azure-policies
 # This configuration defines security scanning rules and exclusions
 
 framework:
